@@ -2,13 +2,17 @@
 
 import { useState } from 'react'
 import { DatabaseSchema, TableSchema, ColumnDefinition } from '@/actions/db'
+import { useTranslation } from '@/contexts/LocaleContext'
 
 interface SchemaBrowserProps {
   schema: DatabaseSchema | null
   onColumnClick?: (tableName: string, columnName: string) => void
+  onRefreshSchema?: () => void
+  isRefreshing?: boolean
 }
 
-export function SchemaBrowser({ schema, onColumnClick }: SchemaBrowserProps) {
+export function SchemaBrowser({ schema, onColumnClick, onRefreshSchema, isRefreshing }: SchemaBrowserProps) {
+  const { t } = useTranslation()
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -54,27 +58,41 @@ export function SchemaBrowser({ schema, onColumnClick }: SchemaBrowserProps) {
         <svg className="w-10 h-10 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
         </svg>
-        <p>No schema loaded</p>
-        <p className="text-xs mt-1">Connect to a database to browse tables</p>
+        <p>{t('dashboard.schemaBrowser.noSchemaLoaded')}</p>
+        <p className="text-xs mt-1">{t('dashboard.schemaBrowser.connectToDatabase')}</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search */}
+      {/* Search + Refresh */}
       <div className="p-2 border-b border-border">
-        <div className="relative">
-          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tables..."
-            className="w-full pl-8 pr-3 py-1.5 text-sm bg-secondary border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex-1">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('dashboard.schemaBrowser.searchTables')}
+              className="w-full pl-8 pr-3 py-1.5 text-sm bg-secondary border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+          {onRefreshSchema && (
+            <button
+              onClick={onRefreshSchema}
+              disabled={isRefreshing}
+              title={t('dashboard.schemaBrowser.refreshSchema')}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+            >
+              <svg className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -97,9 +115,9 @@ export function SchemaBrowser({ schema, onColumnClick }: SchemaBrowserProps) {
 
       {/* Stats footer */}
       <div className="p-2 border-t border-border text-xs text-muted-foreground flex justify-between">
-        <span>{schema.tables.length} tables</span>
+        <span>{schema.tables.length} {t('dashboard.schemaBrowser.tables')}</span>
         <span>
-          {schema.tables.reduce((acc, t) => acc + t.columns.length, 0)} columns
+          {schema.tables.reduce((acc, tbl) => acc + tbl.columns.length, 0)} {t('dashboard.schemaBrowser.columns')}
         </span>
       </div>
     </div>

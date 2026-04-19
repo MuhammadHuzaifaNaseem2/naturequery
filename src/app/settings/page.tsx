@@ -1,28 +1,51 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, User, Users, Key, ScrollText } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { syncSubscriptionFromStripe } from '@/actions/billing'
+import { ArrowLeft, User, Users, Key, ScrollText, CreditCard, Shield, Globe } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useTranslation } from '@/contexts/LocaleContext'
 import { ProfileSettings } from './ProfileSettings'
 import { TeamSettings } from './TeamSettings'
 import { ApiKeySettings } from './ApiKeySettings'
 import { AuditLogViewer } from './AuditLogViewer'
+import { BillingSettings } from './BillingSettings'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import SecuritySettings from './security/page'
 
-type SettingsTab = 'profile' | 'teams' | 'api-keys' | 'audit'
-
-const TABS = [
-  { id: 'profile' as const, label: 'Profile', icon: User },
-  { id: 'teams' as const, label: 'Teams', icon: Users },
-  { id: 'api-keys' as const, label: 'API Keys', icon: Key },
-  { id: 'audit' as const, label: 'Audit Log', icon: ScrollText },
-]
+type SettingsTab = 'profile' | 'billing' | 'teams' | 'api-keys' | 'audit' | 'security' | 'language'
 
 export default function SettingsPage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
+
+  // After Stripe checkout redirect, sync subscription state immediately
+  // so the user sees their new plan without waiting for the webhook.
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    const status = searchParams.get('status')
+    if (tab === 'billing') {
+      setActiveTab('billing')
+      if (status === 'success') {
+        syncSubscriptionFromStripe()
+      }
+    }
+  }, [searchParams])
+
+  const TABS = [
+    { id: 'profile' as const, label: t('settings.profile.title'), icon: User },
+    { id: 'security' as const, label: t('settings.security.title'), icon: Shield },
+    { id: 'language' as const, label: t('settings.language.title'), icon: Globe },
+    { id: 'billing' as const, label: t('settings.billing.title'), icon: CreditCard },
+    { id: 'teams' as const, label: t('settings.team.title'), icon: Users },
+    { id: 'api-keys' as const, label: t('settings.apiKeys.title'), icon: Key },
+    { id: 'audit' as const, label: 'Audit Log', icon: ScrollText },
+  ]
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,14 +53,14 @@ export default function SettingsPage() {
       <header className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/dashboard')}
             className="p-2 hover:bg-secondary rounded-lg transition-colors"
-            title="Back to Dashboard"
+            title={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-lg font-semibold">Settings</h1>
+            <h1 className="text-lg font-semibold">{t('settings.title')}</h1>
             <p className="text-sm text-muted-foreground">Manage your account, teams, and API access</p>
           </div>
         </div>
@@ -81,6 +104,17 @@ export default function SettingsPage() {
           {activeTab === 'teams' && session?.user?.id && (
             <TeamSettings userId={session.user.id} />
           )}
+          {activeTab === 'security' && <SecuritySettings />}
+          {activeTab === 'language' && (
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-2">{t('settings.language.title')}</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                {t('settings.language.selectLanguage')}
+              </p>
+              <LanguageSwitcher />
+            </div>
+          )}
+          {activeTab === 'billing' && <BillingSettings />}
           {activeTab === 'api-keys' && <ApiKeySettings />}
           {activeTab === 'audit' && <AuditLogViewer />}
         </div>

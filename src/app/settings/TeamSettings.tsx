@@ -22,11 +22,14 @@ import {
   inviteTeamMember,
   updateMemberRole,
   removeTeamMember,
+  getPendingInvites,
+  respondToInvite,
 } from '@/actions/team'
 
 interface TeamMember {
   id: string
   role: string
+  status: string
   user: { id: string; name: string | null; email: string; image: string | null }
 }
 
@@ -63,15 +66,28 @@ export function TeamSettings({ userId }: { userId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
 
+  // Confirmation Modals
+  const [memberToRemove, setMemberToRemove] = useState<{ teamId: string; memberId: string; name: string } | null>(null)
+  const [teamToDelete, setTeamToDelete] = useState<{ id: string; name: string } | null>(null)
+
   // Invite state
   const [inviteTeamId, setInviteTeamId] = useState<string | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER')
   const [inviting, setInviting] = useState(false)
+  const [invites, setInvites] = useState<any[]>([])
 
   useEffect(() => {
     loadTeams()
+    loadPendingInvites()
   }, [])
+
+  async function loadPendingInvites() {
+    const result = await getPendingInvites()
+    if (result.success && result.data) {
+      setInvites(result.data as any[])
+    }
+  }
 
   async function loadTeams() {
     setLoading(true)
@@ -104,6 +120,7 @@ export function TeamSettings({ userId }: { userId: string }) {
     const result = await deleteTeam(teamId)
     if (result.success) {
       setTeams((prev) => prev.filter((t) => t.id !== teamId))
+      setTeamToDelete(null)
     } else {
       setError(result.error || 'Failed to delete team')
     }
@@ -139,6 +156,7 @@ export function TeamSettings({ userId }: { userId: string }) {
     const result = await removeTeamMember(teamId, memberId)
     if (result.success) {
       await loadTeams()
+      setMemberToRemove(null)
     } else {
       setError(result.error || 'Failed to remove member')
     }
@@ -147,6 +165,16 @@ export function TeamSettings({ userId }: { userId: string }) {
   function getUserRole(team: Team): string {
     const member = team.members.find((m) => m.user.id === userId)
     return member?.role || 'MEMBER'
+  }
+
+  async function handleRespondToInvite(teamId: string, accept: boolean) {
+    const result = await respondToInvite(teamId, accept)
+    if (result.success) {
+      await loadPendingInvites()
+      await loadTeams()
+    } else {
+      setError(result.error || 'Failed to process invite')
+    }
   }
 
   if (loading) {
@@ -165,6 +193,84 @@ export function TeamSettings({ userId }: { userId: string }) {
           <button onClick={() => setError(null)} className="ml-2 underline">
             dismiss
           </button>
+        </div>
+      )}
+
+      {/* Modals */}
+      {memberToRemove && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-md rounded-xl border border-border shadow-lg overflow-hidden flex flex-col">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-2">Remove Member</h3>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to remove <span className="font-medium text-foreground">{memberToRemove.name}</span> from the team? They will immediately lose access to all shared connections and queries.
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-secondary/50 flex justify-end gap-3 rounded-b-xl">
+              <button onClick={() => setMemberToRemove(null)} className="btn-secondary text-sm">Cancel</button>
+              <button 
+                onClick={() => handleRemoveMember(memberToRemove.teamId, memberToRemove.memberId)} 
+                className="btn-primary bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent text-sm"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {teamToDelete && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-md rounded-xl border border-border shadow-lg overflow-hidden flex flex-col">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-2 text-destructive flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Delete Team
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Are you absolutely sure you want to delete <span className="font-medium text-foreground">"{teamToDelete.name}"</span>? 
+                This will permanently delete the team and remove access for all {teams.find(t => t.id === teamToDelete.id)?.members.length} members. 
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-secondary/50 flex justify-end gap-3 rounded-b-xl">
+              <button onClick={() => setTeamToDelete(null)} className="btn-secondary text-sm">Cancel</button>
+              <button 
+                onClick={() => handleDeleteTeam(teamToDelete.id)} 
+                className="btn-primary bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent text-sm"
+              >
+                Delete Forever
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Invites Banner */}
+      {invites.length > 0 && (
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-3">
+          <h4 className="font-semibold text-sm text-primary flex items-center gap-2">
+            <UserPlus className="w-4 h-4" />
+            Pending Invitations
+          </h4>
+          <div className="space-y-2">
+            {invites.map((inv) => (
+              <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 bg-background rounded-md p-3 border border-border shadow-sm">
+                <div>
+                  <p className="text-sm font-medium">{inv.team.name}</p>
+                  {inv.team.description && <p className="text-xs text-muted-foreground">{inv.team.description}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleRespondToInvite(inv.teamId, true)} className="btn-primary text-xs py-1.5 px-3">
+                    Accept
+                  </button>
+                  <button onClick={() => handleRespondToInvite(inv.teamId, false)} className="btn-secondary text-xs py-1.5 px-3 text-destructive hover:bg-destructive/10">
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -303,6 +409,11 @@ export function TeamSettings({ userId }: { userId: string }) {
                                 {member.user.name && (
                                   <span className="text-xs text-muted-foreground">{member.user.email}</span>
                                 )}
+                                {member.status === 'PENDING' && (
+                                  <span className="ml-2 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-medium uppercase tracking-wide border border-border">
+                                    Pending
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 {canManage && member.role !== 'OWNER' && member.user.id !== userId ? (
@@ -319,7 +430,11 @@ export function TeamSettings({ userId }: { userId: string }) {
                                       <option value="VIEWER">Viewer</option>
                                     </select>
                                     <button
-                                      onClick={() => handleRemoveMember(team.id, member.id)}
+                                      onClick={() => setMemberToRemove({ 
+                                        teamId: team.id, 
+                                        memberId: member.id, 
+                                        name: member.user.name || member.user.email 
+                                      })}
                                       className="p-1 hover:bg-destructive/10 rounded transition-colors"
                                       title="Remove member"
                                     >
@@ -347,11 +462,7 @@ export function TeamSettings({ userId }: { userId: string }) {
                     {userRole === 'OWNER' && (
                       <div className="pt-3 border-t border-border">
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete team "${team.name}"? This cannot be undone.`)) {
-                              handleDeleteTeam(team.id)
-                            }
-                          }}
+                          onClick={() => setTeamToDelete({ id: team.id, name: team.name })}
                           className="text-xs text-destructive hover:text-destructive/80 flex items-center gap-1"
                         >
                           <Trash2 className="w-3 h-3" />

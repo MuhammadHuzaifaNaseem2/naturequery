@@ -3,14 +3,39 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateApiKey, hashApiKey } from '@/lib/encryption'
+import { checkPlanLimits } from '@/lib/plan-limits'
+import { rateLimitAsync } from '@/lib/rate-limit'
+import { IdSchema } from '@/lib/validation'
+import { z } from 'zod'
 
 export async function createApiKey(name: string, expiresInDays?: number) {
   const session = await auth()
   if (!session?.user?.id) return { success: false, error: 'Not authenticated' }
 
-  // Limit to 10 active keys per user
-  const count = await prisma.apiKey.count({ where: { userId: session.user.id } })
-  if (count >= 10) return { success: false, error: 'Maximum of 10 API keys allowed' }
+  // Rate limit
+  const rl = await rateLimitAsync(`apikey_create:${session.user.id}`, {
+    maxRequests: 5,
+    windowSeconds: 60,
+  })
+  if (!rl.allowed) return { success: false, error: 'Too many requests' }
+
+  // Validation
+  const schema = z.object({
+    name: z.string().min(1, 'Name is required').max(100),
+    expiresInDays: z.number().int().min(1).max(3650).optional(),
+  })
+  const validated = schema.safeParse({ name, expiresInDays })
+  if (!validated.success) return { success: false, error: validated.error.issues[0].message }
+
+  // Check plan limits — API keys are PRO/ENTERPRISE only
+  const limitCheck = await checkPlanLimits(session.user.id, 'API_KEY')
+  if (!limitCheck.allowed) {
+    const message =
+      limitCheck.limit === 0
+        ? `API access requires a Pro or Enterprise plan. Upgrade to create API keys.`
+        : `API key limit reached (${limitCheck.current}/${limitCheck.limit}). Upgrade for more keys.`
+    return { success: false, error: message }
+  }
 
   const { key, hash, prefix } = generateApiKey('rp_')
 
@@ -74,6 +99,9 @@ export async function listApiKeys() {
 export async function revokeApiKey(keyId: string) {
   const session = await auth()
   if (!session?.user?.id) return { success: false, error: 'Not authenticated' }
+
+  // Validation
+  if (!IdSchema.safeParse(keyId).success) return { success: false, error: 'Invalid ID' }
 
   // Ensure key belongs to user
   const key = await prisma.apiKey.findFirst({

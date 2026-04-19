@@ -25,14 +25,47 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // 2FA
+  twoFactorEnabled Boolean  @default(false)
+  twoFactorSecret  String?  // encrypted TOTP secret
+  backupCodes      String[] @default([]) // hashed backup codes
+
+  // Brute-force lockout
+  loginAttempts Int       @default(0)
+  lockedUntil   DateTime?
+
+  // Session invalidation on password change
+  passwordChangedAt DateTime?
+
   // Relations
   accounts      Account[]
   sessions      Session[]
   teamMembers   TeamMember[]
   connections   DatabaseConnection[]
   queries       SavedQuery[]
+  queryHistory  QueryHistory[]
   apiKeys       ApiKey[]
   auditLogs     AuditLog[]
+  subscription  Subscription?
+  usageRecords      UsageRecord[]
+  dashboardWidgets  DashboardWidget[]
+  scheduledQueries  ScheduledQuery[]
+  queryFeedback     QueryFeedback[]
+  notifications     Notification[]
+  onboardingChecklist OnboardingChecklist?
+
+  // Onboarding
+  onboardingCompleted Boolean @default(false)
+
+  // Internationalization
+  locale String @default("en") // en, es, fr, de, ja
+
+  // User's own AI API key (encrypted) — avoids shared rate limits
+  groqApiKey String? // encrypted with same lib as DB passwords
+
+  // Dashboard Sharing
+  isDashboardPublic   Boolean @default(false)
+  dashboardShareToken String? @unique
 
   @@index([email])
 }
@@ -82,6 +115,17 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+}
+
 // ============================================
 // Team/Organization Models
 // ============================================
@@ -106,9 +150,10 @@ model TeamMember {
   id        String   @id @default(cuid())
   userId    String
   teamId    String
-  role      TeamRole @default(MEMBER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      TeamRole         @default(MEMBER)
+  status    TeamMemberStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -123,6 +168,12 @@ enum TeamRole {
   ADMIN
   MEMBER
   VIEWER
+}
+
+enum TeamMemberStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 // ============================================
@@ -157,18 +208,23 @@ model DatabaseConnection {
 // ============================================
 
 model SavedQuery {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  question    String   @db.Text
-  sql         String   @db.Text
-  userId      String
-  teamId      String?
-  isPublic    Boolean  @default(false)
-  isFavorite  Boolean  @default(false)
-  tags        String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  question       String   @db.Text
+  sql            String   @db.Text
+  userId         String
+  teamId         String?
+  connectionId   String?
+  connectionName String?
+  isPublic       Boolean  @default(false)
+  isFavorite     Boolean  @default(false)
+  isTemplate     Boolean  @default(false)
+  templateCategory String?
+  tags           String[] @default([])
+  shareToken     String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   team Team? @relation(fields: [teamId], references: [id])
@@ -176,6 +232,29 @@ model SavedQuery {
   @@index([userId])
   @@index([teamId])
   @@index([isPublic])
+  @@index([userId, isFavorite])
+  @@index([userId, isTemplate])
+  @@index([userId, createdAt])
+  @@index([shareToken])
+}
+
+model QueryHistory {
+  id              String   @id @default(cuid())
+  question        String   @db.Text
+  sql             String   @db.Text
+  userId          String
+  connectionId    String?
+  connectionName  String?
+  rowCount        Int?
+  executionTimeMs Int?
+  status          String   @default("success")
+  errorMessage    String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, connectionId])
 }
 
 // ============================================
@@ -202,20 +281,194 @@ model ApiKey {
 // Audit Log Models
 // ============================================
 
+// ============================================
+// Billing / Subscription Models
+// ============================================
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  INCOMPLETE
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  plan                 SubscriptionPlan   @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  trialEndsAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // "QUERY"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, action, createdAt])
+}
+
+// ============================================
+// Dashboard Widget Models
+// ============================================
+
+model DashboardWidget {
+  id             String   @id @default(cuid())
+  userId         String
+  title          String
+  question       String   @db.Text
+  sql            String   @db.Text
+  connectionId   String?
+  connectionName String?
+  position       Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, position])
+}
+
+// ============================================
+// Scheduled Query Models
+// ============================================
+
+enum ScheduleFrequency {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model ScheduledQuery {
+  id             String            @id @default(cuid())
+  userId         String
+  name           String
+  question       String            @db.Text
+  sql            String            @db.Text
+  connectionId   String?
+  connectionName String?
+  frequency      ScheduleFrequency
+  enabled        Boolean           @default(true)
+  notifyEmails   String[]          @default([]) // email addresses to notify on completion/failure
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  lastStatus     String?           // "success" | "failed"
+  lastError      String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([enabled, nextRunAt])
+}
+
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  action      String   // LOGIN, LOGOUT, CREATE_CONNECTION, DELETE_QUERY, etc.
-  resource    String?  // resource type (connection, query, team)
-  resourceId  String?  // ID of the resource
-  metadata    Json?    // additional context
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String?
+  action       String   // LOGIN, LOGOUT, CREATE_CONNECTION, DELETE_QUERY, etc.
+  resource     String?  // resource type (connection, query, team)
+  resourceId   String?  // ID of the resource
+  metadata     Json?    // additional context
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  // Immutable hash chain — SHA-256(previousHash + entryData)
+  // entryData: canonical JSON snapshot of the log fields used for hashing
+  // Once set, these fields must NEVER be updated (enforced at app + DB level)
+  hash         String?  // SHA-256 hash of this entry
+  previousHash String?  // hash of the immediately preceding entry for this user
+  entryData    String?  @db.Text // serialized JSON used for hashing
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+// ============================================
+// Notification Models
+// ============================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // query_complete, threshold_alert, team_invite, billing, system
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  metadata  Json?    // extra data (link, query ID, etc.)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+// ============================================
+// Onboarding Checklist Models
+// ============================================
+
+model OnboardingChecklist {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  connectedDb        Boolean  @default(false)
+  askedFirstQuestion Boolean  @default(false)
+  pinnedChart        Boolean  @default(false)
+  invitedTeamMember  Boolean  @default(false)
+  setupSchedule      Boolean  @default(false)
+  dismissed          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model QueryFeedback {
+  id           String   @id @default(cuid())
+  userId       String
+  question     String   @db.Text
+  generatedSql String   @db.Text
+  correctedSql String?  @db.Text  // null = thumbs up (no correction needed)
+  rating       Int      // 1 = thumbs up, -1 = thumbs down
+  chainOfThought String? @db.Text // stored CoT for ML analysis
+  connectionId String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([rating])
 }

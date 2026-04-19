@@ -1,0 +1,93 @@
+# Test database stack — spin up multiple DBs for connector testing
+# Usage:
+#   docker compose -f docker-compose.test-dbs.yml up -d <service>
+#   docker compose -f docker-compose.test-dbs.yml up -d          # all of them
+#   docker compose -f docker-compose.test-dbs.yml down -v        # teardown + delete data
+#
+# Each DB is on a different port to avoid collisions.
+# Credentials are intentionally trivial — for local testing only.
+
+services:
+  # ── MariaDB (port 3307) ──────────────────────────────────────────────────
+  mariadb-test:
+    image: mariadb:11
+    ports:
+      - '3307:3306'
+    environment:
+      MARIADB_ROOT_PASSWORD: testpass
+      MARIADB_DATABASE: testdb
+      MARIADB_USER: testuser
+      MARIADB_PASSWORD: testpass
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 10s
+      retries: 5
+
+  # ── MySQL (port 3308 — keep 3306 free for host mysql if any) ─────────────
+  mysql-test:
+    image: mysql:8
+    ports:
+      - '3308:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: testpass
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-ptestpass']
+      interval: 10s
+      retries: 5
+
+  # ── SQL Server (port 1433) ───────────────────────────────────────────────
+  mssql-test:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - '1433:1433'
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: 'TestPass123!'
+      MSSQL_PID: Developer
+
+  # ── MongoDB (port 27017) ─────────────────────────────────────────────────
+  mongo-test:
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: testuser
+      MONGO_INITDB_ROOT_PASSWORD: testpass
+      MONGO_INITDB_DATABASE: testdb
+
+  # ── ClickHouse (HTTP port 8123, native 9000) ─────────────────────────────
+  clickhouse-test:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    environment:
+      CLICKHOUSE_DB: testdb
+      CLICKHOUSE_USER: testuser
+      CLICKHOUSE_PASSWORD: testpass
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  # ── CockroachDB (single-node insecure, port 26257) ───────────────────────
+  cockroach-test:
+    image: cockroachdb/cockroach:latest
+    command: start-single-node --insecure
+    ports:
+      - '26257:26257'
+      - '8080:8080'  # admin UI
+
+  # ── Oracle XE (port 1521 — heavy, ~2GB) ──────────────────────────────────
+  oracle-test:
+    image: gvenzl/oracle-xe:21-slim
+    ports:
+      - '1521:1521'
+    environment:
+      ORACLE_PASSWORD: testpass
+      APP_USER: testuser
+      APP_USER_PASSWORD: testpass

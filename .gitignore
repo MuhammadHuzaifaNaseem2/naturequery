@@ -45,3 +45,11 @@ dev_full_log.txt
 
 # misc artifacts
 nul
+
+# user-uploaded datasets (stored per-user, not source code)
+/data/
+
+# test output / scratch files
+email-validation-results.txt
+ts_check.txt
+*.output.txt

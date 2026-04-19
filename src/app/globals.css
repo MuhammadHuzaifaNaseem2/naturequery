@@ -62,7 +62,9 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 }
 
@@ -135,28 +137,54 @@
 
 /* Animation keyframes */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    translate: 0 -10px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    scale: 0.95;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .animate-fadeIn {
@@ -184,6 +212,109 @@
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* Generating animation — pulsing gradient glow on Generate SQL button */
+@keyframes gradientPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 12px hsl(var(--primary) / 0.4),
+      0 0 24px hsl(var(--accent) / 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 20px hsl(var(--primary) / 0.6),
+      0 0 40px hsl(var(--accent) / 0.35);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2) rotate(180deg);
+  }
+}
+
+.btn-generating {
+  background-size: 200% 200%;
+  animation:
+    gradientPulse 1.5s ease-in-out infinite,
+    gradientShift 3s ease infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 1s ease-in-out infinite;
+}
+
+/* SQL generation skeleton loader */
+@keyframes sqlSkeleton {
+  0% {
+    width: 0%;
+    opacity: 0;
+  }
+  20% {
+    width: 60%;
+    opacity: 1;
+  }
+  40% {
+    width: 100%;
+    opacity: 1;
+  }
+  60% {
+    width: 80%;
+    opacity: 0.8;
+  }
+  80% {
+    width: 95%;
+    opacity: 1;
+  }
+  100% {
+    width: 0%;
+    opacity: 0;
+  }
+}
+
+.sql-generating-skeleton > div {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--primary) / 0.15) 25%,
+    hsl(var(--primary) / 0.3) 50%,
+    hsl(var(--primary) / 0.15) 75%
+  );
+  background-size: 200% 100%;
+  animation:
+    shimmer 1.5s infinite,
+    sqlSkeleton 2.5s ease-in-out infinite;
+}
+
+.sql-generating-skeleton > div:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.sql-generating-skeleton > div:nth-child(3) {
+  animation-delay: 0.6s;
+}
+.sql-generating-skeleton > div:nth-child(4) {
+  animation-delay: 0.9s;
 }
 
 /* Toast animations */
@@ -269,7 +400,6 @@
   @apply w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus-ring placeholder:text-muted-foreground;
 }
 
-
 /* Card styles */
 .card {
   @apply bg-card border border-border rounded-xl shadow-sm;
@@ -277,4 +407,284 @@
 
 .card-hover {
   @apply card hover-lift cursor-pointer;
+}
+
+/* Gradient button */
+.btn-gradient {
+  @apply btn bg-gradient-to-r from-primary to-accent text-white shadow-md hover:shadow-lg hover:brightness-110;
+}
+
+/* Glass card */
+.glass-card {
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Hover scale */
+.hover-scale {
+  @apply transition-transform duration-200;
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Active connection border */
+.card-gradient-border {
+  border-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) 1;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* Skeleton shine */
+.skeleton-shine {
+  @apply bg-muted rounded;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.08) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Slide in animations */
+@keyframes slideInLeft {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    translate: 100% 0;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* ============================================================
+   Driver.js Product Tour — Custom Premium Theme
+   ============================================================ */
+
+/* Popover container */
+.driver-popover.driverjs-theme {
+  all: unset;
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 1000000000;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 16px;
+  min-width: 320px;
+  max-width: 380px;
+  padding: 0;
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.12),
+    0 4px 6px -2px hsl(0 0% 0% / 0.06),
+    0 20px 40px -8px hsl(0 0% 0% / 0.18),
+    0 0 80px -20px hsl(var(--primary) / 0.15);
+  animation: tourPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tourPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Inner content padding */
+.driver-popover.driverjs-theme .driver-popover-title,
+.driver-popover.driverjs-theme .driver-popover-description,
+.driver-popover.driverjs-theme .driver-popover-footer {
+  padding-left: 24px;
+  padding-right: 24px;
+  font-family: inherit;
+}
+
+/* Title — gradient header area + top accent bar */
+.driver-popover.driverjs-theme .driver-popover-title {
+  display: block;
+  position: relative;
+  font-size: 15px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  padding-top: 22px;
+  padding-bottom: 14px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.06), hsl(var(--accent) / 0.04));
+}
+
+/* Blue-to-purple top bar */
+.driver-popover.driverjs-theme .driver-popover-title::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
+  border-radius: 16px 16px 0 0;
+}
+
+/* Description */
+.driver-popover.driverjs-theme .driver-popover-description {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: hsl(var(--muted-foreground));
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Footer */
+.driver-popover.driverjs-theme .driver-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  padding-bottom: 20px;
+  margin-top: 16px;
+  border-top: 1px solid hsl(var(--border));
+}
+
+/* Progress text */
+.driver-popover.driverjs-theme .driver-popover-progress-text {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+}
+
+/* Nav button group */
+.driver-popover.driverjs-theme .driver-popover-navigation-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* All buttons reset */
+.driver-popover.driverjs-theme .driver-popover-footer button {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+/* Prev (Back) button — ghost style */
+.driver-popover.driverjs-theme .driver-popover-prev-btn {
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+}
+.driver-popover.driverjs-theme .driver-popover-prev-btn:hover:not(:disabled) {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+/* Next / Done button — gradient primary */
+.driver-popover.driverjs-theme .driver-popover-next-btn {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.35);
+}
+.driver-popover.driverjs-theme .driver-popover-next-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 4px 14px hsl(var(--primary) / 0.45);
+  transform: translateY(-1px);
+}
+.driver-popover.driverjs-theme .driver-popover-next-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Disabled state */
+.driver-popover.driverjs-theme .driver-popover-btn-disabled {
+  opacity: 0.4 !important;
+  pointer-events: none !important;
+}
+
+/* Close button */
+.driver-popover.driverjs-theme .driver-popover-close-btn {
+  all: unset;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 16px;
+  line-height: 1;
+  background: transparent;
+}
+.driver-popover.driverjs-theme .driver-popover-close-btn:hover {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+}
+
+/* Arrow */
+.driver-popover.driverjs-theme .driver-popover-arrow {
+  border-width: 7px;
+}
+.driver-popover.driverjs-theme .driver-popover-arrow-side-top {
+  border-color: hsl(var(--card)) transparent transparent transparent;
+}
+.driver-popover.driverjs-theme .driver-popover-arrow-side-bottom {
+  border-color: transparent transparent hsl(var(--card)) transparent;
+}
+.driver-popover.driverjs-theme .driver-popover-arrow-side-left {
+  border-color: transparent transparent transparent hsl(var(--card));
+}
+.driver-popover.driverjs-theme .driver-popover-arrow-side-right {
+  border-color: transparent hsl(var(--card)) transparent transparent;
+}
+
+/* Stage highlight ring */
+.driver-active-element {
+  outline: 2px solid hsl(var(--primary) / 0.7) !important;
+  outline-offset: 4px !important;
+  border-radius: 8px !important;
 }

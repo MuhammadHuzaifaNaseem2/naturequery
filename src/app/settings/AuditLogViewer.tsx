@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ScrollText, ChevronLeft, ChevronRight, Loader2, Filter } from 'lucide-react'
-import { getAuditLogs, getAuditLogActions } from '@/actions/audit'
+import { ScrollText, ChevronLeft, ChevronRight, Loader2, Filter, Download } from 'lucide-react'
+import { getAuditLogs, getAuditLogActions, exportAuditLogsCSV } from '@/actions/audit'
 
 interface AuditLogEntry {
   id: string
@@ -34,6 +34,7 @@ export function AuditLogViewer() {
   const [total, setTotal] = useState(0)
   const [actionFilter, setActionFilter] = useState<string>('')
   const [availableActions, setAvailableActions] = useState<string[]>([])
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     loadActions()
@@ -78,27 +79,64 @@ export function AuditLogViewer() {
     return action.replace(/_/g, ' ').toLowerCase()
   }
 
+  async function handleExport() {
+    setIsExporting(true)
+    try {
+      const result = await exportAuditLogsCSV({ action: actionFilter })
+      if (result.success && result.data) {
+        const { base64, filename } = result.data
+        const binaryString = atob(base64)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        const blob = new Blob([bytes], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
-      {/* Filter */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <select
-            value={actionFilter}
-            onChange={(e) => {
-              setActionFilter(e.target.value)
-              setPage(1)
-            }}
-            className="px-3 py-1.5 bg-secondary border border-border rounded-lg text-sm"
+      {/* Filter and Export */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <select
+              value={actionFilter}
+              onChange={(e) => {
+                setActionFilter(e.target.value)
+                setPage(1)
+              }}
+              className="px-3 py-1.5 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">All actions</option>
+              {availableActions.map((action) => (
+                <option key={action} value={action}>
+                  {formatAction(action)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleExport}
+            disabled={isExporting || logs.length === 0}
+            className="btn-secondary text-sm py-1.5"
+            title="Export to CSV"
           >
-            <option value="">All actions</option>
-            {availableActions.map((action) => (
-              <option key={action} value={action}>
-                {formatAction(action)}
-              </option>
-            ))}
-          </select>
+            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Export CSV
+          </button>
         </div>
         <span className="text-xs text-muted-foreground">
           {total} event{total !== 1 ? 's' : ''}
@@ -120,9 +158,8 @@ export function AuditLogViewer() {
           {logs.map((log) => (
             <div key={log.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
               <span
-                className={`px-2 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
-                  ACTION_COLORS[log.action] || 'bg-secondary text-muted-foreground'
-                }`}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${ACTION_COLORS[log.action] || 'bg-secondary text-muted-foreground'
+                  }`}
               >
                 {formatAction(log.action)}
               </span>

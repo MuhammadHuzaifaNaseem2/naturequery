@@ -1,66 +1,77 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
 
-// Paths that require authentication
-const protectedPaths = [
-    '/',
-    '/dashboard',
-    '/connections',
-    '/queries',
-    '/settings',
-    '/api/connections',
-    '/api/queries',
-]
+const PUBLIC_PREFIXES = ['/api/v1', '/_next', '/favicon', '/public', '/shared']
 
-// Paths that should redirect to dashboard if already authenticated
-const authPaths = ['/login', '/register']
+const PUBLIC_EXACT = new Set([
+  '/', '/login', '/register', '/verify-email', '/forgot-password',
+  '/reset-password', '/pricing', '/features', '/terms', '/privacy',
+  '/docs', '/about', '/contact', '/faq', '/changelog',
+])
 
-export async function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl
+const AUTH_PAGES = new Set(['/login', '/register'])
 
-    // Get the token from the request
-    const token = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET,
-    })
+function applySecurityHeaders(res: NextResponse): NextResponse {
+  res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  res.headers.set('X-Frame-Options', 'DENY')
+  res.headers.set('X-Content-Type-Options', 'nosniff')
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()')
+  res.headers.set('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://js.stripe.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://*.gravatar.com https://i.pravatar.cc",
+    "font-src 'self' data:",
+    "connect-src 'self' https://api.groq.com https://api.stripe.com https://js.stripe.com wss:",
+    "frame-src https://js.stripe.com https://hooks.stripe.com",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join('; '))
+  return res
+}
 
-    const isAuthenticated = !!token
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
 
-    // Check if it's an auth page (check this FIRST to avoid redirect loop)
-    const isAuthPath = authPaths.some((path) => pathname.startsWith(path))
+  const isPublic =
+    PUBLIC_EXACT.has(pathname) ||
+    PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
 
-    // Redirect to dashboard if accessing auth pages while authenticated
-    if (isAuthPath && isAuthenticated) {
-        return NextResponse.redirect(new URL('/', request.url))
-    }
+  if (isPublic) {
+    return applySecurityHeaders(NextResponse.next())
+  }
 
-    // Check if the path requires authentication
-    // Use exact match for '/' to avoid matching every path
-    const isProtectedPath = protectedPaths.some((path) =>
-        path === '/' ? pathname === '/' : pathname.startsWith(path)
-    )
+  // Check session cookie existence — actual auth verification happens server-side
+  const cookieName = process.env.NODE_ENV === 'production'
+    ? '__Secure-authjs.session-token'
+    : 'authjs.session-token'
+  const hasSession = !!req.cookies.get(cookieName)?.value
 
-    // Redirect to login if accessing protected path without authentication
-    if (isProtectedPath && !isAuthenticated && !isAuthPath) {
-        const loginUrl = new URL('/login', request.url)
-        loginUrl.searchParams.set('callbackUrl', pathname)
-        return NextResponse.redirect(loginUrl)
-    }
+  if (AUTH_PAGES.has(pathname) && hasSession) {
+    return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', req.url)))
+  }
 
-    return NextResponse.next()
+  if (pathname.startsWith('/api/')) {
+    return applySecurityHeaders(NextResponse.next())
+  }
+
+  if (!hasSession) {
+    const loginUrl = new URL('/login', req.url)
+    loginUrl.searchParams.set('callbackUrl', pathname)
+    return applySecurityHeaders(NextResponse.redirect(loginUrl))
+  }
+
+  const res = NextResponse.next()
+  res.headers.set('X-Request-Id', crypto.randomUUID())
+  return applySecurityHeaders(res)
 }
 
 export const config = {
-    matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api/auth (auth API routes)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder
-         */
-        '/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.svg$).*)',
-    ],
+  matcher: [
+    '/((?!api/auth|api/webhooks|_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+  ],
 }

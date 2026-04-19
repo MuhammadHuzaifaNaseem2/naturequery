@@ -2,6 +2,7 @@
 
 import ExcelJS from 'exceljs'
 import { QueryResultRow } from './db'
+import { ExportToExcelSchema, ExportToCSVSchema, validateInput } from '@/lib/validation'
 
 export interface ExportRequest {
   rows: QueryResultRow[]
@@ -23,7 +24,16 @@ export interface ExportResult {
  */
 export async function exportToCSV(request: ExportRequest): Promise<ExportResult> {
   try {
-    const { rows, fields, filename = 'report.csv' } = request
+    // Validate input
+    const validation = validateInput(ExportToCSVSchema, request)
+    if (!validation.success) {
+      return {
+        success: false,
+        error: validation.error,
+      }
+    }
+
+    const { rows, fields, filename = 'report.csv' } = validation.data
 
     // Escape CSV values (handle commas, quotes, newlines)
     const escapeCSV = (value: unknown): string => {
@@ -39,9 +49,7 @@ export async function exportToCSV(request: ExportRequest): Promise<ExportResult>
 
     // Build CSV content
     const headerRow = fields.map(escapeCSV).join(',')
-    const dataRows = rows.map((row) =>
-      fields.map((field) => escapeCSV(row[field])).join(',')
-    )
+    const dataRows = rows.map((row) => fields.map((field) => escapeCSV(row[field])).join(','))
 
     const csvContent = [headerRow, ...dataRows].join('\n')
 
@@ -69,10 +77,19 @@ export async function exportToCSV(request: ExportRequest): Promise<ExportResult>
  */
 export async function exportToExcel(request: ExportRequest): Promise<ExportResult> {
   try {
-    const { rows, fields, filename = 'report.xlsx', title = 'Query Results' } = request
+    // Validate input
+    const validation = validateInput(ExportToExcelSchema, request)
+    if (!validation.success) {
+      return {
+        success: false,
+        error: validation.error,
+      }
+    }
+
+    const { rows, fields, filename = 'report.xlsx', title = 'Query Results' } = validation.data
 
     const workbook = new ExcelJS.Workbook()
-    workbook.creator = 'ReportFlow'
+    workbook.creator = 'NatureQuery'
     workbook.created = new Date()
     workbook.modified = new Date()
 

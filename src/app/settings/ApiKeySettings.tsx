@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Key, Plus, Trash2, Loader2, Copy, Check, AlertTriangle } from 'lucide-react'
 import { createApiKey, listApiKeys, revokeApiKey } from '@/actions/api-keys'
+import { useTranslation } from '@/contexts/LocaleContext'
 
 interface ApiKeyDisplay {
   id: string
@@ -14,6 +15,7 @@ interface ApiKeyDisplay {
 }
 
 export function ApiKeySettings() {
+  const { t } = useTranslation()
   const [keys, setKeys] = useState<ApiKeyDisplay[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -21,6 +23,9 @@ export function ApiKeySettings() {
   const [expiryDays, setExpiryDays] = useState<string>('90')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Custom confirm modal state
+  const [keyToRevoke, setKeyToRevoke] = useState<string | null>(null)
 
   // Newly created key (shown once)
   const [newKey, setNewKey] = useState<string | null>(null)
@@ -58,8 +63,14 @@ export function ApiKeySettings() {
     }
   }
 
-  async function handleRevoke(keyId: string) {
-    if (!confirm('Revoke this API key? Any applications using it will stop working.')) return
+  function handleRevoke(keyId: string) {
+    setKeyToRevoke(keyId)
+  }
+
+  async function confirmRevoke() {
+    if (!keyToRevoke) return
+    const keyId = keyToRevoke
+    setKeyToRevoke(null)
 
     const result = await revokeApiKey(keyId)
     if (result.success) {
@@ -78,7 +89,7 @@ export function ApiKeySettings() {
   }
 
   function formatDate(date: Date | string | null) {
-    if (!date) return 'Never'
+    if (!date) return t('settings.apiKeys.never')
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -115,7 +126,7 @@ export function ApiKeySettings() {
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
           <div className="flex items-center gap-2 text-amber-600">
             <AlertTriangle className="w-4 h-4" />
-            <span className="text-sm font-medium">Copy your API key now. It won't be shown again.</span>
+            <span className="text-sm font-medium">{t('settings.apiKeys.copyKeyNow')}</span>
           </div>
           <div className="flex items-center gap-2">
             <code className="flex-1 px-3 py-2 bg-background border border-border rounded text-xs font-mono break-all">
@@ -126,7 +137,7 @@ export function ApiKeySettings() {
             </button>
           </div>
           <button onClick={() => setNewKey(null)} className="text-xs text-amber-600 hover:underline">
-            I've copied it, dismiss
+            {t('settings.apiKeys.copiedDismiss')}
           </button>
         </div>
       )}
@@ -135,39 +146,39 @@ export function ApiKeySettings() {
       {!showCreate ? (
         <button onClick={() => setShowCreate(true)} className="btn-primary text-sm">
           <Plus className="w-4 h-4" />
-          Create API Key
+          {t('settings.apiKeys.createKey')}
         </button>
       ) : (
         <div className="card p-4 space-y-3">
-          <h4 className="font-medium text-sm">Create a New API Key</h4>
+          <h4 className="font-medium text-sm">{t('settings.apiKeys.createNewKey')}</h4>
           <input
             type="text"
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
-            placeholder="Key name (e.g., Production App)"
+            placeholder={t('settings.apiKeys.keyNamePlaceholder')}
             className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">Expiration</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('settings.apiKeys.expiration')}</label>
             <select
               value={expiryDays}
               onChange={(e) => setExpiryDays(e.target.value)}
               className="px-3 py-2 bg-secondary border border-border rounded-lg text-sm"
             >
-              <option value="30">30 days</option>
-              <option value="90">90 days</option>
-              <option value="180">180 days</option>
-              <option value="365">1 year</option>
-              <option value="never">No expiration</option>
+              <option value="30">{t('settings.apiKeys.30days')}</option>
+              <option value="90">{t('settings.apiKeys.90days')}</option>
+              <option value="180">{t('settings.apiKeys.180days')}</option>
+              <option value="365">{t('settings.apiKeys.1year')}</option>
+              <option value="never">{t('settings.apiKeys.noExpiration')}</option>
             </select>
           </div>
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={creating || !newKeyName.trim()} className="btn-primary text-sm">
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-              Create
+              {t('settings.apiKeys.create')}
             </button>
             <button onClick={() => setShowCreate(false)} className="btn-secondary text-sm">
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -177,9 +188,9 @@ export function ApiKeySettings() {
       {keys.length === 0 ? (
         <div className="text-center py-8">
           <Key className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No API keys</p>
+          <p className="text-sm text-muted-foreground">{t('settings.apiKeys.noKeys')}</p>
           <p className="text-xs text-muted-foreground/70 mt-1">
-            Create an API key to access ReportFlow programmatically.
+            {t('settings.apiKeys.noKeysDesc')}
           </p>
         </div>
       ) : (
@@ -200,15 +211,15 @@ export function ApiKeySettings() {
                       <h4 className="text-sm font-medium">{key.name}</h4>
                       {expired && (
                         <span className="px-1.5 py-0.5 bg-destructive/10 text-destructive rounded text-[10px] font-medium">
-                          Expired
+                          {t('settings.apiKeys.expired')}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                       <code className="font-mono">{key.prefix}...</code>
-                      <span>Created {formatDate(key.createdAt)}</span>
-                      {key.lastUsedAt && <span>Last used {formatDate(key.lastUsedAt)}</span>}
-                      {key.expiresAt && <span>Expires {formatDate(key.expiresAt)}</span>}
+                      <span>{t('settings.apiKeys.created')} {formatDate(key.createdAt)}</span>
+                      {key.lastUsedAt && <span>{t('settings.apiKeys.lastUsedLabel')} {formatDate(key.lastUsedAt)}</span>}
+                      {key.expiresAt && <span>{t('settings.apiKeys.expires')} {formatDate(key.expiresAt)}</span>}
                     </div>
                   </div>
                 </div>
@@ -227,14 +238,44 @@ export function ApiKeySettings() {
 
       {/* Usage info */}
       <div className="card p-4">
-        <h4 className="text-sm font-medium mb-2">Usage</h4>
+        <h4 className="text-sm font-medium mb-2">{t('settings.apiKeys.usageTitle')}</h4>
         <p className="text-xs text-muted-foreground mb-2">
-          Include your API key in the Authorization header:
+          {t('settings.apiKeys.usageDesc')}
         </p>
         <code className="block px-3 py-2 bg-secondary rounded-lg text-xs font-mono">
           Authorization: Bearer rp_your_api_key_here
         </code>
       </div>
+
+      {/* Revoke Confirm Modal */}
+      {keyToRevoke && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative bg-card border border-border shadow-2xl rounded-2xl p-6 w-full max-w-md animate-scaleIn">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-semibold">{t('settings.apiKeys.revoke')}</h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              {t('settings.apiKeys.revokeConfirm')}
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={confirmRevoke}
+                className="btn-primary flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent"
+              >
+                {t('settings.apiKeys.revoke')}
+              </button>
+              <button
+                onClick={() => setKeyToRevoke(null)}
+                className="btn-secondary flex-1"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
