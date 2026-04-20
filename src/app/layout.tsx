@@ -36,14 +36,6 @@ export const metadata: Metadata = {
   authors: [{ name: 'NatureQuery' }],
   creator: 'NatureQuery',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://naturequery.app'),
-  icons: {
-    icon: [
-      { url: '/naturequery-icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-    shortcut: '/naturequery-icon.svg',
-    apple: '/naturequery-icon.svg',
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
