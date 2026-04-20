@@ -110,8 +110,12 @@ export default function DashboardPage() {
           queryHistoryTotal={dashboard.queryHistoryTotal}
           showHistory={dashboard.showHistory}
           onToggleHistory={() => {
-            dashboard.setShowHistory(!dashboard.showHistory)
-            if (!dashboard.showHistory) dashboard.setShowSchema(false)
+            const opening = !dashboard.showHistory
+            dashboard.setShowHistory(opening)
+            if (opening) {
+              dashboard.setShowSchema(false)
+              dashboard.setShowRightSidebar(true)
+            }
           }}
           onShowShortcuts={() => dashboard.setShowShortcutsHelp(true)}
           showProfileMenu={dashboard.showProfileMenu}
@@ -131,7 +135,10 @@ export default function DashboardPage() {
               isLoading={!dashboard.connectionsLoaded}
               activeConnection={dashboard.activeConnection}
               nlQuery={dashboard.nlQuery}
-              onNlQueryChange={(q) => { dashboard.setNlQuery(q); if (dashboard.error) dashboard.setError(null) }}
+              onNlQueryChange={(q) => {
+                dashboard.setNlQuery(q)
+                if (dashboard.error) dashboard.setError(null)
+              }}
               generatedSQL={dashboard.generatedSQL}
               onSQLChange={dashboard.setGeneratedSQL}
               isGenerating={dashboard.isGenerating}
@@ -238,7 +245,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="relative animate-scaleIn">
             <SettingsForm
-              onSchemaFetched={() => { }}
+              onSchemaFetched={() => {}}
               onConnectionSuccess={(credentials, schema) => {
                 dashboard.handleAddConnection(credentials, schema)
               }}
@@ -268,7 +275,7 @@ export default function DashboardPage() {
               onCreateSchedule={dashboard.handleCreateSchedule}
               onDeleteSchedule={dashboard.handleDeleteSchedule}
               onToggleSchedule={dashboard.handleToggleSchedule}
-              onEditSchedule={() => { }}
+              onEditSchedule={() => {}}
               currentQuestion={dashboard.schedulerContext?.question}
               currentSql={dashboard.schedulerContext?.sql}
               connectionId={dashboard.activeConnectionId ?? ''}
@@ -286,7 +293,11 @@ export default function DashboardPage() {
         <PlanLimitModal
           onClose={() => dashboard.setShowPlanLimit(false)}
           reason={dashboard.planLimitReason}
-          title={dashboard.planLimitReason === 'query' ? 'Query Limit Reached' : 'Connection Limit Reached'}
+          title={
+            dashboard.planLimitReason === 'query'
+              ? 'Query Limit Reached'
+              : 'Connection Limit Reached'
+          }
           description={
             dashboard.planLimitReason === 'query'
               ? "You've reached the maximum number of queries allowed on the Free plan this month."
@@ -294,7 +305,6 @@ export default function DashboardPage() {
           }
         />
       )}
-
     </div>
   )
 }

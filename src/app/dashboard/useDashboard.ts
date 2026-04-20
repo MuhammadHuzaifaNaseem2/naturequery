@@ -2,7 +2,13 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { DBCredentials, DatabaseSchema } from '@/actions/db'
 import { schemaCache } from '@/lib/schema-cache'
-import { generateSQL, fixSQL, discoverSchema, refineQueryWithFilter, recommendChart } from '@/actions/ai'
+import {
+  generateSQL,
+  fixSQL,
+  discoverSchema,
+  refineQueryWithFilter,
+  recommendChart,
+} from '@/actions/ai'
 import { updateChecklistItem } from '@/actions/onboarding-checklist'
 import { exportToExcel, exportToCSV } from '@/actions/export'
 import { analyzeResults, InsightResult } from '@/actions/insights'
@@ -47,9 +53,12 @@ export function useDashboard() {
   const userId = session?.user?.id
 
   // Helper function to generate user-specific localStorage keys
-  const getStorageKey = useCallback((key: string) => {
-    return userId ? `${key}_${userId}` : key
-  }, [userId])
+  const getStorageKey = useCallback(
+    (key: string) => {
+      return userId ? `${key}_${userId}` : key
+    },
+    [userId]
+  )
 
   // Connection state
   const [connections, setConnections] = useState<SavedConnection[]>([])
@@ -70,36 +79,57 @@ export function useDashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   // Schema discovery ("What Can I Ask?") state
-  const [schemaSuggestions, setSchemaSuggestions] = useState<{ summary: string; suggestions: string[] } | null>(null)
+  const [schemaSuggestions, setSchemaSuggestions] = useState<{
+    summary: string
+    suggestions: string[]
+  } | null>(null)
   const [isDiscovering, setIsDiscovering] = useState(false)
 
   // Conversational follow-up context (per connection)
-  const conversationRef = useRef<Map<string, { question: string; sql: string; rowCount?: number }[]>>(new Map())
+  const conversationRef = useRef<
+    Map<string, { question: string; sql: string; rowCount?: number }[]>
+  >(new Map())
   const [conversationLength, setConversationLength] = useState(0)
   const MAX_CONVERSATION_TURNS = 5
 
   // NL filter state
-  const [activeFilters, setActiveFilters] = useState<{ id: string; label: string; nlQuery: string }[]>([])
+  const [activeFilters, setActiveFilters] = useState<
+    { id: string; label: string; nlQuery: string }[]
+  >([])
   const [isApplyingFilter, setIsApplyingFilter] = useState(false)
   // Track the "base SQL" before any filters (so we can rebuild from it)
   const baseSqlRef = useRef<string>('')
 
   // Extract UI state
   const {
-    showLeftSidebar, setShowLeftSidebar,
-    showRightSidebar, setShowRightSidebar,
-    showCommandPalette, setShowCommandPalette,
-    showAddConnection, setShowAddConnection,
-    showHistory, setShowHistory,
-    showSchema, setShowSchema,
-    showExportMenu, setShowExportMenu,
-    showShortcutsHelp, setShowShortcutsHelp,
-    showProfileMenu, setShowProfileMenu,
-    searchQuery, setSearchQuery,
-    showPlanLimit, setShowPlanLimit,
-    planLimitReason, setPlanLimitReason,
-    showScheduler, setShowScheduler,
-    queryInputRef, profileRef
+    showLeftSidebar,
+    setShowLeftSidebar,
+    showRightSidebar,
+    setShowRightSidebar,
+    showCommandPalette,
+    setShowCommandPalette,
+    showAddConnection,
+    setShowAddConnection,
+    showHistory,
+    setShowHistory,
+    showSchema,
+    setShowSchema,
+    showExportMenu,
+    setShowExportMenu,
+    showShortcutsHelp,
+    setShowShortcutsHelp,
+    showProfileMenu,
+    setShowProfileMenu,
+    searchQuery,
+    setSearchQuery,
+    showPlanLimit,
+    setShowPlanLimit,
+    planLimitReason,
+    setPlanLimitReason,
+    showScheduler,
+    setShowScheduler,
+    queryInputRef,
+    profileRef,
   } = useDashboardUI()
 
   // Track whether localStorage has been loaded
@@ -112,8 +142,10 @@ export function useDashboard() {
 
   // Dashboard widgets state
   const {
-    dashboardWidgets, setDashboardWidgets,
-    scheduledQueries, setScheduledQueries,
+    dashboardWidgets,
+    setDashboardWidgets,
+    scheduledQueries,
+    setScheduledQueries,
     isRefreshingWidget,
     schedulerContext,
     handlePinToDashboard,
@@ -138,15 +170,18 @@ export function useDashboard() {
 
   // Extract History State & Logic
   const {
-    queryHistory, setQueryHistory,
-    queryHistoryTotal, setQueryHistoryTotal,
-    savedQueries, setSavedQueries,
+    queryHistory,
+    setQueryHistory,
+    queryHistoryTotal,
+    setQueryHistoryTotal,
+    savedQueries,
+    setSavedQueries,
     handleSaveQuery,
     handleDeleteSavedQuery,
     handleToggleFavorite,
     handleShareQuery,
     handleClearHistory,
-    handleDeleteHistoryEntry
+    handleDeleteHistoryEntry,
   } = useDashboardHistory(activeConnectionId, activeConnection)
 
   // Filter connections by search
@@ -179,7 +214,7 @@ export function useDashboard() {
         setConnections(cachedConnections)
         setConnectionsLoaded(true)
       }
-    } catch { }
+    } catch {}
 
     // Show the UI immediately — don't wait for the server call
     setHydrated(true)
@@ -205,19 +240,21 @@ export function useDashboard() {
           // Preserve cached schema so table counts show immediately on reload
           schema: cachedById.get(c.id)?.schema,
         }))
-        setConnections(mapped)
+        const demoConn = cachedConnections.find((c) => c.isDemo)
+        const merged = demoConn ? [...mapped, demoConn] : mapped
+        setConnections(merged)
         setConnectionsLoaded(true)
         try {
-          localStorage.setItem(getStorageKey('rf_connections'), JSON.stringify(mapped))
-        } catch { }
+          localStorage.setItem(getStorageKey('rf_connections'), JSON.stringify(merged))
+        } catch {}
 
         // Best connection to use as fallback: savedActive → first connection
         const fallbackConnId = savedActive || mapped[0]?.id || null
 
         // Load and execute dashboard widgets now that we know available connections
         fetch('/api/dashboard/widgets')
-          .then(r => r.json())
-          .then(async res => {
+          .then((r) => r.json())
+          .then(async (res) => {
             if (cancelled || !res.success) return
             const widgets = res.data.map((w: any) => ({
               id: w.id,
@@ -240,19 +277,21 @@ export function useDashboard() {
               res.data
                 .filter((w: any) => w.sql && (w.connectionId || fallbackConnId))
                 .map((w: any) =>
-                  executeSQLByConnection(w.connectionId || fallbackConnId, w.sql).then(result => ({
-                    id: w.id,
-                    result,
-                  }))
+                  executeSQLByConnection(w.connectionId || fallbackConnId, w.sql).then(
+                    (result) => ({
+                      id: w.id,
+                      result,
+                    })
+                  )
                 )
             )
 
             if (cancelled) return
 
-            setDashboardWidgets(prev =>
-              prev.map(widget => {
+            setDashboardWidgets((prev) =>
+              prev.map((widget) => {
                 const found = execResults.find(
-                  r => r.status === 'fulfilled' && (r as any).value.id === widget.id
+                  (r) => r.status === 'fulfilled' && (r as any).value.id === widget.id
                 )
                 if (found && found.status === 'fulfilled') {
                   const { result } = (found as any).value
@@ -269,17 +308,17 @@ export function useDashboard() {
               })
             )
           })
-          .catch(() => { })
+          .catch(() => {})
 
         // Prefetch schemas for ALL connections in parallel so table counts show immediately
-        const nonDemo = mapped.filter(c => !c.isDemo)
+        const nonDemo = mapped.filter((c) => !c.isDemo)
         if (nonDemo.length > 0) {
           // Fire all fetches in parallel — active connection first for perceived speed
           const sorted = savedActive
             ? [
-              ...nonDemo.filter(c => c.id === savedActive),
-              ...nonDemo.filter(c => c.id !== savedActive),
-            ]
+                ...nonDemo.filter((c) => c.id === savedActive),
+                ...nonDemo.filter((c) => c.id !== savedActive),
+              ]
             : nonDemo
 
           await Promise.allSettled(
@@ -287,19 +326,26 @@ export function useDashboard() {
               if (cancelled) return
               const cached = schemaCache.get(conn.host, conn.port, conn.database)
               if (cached) {
-                setConnections(prev => prev.map(c =>
-                  c.id === conn.id ? { ...c, schema: cached, status: 'active' as const } : c
-                ))
+                setConnections((prev) =>
+                  prev.map((c) =>
+                    c.id === conn.id ? { ...c, schema: cached, status: 'active' as const } : c
+                  )
+                )
                 return
               }
               const result = await fetchSchemaByConnection(conn.id)
               if (!cancelled && result.success && result.data) {
                 schemaCache.set(conn.host, conn.port, conn.database, result.data)
-                setConnections(prev => prev.map(c =>
-                  c.id === conn.id ? { ...c, schema: result.data, status: 'active' as const } : c
-                ))
+                setConnections((prev) =>
+                  prev.map((c) =>
+                    c.id === conn.id ? { ...c, schema: result.data, status: 'active' as const } : c
+                  )
+                )
               } else {
-                console.error(`[schema-fetch] ${conn.name} (${conn.dbType}):`, JSON.stringify(result))
+                console.error(
+                  `[schema-fetch] ${conn.name} (${conn.dbType}):`,
+                  JSON.stringify(result)
+                )
               }
             })
           )
@@ -341,7 +387,7 @@ export function useDashboard() {
             localStorage.removeItem(getStorageKey('rf_savedQueries'))
           }
         }
-      } catch { }
+      } catch {}
 
       if (cancelled) return
 
@@ -366,28 +412,38 @@ export function useDashboard() {
 
     // Load scheduled queries from DB
     fetch('/api/scheduled-queries')
-      .then(r => r.json())
-      .then(res => {
+      .then((r) => r.json())
+      .then((res) => {
         if (cancelled || !res.success) return
-        setScheduledQueries(res.data.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          question: s.question,
-          sql: s.sql,
-          connectionId: s.connectionId ?? '',
-          connectionName: s.connectionName ?? '',
-          schedule: { type: (s.frequency as string).toLowerCase() as 'hourly' | 'daily' | 'weekly' | 'monthly', time: '09:00' },
-          notifications: {},
-          isActive: s.enabled,
-          createdAt: new Date(s.createdAt),
-          nextRun: s.nextRunAt ? new Date(s.nextRunAt) : undefined,
-          lastRun: s.lastRunAt ? new Date(s.lastRunAt) : undefined,
-        })))
+        setScheduledQueries(
+          res.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            question: s.question,
+            sql: s.sql,
+            connectionId: s.connectionId ?? '',
+            connectionName: s.connectionName ?? '',
+            schedule: {
+              type: (s.frequency as string).toLowerCase() as
+                | 'hourly'
+                | 'daily'
+                | 'weekly'
+                | 'monthly',
+              time: '09:00',
+            },
+            notifications: {},
+            isActive: s.enabled,
+            createdAt: new Date(s.createdAt),
+            nextRun: s.nextRunAt ? new Date(s.nextRunAt) : undefined,
+            lastRun: s.lastRunAt ? new Date(s.lastRunAt) : undefined,
+          }))
+        )
       })
-      .catch(() => { })
+      .catch(() => {})
 
-
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [userId, getStorageKey])
 
   // Save active connection ID to localStorage
@@ -405,7 +461,7 @@ export function useDashboard() {
     if (!hydrated || !userId || !connectionsLoaded) return
     try {
       localStorage.setItem(getStorageKey('rf_connections'), JSON.stringify(connections))
-    } catch { }
+    } catch {}
   }, [connections, hydrated, userId, connectionsLoaded, getStorageKey])
 
   // Handle selecting a saved query
@@ -430,13 +486,17 @@ export function useDashboard() {
       })
 
       if (!result.success || !result.connection) {
-        const isLimitError = result.error?.toLowerCase().includes('limit') || result.error?.toLowerCase().includes('upgrade')
+        const isLimitError =
+          result.error?.toLowerCase().includes('limit') ||
+          result.error?.toLowerCase().includes('upgrade')
         if (isLimitError) {
           setPlanLimitReason('connection')
           setShowPlanLimit(true)
         } else {
           setError(result.error || 'Failed to save connection')
-          toast.error('Connection failed', { description: result.error || 'Failed to save connection' })
+          toast.error('Connection failed', {
+            description: result.error || 'Failed to save connection',
+          })
         }
         return
       }
@@ -461,8 +521,10 @@ export function useDashboard() {
       toast.success('Connection added', { description: result.connection.name })
 
       // Onboarding: mark "connected DB" step
-      updateChecklistItem('connectedDb', true).catch(() => { })
-      window.dispatchEvent(new CustomEvent('onboarding:complete', { detail: { item: 'connectedDb' } }))
+      updateChecklistItem('connectedDb', true).catch(() => {})
+      window.dispatchEvent(
+        new CustomEvent('onboarding:complete', { detail: { item: 'connectedDb' } })
+      )
     },
     []
   )
@@ -580,9 +642,7 @@ export function useDashboard() {
       const result = await refreshSchemaByConnection(activeConnection.id)
       if (result.success && result.data) {
         setConnections((prev) =>
-          prev.map((c) =>
-            c.id === activeConnection.id ? { ...c, schema: result.data } : c
-          )
+          prev.map((c) => (c.id === activeConnection.id ? { ...c, schema: result.data } : c))
         )
         toast.success('Schema refreshed')
       } else {
@@ -598,55 +658,59 @@ export function useDashboard() {
   // Handle SQL delivered by the streaming panel (CoT mode)
   // Executes directly without touching generatedSQL — avoids the duplicate
   // "Generated SQL" card that the standard panel would render.
-  const handleStreamingSQL = useCallback(async (sql: string, question: string) => {
-    if (!activeConnection) return
-    setNlQuery(question)
-    setQueryResults(null)
-    setError(null)
-    setIsExecuting(true)
+  const handleStreamingSQL = useCallback(
+    async (sql: string, question: string) => {
+      if (!activeConnection) return
+      setNlQuery(question)
+      setQueryResults(null)
+      setError(null)
+      setIsExecuting(true)
 
-    const startTime = Date.now()
-    const result = await executeSQLByConnection(activeConnection.id, sql)
-    const executionTimeMs = Date.now() - startTime
-    setIsExecuting(false)
+      const startTime = Date.now()
+      const result = await executeSQLByConnection(activeConnection.id, sql)
+      const executionTimeMs = Date.now() - startTime
+      setIsExecuting(false)
 
-    if (result.success && result.data) {
-      setQueryResults(result.data)
-      toast.success(`Query returned ${result.data.rowCount} rows`, {
-        description: `${executionTimeMs}ms`,
-      })
+      if (result.success && result.data) {
+        setQueryResults(result.data)
+        toast.success(`Query returned ${result.data.rowCount} rows`, {
+          description: `${executionTimeMs}ms`,
+        })
 
-      // Record into conversation context for follow-ups
-      const connId = activeConnection.id
-      const history = conversationRef.current.get(connId) ?? []
-      history.push({ question, sql, rowCount: result.data.rowCount })
-      if (history.length > MAX_CONVERSATION_TURNS) history.shift()
-      conversationRef.current.set(connId, history)
-      setConversationLength(history.length)
+        // Record into conversation context for follow-ups
+        const connId = activeConnection.id
+        const history = conversationRef.current.get(connId) ?? []
+        history.push({ question, sql, rowCount: result.data.rowCount })
+        if (history.length > MAX_CONVERSATION_TURNS) history.shift()
+        conversationRef.current.set(connId, history)
+        setConversationLength(history.length)
 
-      addHistoryEntry({
-        question,
-        sql,
-        connectionId: activeConnection.id,
-        connectionName: activeConnection.name,
-        rowCount: result.data.rowCount,
-        executionTimeMs,
-        status: 'success',
-      }).then((res) => {
-        if (res.success && res.data) setQueryHistory((prev) => [res.data!, ...prev])
-      })
-    } else {
-      const errMsg = result.error || 'Failed to execute query'
-      const isLimitError = errMsg.toLowerCase().includes('query limit') || errMsg.toLowerCase().includes('upgrade')
-      if (isLimitError) {
-        setPlanLimitReason('query')
-        setShowPlanLimit(true)
+        addHistoryEntry({
+          question,
+          sql,
+          connectionId: activeConnection.id,
+          connectionName: activeConnection.name,
+          rowCount: result.data.rowCount,
+          executionTimeMs,
+          status: 'success',
+        }).then((res) => {
+          if (res.success && res.data) setQueryHistory((prev) => [res.data!, ...prev])
+        })
       } else {
-        setError(errMsg)
-        toast.error('Query failed', { description: errMsg })
+        const errMsg = result.error || 'Failed to execute query'
+        const isLimitError =
+          errMsg.toLowerCase().includes('query limit') || errMsg.toLowerCase().includes('upgrade')
+        if (isLimitError) {
+          setPlanLimitReason('query')
+          setShowPlanLimit(true)
+        } else {
+          setError(errMsg)
+          toast.error('Query failed', { description: errMsg })
+        }
       }
-    }
-  }, [activeConnection, setShowPlanLimit])
+    },
+    [activeConnection, setShowPlanLimit]
+  )
 
   // Handle generating SQL from natural language
   const handleGenerateSQL = useCallback(async () => {
@@ -673,8 +737,10 @@ export function useDashboard() {
     if (result.success && result.sql) {
       setGeneratedSQL(result.sql)
       // Onboarding: mark "asked first question"
-      updateChecklistItem('askedFirstQuestion', true).catch(() => { })
-      window.dispatchEvent(new CustomEvent('onboarding:complete', { detail: { item: 'askedFirstQuestion' } }))
+      updateChecklistItem('askedFirstQuestion', true).catch(() => {})
+      window.dispatchEvent(
+        new CustomEvent('onboarding:complete', { detail: { item: 'askedFirstQuestion' } })
+      )
     } else {
       setError(result.error || 'Failed to generate SQL')
       toast.error('SQL generation failed', { description: result.error })
@@ -682,143 +748,155 @@ export function useDashboard() {
   }, [activeConnection, nlQuery])
 
   // Handle executing the generated SQL
-  const handleExecuteSQL = useCallback(async (overrideSql?: string) => {
-    // If called via synthetic event (e.g. onClick), overrideSql will be an Event object, not a string.
-    const sqlToRun = typeof overrideSql === 'string' ? overrideSql : generatedSQL
-    if (!activeConnection || !sqlToRun) return
+  const handleExecuteSQL = useCallback(
+    async (overrideSql?: string) => {
+      // If called via synthetic event (e.g. onClick), overrideSql will be an Event object, not a string.
+      const sqlToRun = typeof overrideSql === 'string' ? overrideSql : generatedSQL
+      if (!activeConnection || !sqlToRun) return
 
-    setIsExecuting(true)
-    setError(null)
+      setIsExecuting(true)
+      setError(null)
 
-    // Demo mode - return fake data
-    if (activeConnection.isDemo) {
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // Demo mode - return fake data
+      if (activeConnection.isDemo) {
+        await new Promise((resolve) => setTimeout(resolve, 500))
 
-      const sqlLower = sqlToRun.toLowerCase()
-      let demoRows = DEMO_DATA.customers
-      let fields = ['id', 'name', 'email', 'city', 'created_at']
+        const sqlLower = sqlToRun.toLowerCase()
+        let demoRows = DEMO_DATA.customers
+        let fields = ['id', 'name', 'email', 'city', 'created_at']
 
-      if (sqlLower.includes('orders')) {
-        demoRows = DEMO_DATA.orders
-        fields = ['id', 'customer_id', 'product', 'amount', 'status', 'order_date']
-      } else if (sqlLower.includes('products')) {
-        demoRows = DEMO_DATA.products
-        fields = ['id', 'name', 'price', 'category', 'stock']
+        if (sqlLower.includes('orders')) {
+          demoRows = DEMO_DATA.orders
+          fields = ['id', 'customer_id', 'product', 'amount', 'status', 'order_date']
+        } else if (sqlLower.includes('products')) {
+          demoRows = DEMO_DATA.products
+          fields = ['id', 'name', 'price', 'category', 'stock']
+        }
+
+        const limitMatch = sqlLower.match(/limit\s+(\d+)/)
+        if (limitMatch) {
+          const limit = parseInt(limitMatch[1])
+          demoRows = demoRows.slice(0, limit)
+        }
+
+        const results = {
+          rows: demoRows,
+          fields,
+          rowCount: demoRows.length,
+          executionTime: Math.floor(Math.random() * 50) + 10,
+        }
+
+        setIsExecuting(false)
+        setQueryResults(results)
+        toast.success(`Query returned ${results.rowCount} rows`, {
+          description: `${results.executionTime}ms`,
+        })
+
+        // Record into conversation context for follow-ups
+        const demoHistory = conversationRef.current.get('demo') ?? []
+        demoHistory.push({ question: nlQuery, sql: sqlToRun, rowCount: results.rowCount })
+        if (demoHistory.length > MAX_CONVERSATION_TURNS) demoHistory.shift()
+        conversationRef.current.set('demo', demoHistory)
+        setConversationLength(demoHistory.length)
+
+        // Record demo history via server action (fire-and-forget)
+        addHistoryEntry({
+          question: nlQuery,
+          sql: sqlToRun,
+          connectionId: 'demo',
+          connectionName: 'Demo Database',
+          rowCount: results.rowCount,
+          executionTimeMs: results.executionTime,
+          status: 'success',
+        }).then((res) => {
+          if (res.success && res.data) {
+            setQueryHistory((prev) => [res.data!, ...prev])
+          }
+        })
+        return
       }
 
-      const limitMatch = sqlLower.match(/limit\s+(\d+)/)
-      if (limitMatch) {
-        const limit = parseInt(limitMatch[1])
-        demoRows = demoRows.slice(0, limit)
-      }
-
-      const results = {
-        rows: demoRows,
-        fields,
-        rowCount: demoRows.length,
-        executionTime: Math.floor(Math.random() * 50) + 10,
-      }
+      // Real connection - execute via server action (credentials decrypted server-side)
+      const startTime = Date.now()
+      const result = await executeSQLByConnection(activeConnection.id, sqlToRun)
+      const executionTimeMs = Date.now() - startTime
 
       setIsExecuting(false)
-      setQueryResults(results)
-      toast.success(`Query returned ${results.rowCount} rows`, { description: `${results.executionTime}ms` })
 
-      // Record into conversation context for follow-ups
-      const demoHistory = conversationRef.current.get('demo') ?? []
-      demoHistory.push({ question: nlQuery, sql: sqlToRun, rowCount: results.rowCount })
-      if (demoHistory.length > MAX_CONVERSATION_TURNS) demoHistory.shift()
-      conversationRef.current.set('demo', demoHistory)
-      setConversationLength(demoHistory.length)
+      if (result.success && result.data) {
+        // In the background, get an AI chart recommendation
+        recommendChart({
+          question: nlQuery,
+          sql: sqlToRun,
+          fields: result.data.fields,
+          sampleRows: result.data.rows.slice(0, 5),
+        })
+          .then((rec) => {
+            if (rec.success && rec.recommendation) {
+              setQueryResults((prev) =>
+                prev ? { ...prev, chartRecommendation: rec.recommendation } : null
+              )
+            }
+          })
+          .catch(console.error)
 
-      // Record demo history via server action (fire-and-forget)
-      addHistoryEntry({
-        question: nlQuery,
-        sql: sqlToRun,
-        connectionId: 'demo',
-        connectionName: 'Demo Database',
-        rowCount: results.rowCount,
-        executionTimeMs: results.executionTime,
-        status: 'success',
-      }).then((res) => {
-        if (res.success && res.data) {
-          setQueryHistory((prev) => [res.data!, ...prev])
-        }
-      })
-      return
-    }
+        setQueryResults(result.data)
+        toast.success(`Query returned ${result.data.rowCount} rows`, {
+          description: `${executionTimeMs}ms`,
+        })
 
-    // Real connection - execute via server action (credentials decrypted server-side)
-    const startTime = Date.now()
-    const result = await executeSQLByConnection(activeConnection.id, sqlToRun)
-    const executionTimeMs = Date.now() - startTime
+        // Record into conversation context for follow-ups
+        const connId = activeConnection.id
+        const history = conversationRef.current.get(connId) ?? []
+        history.push({ question: nlQuery, sql: sqlToRun, rowCount: result.data.rowCount })
+        if (history.length > MAX_CONVERSATION_TURNS) history.shift()
+        conversationRef.current.set(connId, history)
+        setConversationLength(history.length)
 
-    setIsExecuting(false)
-
-    if (result.success && result.data) {
-      // In the background, get an AI chart recommendation
-      recommendChart({
-        question: nlQuery,
-        sql: sqlToRun,
-        fields: result.data.fields,
-        sampleRows: result.data.rows.slice(0, 5),
-      }).then((rec) => {
-        if (rec.success && rec.recommendation) {
-          setQueryResults((prev) => prev ? ({ ...prev, chartRecommendation: rec.recommendation }) : null)
-        }
-      }).catch(console.error)
-
-      setQueryResults(result.data)
-      toast.success(`Query returned ${result.data.rowCount} rows`, { description: `${executionTimeMs}ms` })
-
-      // Record into conversation context for follow-ups
-      const connId = activeConnection.id
-      const history = conversationRef.current.get(connId) ?? []
-      history.push({ question: nlQuery, sql: sqlToRun, rowCount: result.data.rowCount })
-      if (history.length > MAX_CONVERSATION_TURNS) history.shift()
-      conversationRef.current.set(connId, history)
-      setConversationLength(history.length)
-
-      // Record success history via server action (fire-and-forget)
-      addHistoryEntry({
-        question: nlQuery,
-        sql: sqlToRun,
-        connectionId: activeConnection.id,
-        connectionName: activeConnection.name,
-        rowCount: result.data.rowCount,
-        executionTimeMs,
-        status: 'success',
-      }).then((res) => {
-        if (res.success && res.data) {
-          setQueryHistory((prev) => [res.data!, ...prev])
-        }
-      })
-    } else {
-      const errMsg = result.error || 'Failed to execute query'
-      const isLimitError = errMsg.toLowerCase().includes('query limit') || errMsg.toLowerCase().includes('upgrade')
-      if (isLimitError) {
-        setPlanLimitReason('query')
-        setShowPlanLimit(true)
+        // Record success history via server action (fire-and-forget)
+        addHistoryEntry({
+          question: nlQuery,
+          sql: sqlToRun,
+          connectionId: activeConnection.id,
+          connectionName: activeConnection.name,
+          rowCount: result.data.rowCount,
+          executionTimeMs,
+          status: 'success',
+        }).then((res) => {
+          if (res.success && res.data) {
+            setQueryHistory((prev) => [res.data!, ...prev])
+          }
+        })
       } else {
-        setError(errMsg)
-        toast.error('Query failed', { description: errMsg })
-      }
-
-      // Record error history via server action (fire-and-forget)
-      addHistoryEntry({
-        question: nlQuery,
-        sql: sqlToRun,
-        connectionId: activeConnection.id,
-        connectionName: activeConnection.name,
-        executionTimeMs,
-        status: 'error',
-        errorMessage: errMsg,
-      }).then((res) => {
-        if (res.success && res.data) {
-          setQueryHistory((prev) => [res.data!, ...prev])
+        const errMsg = result.error || 'Failed to execute query'
+        const isLimitError =
+          errMsg.toLowerCase().includes('query limit') || errMsg.toLowerCase().includes('upgrade')
+        if (isLimitError) {
+          setPlanLimitReason('query')
+          setShowPlanLimit(true)
+        } else {
+          setError(errMsg)
+          toast.error('Query failed', { description: errMsg })
         }
-      })
-    }
-  }, [activeConnection, generatedSQL, nlQuery, setShowPlanLimit])
+
+        // Record error history via server action (fire-and-forget)
+        addHistoryEntry({
+          question: nlQuery,
+          sql: sqlToRun,
+          connectionId: activeConnection.id,
+          connectionName: activeConnection.name,
+          executionTimeMs,
+          status: 'error',
+          errorMessage: errMsg,
+        }).then((res) => {
+          if (res.success && res.data) {
+            setQueryHistory((prev) => [res.data!, ...prev])
+          }
+        })
+      }
+    },
+    [activeConnection, generatedSQL, nlQuery, setShowPlanLimit]
+  )
 
   const handleFixSQL = useCallback(async () => {
     if (!activeConnection?.schema || !error || !nlQuery.trim()) return
@@ -848,55 +926,60 @@ export function useDashboard() {
   }, [activeConnection, generatedSQL, error, nlQuery, t])
 
   // Handle export
-  const handleExport = useCallback(async (format: 'excel' | 'csv') => {
-    if (!queryResults) return
+  const handleExport = useCallback(
+    async (format: 'excel' | 'csv') => {
+      if (!queryResults) return
 
-    setIsExporting(true)
-    setShowExportMenu(false)
+      setIsExporting(true)
+      setShowExportMenu(false)
 
-    const filename = `report_${new Date().toISOString().split('T')[0]}`
+      const filename = `report_${new Date().toISOString().split('T')[0]}`
 
-    const result = format === 'excel'
-      ? await exportToExcel({
-        rows: queryResults.rows,
-        fields: queryResults.fields,
-        filename: `${filename}.xlsx`,
-        title: 'Query Results',
-      })
-      : await exportToCSV({
-        rows: queryResults.rows,
-        fields: queryResults.fields,
-        filename: `${filename}.csv`,
-      })
+      const result =
+        format === 'excel'
+          ? await exportToExcel({
+              rows: queryResults.rows,
+              fields: queryResults.fields,
+              filename: `${filename}.xlsx`,
+              title: 'Query Results',
+            })
+          : await exportToCSV({
+              rows: queryResults.rows,
+              fields: queryResults.fields,
+              filename: `${filename}.csv`,
+            })
 
-    setIsExporting(false)
+      setIsExporting(false)
 
-    if (result.success && result.data) {
-      const binaryString = atob(result.data)
-      const bytes = new Uint8Array(binaryString.length)
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i)
+      if (result.success && result.data) {
+        const binaryString = atob(result.data)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+
+        const mimeType =
+          format === 'excel'
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'text/csv'
+
+        const blob = new Blob([bytes], { type: mimeType })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = result.filename || `report.${format === 'excel' ? 'xlsx' : 'csv'}`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success(`Exported as ${format === 'excel' ? 'Excel' : 'CSV'}`)
+      } else {
+        setError(result.error || 'Failed to export')
+        toast.error('Export failed', { description: result.error })
       }
-
-      const mimeType = format === 'excel'
-        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        : 'text/csv'
-
-      const blob = new Blob([bytes], { type: mimeType })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = result.filename || `report.${format === 'excel' ? 'xlsx' : 'csv'}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      toast.success(`Exported as ${format === 'excel' ? 'Excel' : 'CSV'}`)
-    } else {
-      setError(result.error || 'Failed to export')
-      toast.error('Export failed', { description: result.error })
-    }
-  }, [queryResults])
+    },
+    [queryResults]
+  )
 
   // Handle template selection
   const handleSelectTemplate = useCallback((question: string) => {
@@ -933,42 +1016,52 @@ export function useDashboard() {
   }, [queryResults, nlQuery, activeConnection, isAnalyzing])
 
   // ── NL Filter handlers ──────────────────────────────────────────────
-  const handleAddFilter = useCallback(async (filterText: string) => {
-    if (!activeConnection?.schema || !generatedSQL) return
-    setIsApplyingFilter(true)
-    const currentSql = generatedSQL
-    const result = await refineQueryWithFilter(currentSql, filterText, activeConnection.schema)
-    setIsApplyingFilter(false)
-    if (result.success && result.sql) {
-      // Store the original SQL before first filter
-      if (activeFilters.length === 0) {
-        baseSqlRef.current = currentSql
+  const handleAddFilter = useCallback(
+    async (filterText: string) => {
+      if (!activeConnection?.schema || !generatedSQL) return
+      setIsApplyingFilter(true)
+      const currentSql = generatedSQL
+      const result = await refineQueryWithFilter(currentSql, filterText, activeConnection.schema)
+      setIsApplyingFilter(false)
+      if (result.success && result.sql) {
+        // Store the original SQL before first filter
+        if (activeFilters.length === 0) {
+          baseSqlRef.current = currentSql
+        }
+        setGeneratedSQL(result.sql)
+        setActiveFilters((prev) => [
+          ...prev,
+          {
+            id: `f_${Date.now()}`,
+            label: result.filterLabel || filterText.slice(0, 30),
+            nlQuery: filterText,
+          },
+        ])
+        // Auto-execute the filtered query
+        setQueryResults(null)
+        setError(null)
+      } else {
+        toast.error('Filter failed', { description: result.error })
       }
-      setGeneratedSQL(result.sql)
-      setActiveFilters(prev => [
-        ...prev,
-        { id: `f_${Date.now()}`, label: result.filterLabel || filterText.slice(0, 30), nlQuery: filterText },
-      ])
-      // Auto-execute the filtered query
-      setQueryResults(null)
-      setError(null)
-    } else {
-      toast.error('Filter failed', { description: result.error })
-    }
-  }, [activeConnection, generatedSQL, activeFilters])
+    },
+    [activeConnection, generatedSQL, activeFilters]
+  )
 
-  const handleRemoveFilter = useCallback(async (filterId: string) => {
-    const remaining = activeFilters.filter(f => f.id !== filterId)
-    setActiveFilters(remaining)
+  const handleRemoveFilter = useCallback(
+    async (filterId: string) => {
+      const remaining = activeFilters.filter((f) => f.id !== filterId)
+      setActiveFilters(remaining)
 
-    if (remaining.length === 0 && baseSqlRef.current) {
-      // Revert to the original SQL
-      setGeneratedSQL(baseSqlRef.current)
-      baseSqlRef.current = ''
-    }
-    // Note: we don't auto-rebuild with remaining filters for simplicity;
-    // user can re-execute or add filters again
-  }, [activeFilters])
+      if (remaining.length === 0 && baseSqlRef.current) {
+        // Revert to the original SQL
+        setGeneratedSQL(baseSqlRef.current)
+        baseSqlRef.current = ''
+      }
+      // Note: we don't auto-rebuild with remaining filters for simplicity;
+      // user can re-execute or add filters again
+    },
+    [activeFilters]
+  )
 
   const handleClearFilters = useCallback(() => {
     if (baseSqlRef.current) {
@@ -996,7 +1089,9 @@ export function useDashboard() {
           const { format } = require('sql-formatter')
           setGeneratedSQL(format(generatedSQL, { language: 'sql' }))
           toast.success('SQL formatted')
-        } catch { toast.error('Could not format SQL') }
+        } catch {
+          toast.error('Could not format SQL')
+        }
       }
     },
     onSaveQuery: () => {
@@ -1020,7 +1115,8 @@ export function useDashboard() {
     onExportExcel: () => handleExport('excel'),
     onExportCSV: () => handleExport('csv'),
     // General
-    onToggleTheme: () => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark'),
+    onToggleTheme: () =>
+      setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark'),
     onClearInput: () => setNlQuery(''),
     onToggleHelp: () => setShowShortcutsHelp((prev) => !prev),
   })
@@ -1128,7 +1224,9 @@ export function useDashboard() {
 
     // Conversation context
     conversationLength,
-    conversationContext: activeConnectionId ? conversationRef.current.get(activeConnectionId) ?? [] : [],
+    conversationContext: activeConnectionId
+      ? (conversationRef.current.get(activeConnectionId) ?? [])
+      : [],
     handleClearConversation: useCallback(() => {
       if (activeConnectionId) {
         conversationRef.current.delete(activeConnectionId)
@@ -1137,8 +1235,10 @@ export function useDashboard() {
     }, [activeConnectionId]),
 
     // Dashboard widgets
-    dashboardWidgets, setDashboardWidgets,
-    scheduledQueries, setScheduledQueries,
+    dashboardWidgets,
+    setDashboardWidgets,
+    scheduledQueries,
+    setScheduledQueries,
     isRefreshingWidget,
     schedulerContext,
     handlePinToDashboard,
