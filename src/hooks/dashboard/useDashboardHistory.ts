@@ -7,32 +7,42 @@ import {
   toggleFavorite as toggleFavoriteAction,
   clearQueryHistory as clearQueryHistoryAction,
   deleteHistoryEntry,
-  getQueryHistory
+  getQueryHistory,
 } from '@/actions/queries'
 import { generateShareLink } from '@/actions/sharing'
 import { SavedConnection } from '@/app/dashboard/types'
 
-export function useDashboardHistory(activeConnectionId: string | null, activeConnection: SavedConnection | undefined) {
+export function useDashboardHistory(
+  activeConnectionId: string | null,
+  activeConnection: SavedConnection | undefined
+) {
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([])
   // True total from the server — may be > queryHistory.length when DB has > pageSize entries
   const [queryHistoryTotal, setQueryHistoryTotal] = useState(0)
   const [savedQueries, setSavedQueries] = useState<SavedQueryItem[]>([])
 
   // Handle saving a query
-  const handleSaveQuery = useCallback(async (name: string, question: string, sql: string) => {
-    const connectionName = activeConnection?.name || null
-    const result = await saveQueryAction({
-      name,
-      question,
-      sql,
-      connectionId: activeConnectionId,
-      connectionName,
-    })
-    if (result.success && result.data) {
-      setSavedQueries((prev) => [result.data!, ...prev])
-      toast.success('Query saved')
-    }
-  }, [activeConnectionId, activeConnection])
+  const handleSaveQuery = useCallback(
+    async (name: string, question: string, sql: string) => {
+      const connectionName = activeConnection?.name || null
+      // Demo connection exists only in localStorage — don't try to persist the FK to the DB
+      const isDemo = activeConnection?.isDemo === true
+      const result = await saveQueryAction({
+        name,
+        question,
+        sql,
+        connectionId: isDemo ? null : activeConnectionId,
+        connectionName,
+      })
+      if (result.success && result.data) {
+        setSavedQueries((prev) => [result.data!, ...prev])
+        toast.success('Query saved')
+      } else {
+        toast.error('Failed to save query', { description: result.error })
+      }
+    },
+    [activeConnectionId, activeConnection]
+  )
 
   // Handle deleting a saved query
   const handleDeleteSavedQuery = useCallback(async (id: string) => {
@@ -61,7 +71,9 @@ export function useDashboardHistory(activeConnectionId: string | null, activeCon
       const url = `${window.location.origin}/shared/${result.shareToken}`
       await navigator.clipboard.writeText(url)
       setSavedQueries((prev) =>
-        prev.map((q) => (q.id === id ? { ...q, shareToken: result.shareToken!, isPublic: true } : q))
+        prev.map((q) =>
+          q.id === id ? { ...q, shareToken: result.shareToken!, isPublic: true } : q
+        )
       )
       toast.success('Share link copied to clipboard')
     } else {
@@ -89,35 +101,42 @@ export function useDashboardHistory(activeConnectionId: string | null, activeCon
     if (result.success) {
       toast.success('History entry deleted')
       // Background sync: pull updated list + authoritative total from server
-      getQueryHistory({ pageSize: 50 }).then((res) => {
-        if (res.success && res.data) {
-          setQueryHistory(res.data.items)
-          setQueryHistoryTotal(res.data.total)
-        }
-      }).catch(() => {
-        // Background sync failed — optimistic state is still approximately correct
-      })
+      getQueryHistory({ pageSize: 50 })
+        .then((res) => {
+          if (res.success && res.data) {
+            setQueryHistory(res.data.items)
+            setQueryHistoryTotal(res.data.total)
+          }
+        })
+        .catch(() => {
+          // Background sync failed — optimistic state is still approximately correct
+        })
     } else {
       // Revert: re-fetch to restore correct state
-      getQueryHistory({ pageSize: 50 }).then((res) => {
-        if (res.success && res.data) {
-          setQueryHistory(res.data.items)
-          setQueryHistoryTotal(res.data.total)
-        }
-      }).catch(() => {})
+      getQueryHistory({ pageSize: 50 })
+        .then((res) => {
+          if (res.success && res.data) {
+            setQueryHistory(res.data.items)
+            setQueryHistoryTotal(res.data.total)
+          }
+        })
+        .catch(() => {})
       toast.error('Failed to delete entry', { description: result.error })
     }
   }, [])
 
   return {
-    queryHistory, setQueryHistory,
-    queryHistoryTotal, setQueryHistoryTotal,
-    savedQueries, setSavedQueries,
+    queryHistory,
+    setQueryHistory,
+    queryHistoryTotal,
+    setQueryHistoryTotal,
+    savedQueries,
+    setSavedQueries,
     handleSaveQuery,
     handleDeleteSavedQuery,
     handleToggleFavorite,
     handleShareQuery,
     handleClearHistory,
-    handleDeleteHistoryEntry
+    handleDeleteHistoryEntry,
   }
 }
