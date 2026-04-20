@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Loader2, Lightbulb, X } from 'lucide-react'
 import { explainSQLClause } from '@/actions/ai'
 
@@ -12,8 +13,10 @@ interface TooltipState {
   text: string
   explanation: string | null
   loading: boolean
-  x: number
-  y: number
+  // Viewport coords of the selection rect
+  selLeft: number
+  selRight: number
+  selBottom: number
 }
 
 /**
@@ -50,16 +53,17 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
     const selectedText = selection.toString().trim()
     if (selectedText.length < 3 || selectedText.length > 500) return
 
-    // Get position for tooltip
     const range = selection.getRangeAt(0)
     const rect = range.getBoundingClientRect()
-    const containerRect = containerRef.current?.getBoundingClientRect()
-    if (!containerRect) return
 
-    const x = rect.left - containerRect.left + rect.width / 2
-    const y = rect.top - containerRect.top - 8
-
-    setTooltip({ text: selectedText, explanation: null, loading: true, x, y })
+    setTooltip({
+      text: selectedText,
+      explanation: null,
+      loading: true,
+      selLeft: rect.left,
+      selRight: rect.right,
+      selBottom: rect.bottom,
+    })
 
     const result = await explainSQLClause(sql, selectedText)
     setTooltip((prev) =>
@@ -102,45 +106,49 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
         <span>Select any part of the SQL to get an AI explanation</span>
       </div>
 
-      {/* Tooltip */}
-      {tooltip && (
-        <div
-          ref={tooltipRef}
-          className="absolute z-50 animate-fadeIn"
-          style={{
-            left: Math.max(
-              0,
-              Math.min(tooltip.x - 140, (containerRef.current?.offsetWidth || 300) - 280)
-            ),
-            top: tooltip.y,
-            transform: 'translateY(-100%)',
-          }}
-        >
-          <div className="bg-card border border-primary/20 rounded-xl shadow-xl p-3 w-[280px]">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <code className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono line-clamp-1 flex-1">
-                {tooltip.text}
-              </code>
-              <button
-                onClick={() => setTooltip(null)}
-                className="p-0.5 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            {tooltip.loading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                Explaining...
+      {/* Tooltip — portaled to body with fixed positioning to escape parent overflow clipping */}
+      {tooltip &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={tooltipRef}
+            className="fixed z-[100] animate-fadeIn"
+            style={(() => {
+              const width = 280
+              const vw = window.innerWidth
+              const centerX = (tooltip.selLeft + tooltip.selRight) / 2
+              const left = Math.max(8, Math.min(centerX - width / 2, vw - width - 8))
+              // Always render below the selection — plain, no translate, no clipping
+              const top = tooltip.selBottom + 8
+              return { left, top }
+            })()}
+          >
+            <div className="bg-card border border-primary/20 rounded-xl shadow-xl p-3 w-[280px] relative">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <code className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono line-clamp-1 flex-1">
+                  {tooltip.text}
+                </code>
+                <button
+                  onClick={() => setTooltip(null)}
+                  className="p-0.5 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
-            ) : (
-              <p className="text-xs text-foreground/80 leading-relaxed">{tooltip.explanation}</p>
-            )}
-            {/* Arrow */}
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-card border-r border-b border-primary/20 transform rotate-45" />
-          </div>
-        </div>
-      )}
+              {tooltip.loading ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                  Explaining...
+                </div>
+              ) : (
+                <p className="text-xs text-foreground/80 leading-relaxed">{tooltip.explanation}</p>
+              )}
+              {/* Arrow — points up to the selection */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-card border-l border-t border-primary/20 rotate-45" />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
