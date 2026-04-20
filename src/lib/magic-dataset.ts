@@ -11,7 +11,7 @@
 //   4. Any schema-qualified identifier in user SQL that references something
 //      other than the user's schema is rejected before execution.
 
-import { Pool, PoolClient } from 'pg'
+import { Pool } from 'pg'
 import Papa from 'papaparse'
 import crypto from 'crypto'
 import { parse, astVisitor, Statement } from 'pgsql-ast-parser'
