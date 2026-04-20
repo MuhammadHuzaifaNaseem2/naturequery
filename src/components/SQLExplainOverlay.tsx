@@ -28,9 +28,11 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
-  // Close tooltip on outside click
+  // Close tooltip on outside click or on any scroll (tooltip uses viewport coords,
+  // so once the page scrolls the tooltip would detach from the selection).
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    if (!tooltip) return
+    const onMouseDown = (e: MouseEvent) => {
       if (
         tooltipRef.current &&
         !tooltipRef.current.contains(e.target as Node) &&
@@ -40,9 +42,13 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
         setTooltip(null)
       }
     }
-    if (tooltip) {
-      document.addEventListener('mousedown', handler)
-      return () => document.removeEventListener('mousedown', handler)
+    const onScroll = () => setTooltip(null)
+    document.addEventListener('mousedown', onMouseDown)
+    // Capture phase catches scrolls in any scroll container, not just window
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [tooltip])
 
