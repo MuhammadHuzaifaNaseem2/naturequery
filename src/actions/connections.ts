@@ -271,6 +271,17 @@ export async function deleteConnection(
       await requireTeamPermission(conn.teamId, 'connection:delete')
     }
 
+    // Magic Dataset connections own a real Postgres table — drop it before
+    // removing the row so we don't orphan storage.
+    if (conn.dbType === 'magic') {
+      try {
+        const { dropMagicTable } = await import('@/lib/magic-dataset')
+        await dropMagicTable(conn.user, conn.database)
+      } catch (err) {
+        console.error('Failed to drop magic table; continuing with row delete:', err)
+      }
+    }
+
     await prisma.databaseConnection.delete({
       where: { id: connectionId },
     })

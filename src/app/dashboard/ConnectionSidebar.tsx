@@ -2,137 +2,231 @@
 
 import { useRef, useState } from 'react'
 import { AppLogo } from '@/components/AppLogo'
-import { Database, Plus, Search, Sparkles, Trash2, X, UploadCloud, AlertTriangle } from 'lucide-react'
+import {
+  Database,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
+  UploadCloud,
+  AlertTriangle,
+} from 'lucide-react'
 
 // Mini logos for each DB type shown in the sidebar connection list
 const DB_MINI_LOGOS: Record<string, React.ReactNode> = {
   postgresql: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="14" fill="#336791"/>
-      <ellipse cx="16" cy="15" rx="7" ry="8" fill="white" opacity="0.9"/>
-      <ellipse cx="16" cy="10" rx="5" ry="4" fill="#336791"/>
-      <circle cx="13.5" cy="13" r="1.2" fill="#336791"/>
-      <circle cx="18.5" cy="13" r="1.2" fill="#336791"/>
+      <circle cx="16" cy="16" r="14" fill="#336791" />
+      <ellipse cx="16" cy="15" rx="7" ry="8" fill="white" opacity="0.9" />
+      <ellipse cx="16" cy="10" rx="5" ry="4" fill="#336791" />
+      <circle cx="13.5" cy="13" r="1.2" fill="#336791" />
+      <circle cx="18.5" cy="13" r="1.2" fill="#336791" />
     </svg>
   ),
   mysql: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="#00758F"/>
-      <path d="M6 20 Q10 10 16 12 Q22 14 26 10 Q24 18 18 18 Q14 18 12 22 Q9 26 6 20z" fill="white" opacity="0.9"/>
-      <circle cx="22" cy="11" r="1.5" fill="#F29111"/>
+      <rect width="32" height="32" rx="6" fill="#00758F" />
+      <path
+        d="M6 20 Q10 10 16 12 Q22 14 26 10 Q24 18 18 18 Q14 18 12 22 Q9 26 6 20z"
+        fill="white"
+        opacity="0.9"
+      />
+      <circle cx="22" cy="11" r="1.5" fill="#F29111" />
     </svg>
   ),
   mariadb: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="#C0765A"/>
-      <path d="M8 22 Q8 14 14 12 Q20 10 22 14 Q24 18 20 20 Q16 22 14 20 Q12 18 14 16" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      <circle cx="22" cy="13" r="1.5" fill="white"/>
+      <rect width="32" height="32" rx="6" fill="#C0765A" />
+      <path
+        d="M8 22 Q8 14 14 12 Q20 10 22 14 Q24 18 20 20 Q16 22 14 20 Q12 18 14 16"
+        stroke="white"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <circle cx="22" cy="13" r="1.5" fill="white" />
     </svg>
   ),
   sqlserver: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="#CC2927"/>
-      <path d="M11 11 Q11 9 16 9 Q21 9 21 12 Q21 15 16 15.5 Q11 16 11 19.5 Q11 23 16 23 Q21 23 21 21" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      <rect width="32" height="32" rx="6" fill="#CC2927" />
+      <path
+        d="M11 11 Q11 9 16 9 Q21 9 21 12 Q21 15 16 15.5 Q11 16 11 19.5 Q11 23 16 23 Q21 23 21 21"
+        stroke="white"
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   sqlite: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="14" cy="16" rx="7" ry="11" fill="#003B57"/>
-      <ellipse cx="14" cy="7" rx="7" ry="3.5" fill="#0F80CC"/>
-      <path d="M21 9 L27 4" stroke="#0F80CC" strokeWidth="2.5" strokeLinecap="round"/>
-      <circle cx="27" cy="4" r="2" fill="#0F80CC"/>
+      <ellipse cx="14" cy="16" rx="7" ry="11" fill="#003B57" />
+      <ellipse cx="14" cy="7" rx="7" ry="3.5" fill="#0F80CC" />
+      <path d="M21 9 L27 4" stroke="#0F80CC" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="27" cy="4" r="2" fill="#0F80CC" />
     </svg>
   ),
   oracle: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="4" fill="#F80000"/>
-      <path d="M16 8 A8 8 0 1 1 15.99 8Z" fill="none" stroke="white" strokeWidth="5"/>
+      <rect width="32" height="32" rx="4" fill="#F80000" />
+      <path d="M16 8 A8 8 0 1 1 15.99 8Z" fill="none" stroke="white" strokeWidth="5" />
     </svg>
   ),
   db2: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="4" fill="#052FAD"/>
-      <rect x="6" y="9" width="20" height="3" rx="1" fill="white"/>
-      <rect x="6" y="14.5" width="20" height="3" rx="1" fill="white"/>
-      <rect x="6" y="20" width="20" height="3" rx="1" fill="white"/>
+      <rect width="32" height="32" rx="4" fill="#052FAD" />
+      <rect x="6" y="9" width="20" height="3" rx="1" fill="white" />
+      <rect x="6" y="14.5" width="20" height="3" rx="1" fill="white" />
+      <rect x="6" y="20" width="20" height="3" rx="1" fill="white" />
     </svg>
   ),
   redshift: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="4" fill="#205B99"/>
-      <path d="M16 5 L22 9.5 L22 22.5 L16 27 L10 22.5 L10 9.5Z" fill="#5294CF"/>
-      <path d="M16 5 L22 9.5 L16 13 L10 9.5Z" fill="#8CC4F0"/>
+      <rect width="32" height="32" rx="4" fill="#205B99" />
+      <path d="M16 5 L22 9.5 L22 22.5 L16 27 L10 22.5 L10 9.5Z" fill="#5294CF" />
+      <path d="M16 5 L22 9.5 L16 13 L10 9.5Z" fill="#8CC4F0" />
     </svg>
   ),
   bigquery: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 3 L27 9.5 V22.5 L16 29 L5 22.5 V9.5Z" fill="#4285F4"/>
-      <circle cx="15" cy="15" r="5.5" fill="white" opacity="0.95"/>
-      <circle cx="15" cy="15" r="3.5" fill="#4285F4"/>
-      <line x1="19" y1="19" x2="23" y2="23" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M16 3 L27 9.5 V22.5 L16 29 L5 22.5 V9.5Z" fill="#4285F4" />
+      <circle cx="15" cy="15" r="5.5" fill="white" opacity="0.95" />
+      <circle cx="15" cy="15" r="3.5" fill="#4285F4" />
+      <line
+        x1="19"
+        y1="19"
+        x2="23"
+        y2="23"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   snowflake: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="#29B5E8"/>
-      <line x1="16" y1="4" x2="16" y2="28" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="4" y1="16" x2="28" y2="16" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="7.5" y1="7.5" x2="24.5" y2="24.5" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="24.5" y1="7.5" x2="7.5" y2="24.5" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-      <circle cx="16" cy="16" r="3" fill="white"/>
+      <rect width="32" height="32" rx="6" fill="#29B5E8" />
+      <line x1="16" y1="4" x2="16" y2="28" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="4" y1="16" x2="28" y2="16" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+      <line
+        x1="7.5"
+        y1="7.5"
+        x2="24.5"
+        y2="24.5"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="24.5"
+        y1="7.5"
+        x2="7.5"
+        y2="24.5"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <circle cx="16" cy="16" r="3" fill="white" />
     </svg>
   ),
   cockroachdb: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="14" fill="#6933FF"/>
-      <ellipse cx="16" cy="14" rx="5.5" ry="7" fill="white" opacity="0.92"/>
-      <circle cx="13.5" cy="12" r="1.3" fill="#6933FF"/>
-      <circle cx="18.5" cy="12" r="1.3" fill="#6933FF"/>
+      <circle cx="16" cy="16" r="14" fill="#6933FF" />
+      <ellipse cx="16" cy="14" rx="5.5" ry="7" fill="white" opacity="0.92" />
+      <circle cx="13.5" cy="12" r="1.3" fill="#6933FF" />
+      <circle cx="18.5" cy="12" r="1.3" fill="#6933FF" />
     </svg>
   ),
   clickhouse: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="4" fill="#1C1C1C"/>
-      <rect x="4" y="8" width="4" height="16" rx="1" fill="#FAFF69"/>
-      <rect x="10" y="8" width="4" height="16" rx="1" fill="#FAFF69"/>
-      <rect x="16" y="8" width="4" height="16" rx="1" fill="#FAFF69"/>
-      <rect x="22" y="8" width="4" height="8" rx="1" fill="#FAFF69"/>
+      <rect width="32" height="32" rx="4" fill="#1C1C1C" />
+      <rect x="4" y="8" width="4" height="16" rx="1" fill="#FAFF69" />
+      <rect x="10" y="8" width="4" height="16" rx="1" fill="#FAFF69" />
+      <rect x="16" y="8" width="4" height="16" rx="1" fill="#FAFF69" />
+      <rect x="22" y="8" width="4" height="8" rx="1" fill="#FAFF69" />
     </svg>
   ),
   mongodb: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 3 C14 9 9 12 9 18 A7 7 0 0 0 23 18 C23 12 18 9 16 3Z" fill="#10AA50"/>
-      <rect x="15" y="22" width="2" height="7" rx="1" fill="#10AA50"/>
+      <path d="M16 3 C14 9 9 12 9 18 A7 7 0 0 0 23 18 C23 12 18 9 16 3Z" fill="#10AA50" />
+      <rect x="15" y="22" width="2" height="7" rx="1" fill="#10AA50" />
     </svg>
   ),
   neon: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="#0C0C0C"/>
-      <path d="M9 24 L9 8 L23 24 L23 8" stroke="#00E599" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect width="32" height="32" rx="6" fill="#0C0C0C" />
+      <path
+        d="M9 24 L9 8 L23 24 L23 8"
+        stroke="#00E599"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   planetscale: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="14" fill="#0C0C0C"/>
-      <circle cx="16" cy="16" r="10" fill="none" stroke="white" strokeWidth="2"/>
-      <line x1="8" y1="24" x2="24" y2="8" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+      <circle cx="16" cy="16" r="14" fill="#0C0C0C" />
+      <circle cx="16" cy="16" r="10" fill="none" stroke="white" strokeWidth="2" />
+      <line x1="8" y1="24" x2="24" y2="8" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   ),
   duckdb: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="14" fill="#FFF200"/>
-      <circle cx="16" cy="16" r="9" fill="#1C1C1C"/>
-      <circle cx="16" cy="16" r="5" fill="white"/>
-      <circle cx="18.5" cy="13.5" r="2.5" fill="white"/>
-      <circle cx="19.5" cy="13" r="1.2" fill="#1C1C1C"/>
+      <circle cx="16" cy="16" r="14" fill="#FFF200" />
+      <circle cx="16" cy="16" r="9" fill="#1C1C1C" />
+      <circle cx="16" cy="16" r="5" fill="white" />
+      <circle cx="18.5" cy="13.5" r="2.5" fill="white" />
+      <circle cx="19.5" cy="13" r="1.2" fill="#1C1C1C" />
     </svg>
   ),
   turso: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="6" fill="#0D1117"/>
-      <path d="M16 5 L26 10.5 V21.5 L16 27 L6 21.5 V10.5Z" fill="none" stroke="#4FF8D2" strokeWidth="2"/>
-      <line x1="11" y1="13" x2="21" y2="13" stroke="#4FF8D2" strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="16" y1="13" x2="16" y2="21" stroke="#4FF8D2" strokeWidth="2.5" strokeLinecap="round"/>
+      <rect width="32" height="32" rx="6" fill="#0D1117" />
+      <path
+        d="M16 5 L26 10.5 V21.5 L16 27 L6 21.5 V10.5Z"
+        fill="none"
+        stroke="#4FF8D2"
+        strokeWidth="2"
+      />
+      <line
+        x1="11"
+        y1="13"
+        x2="21"
+        y2="13"
+        stroke="#4FF8D2"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="16"
+        y1="13"
+        x2="16"
+        y2="21"
+        stroke="#4FF8D2"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+  magic: (
+    <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="magicBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#7C3AED" />
+          <stop offset="100%" stopColor="#06B6D4" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="6" fill="url(#magicBg)" />
+      <path
+        d="M16 7 L17.8 13.2 L24 15 L17.8 16.8 L16 23 L14.2 16.8 L8 15 L14.2 13.2Z"
+        fill="white"
+      />
+      <circle cx="23" cy="9" r="1.5" fill="white" opacity="0.85" />
+      <circle cx="9" cy="23" r="1.2" fill="white" opacity="0.7" />
     </svg>
   ),
 }
@@ -232,16 +326,15 @@ export function ConnectionSidebar({
       <div className="flex-1 overflow-y-auto">
         {/* Onboarding Checklist — inside scroll */}
         <div className="px-3 pt-3">
-          <OnboardingChecklist
-            onConnectDb={onAddConnection}
-            onAskQuestion={() => {}}
-          />
+          <OnboardingChecklist onConnectDb={onAddConnection} onAskQuestion={() => {}} />
         </div>
 
         {/* Connections */}
         <div className="px-3 pb-2">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('dashboard.sidebar.connections')}</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {t('dashboard.sidebar.connections')}
+            </h2>
             <button
               onClick={onAddConnection}
               className="p-1 hover:bg-secondary rounded transition-colors"
@@ -257,11 +350,10 @@ export function ConnectionSidebar({
               <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-secondary/50 flex items-center justify-center">
                 <Database className="w-5 h-5 text-muted-foreground/50" />
               </div>
-              <p className="text-xs text-muted-foreground mb-3">{t('dashboard.sidebar.noConnections')}</p>
-              <button
-                onClick={onAddDemoConnection}
-                className="btn-gradient text-xs py-1.5 px-3"
-              >
+              <p className="text-xs text-muted-foreground mb-3">
+                {t('dashboard.sidebar.noConnections')}
+              </p>
+              <button onClick={onAddDemoConnection} className="btn-gradient text-xs py-1.5 px-3">
                 <Sparkles className="w-3.5 h-3.5" />
                 {t('dashboard.sidebar.tryDemo')}
               </button>
@@ -269,12 +361,15 @@ export function ConnectionSidebar({
           ) : (
             <div className="space-y-3">
               {Object.entries(
-                filteredConnections.reduce((acc, curr) => {
-                  const group = curr.teamName || 'Personal'
-                  if (!acc[group]) acc[group] = []
-                  acc[group].push(curr)
-                  return acc
-                }, {} as Record<string, typeof filteredConnections>)
+                filteredConnections.reduce(
+                  (acc, curr) => {
+                    const group = curr.teamName || 'Personal'
+                    if (!acc[group]) acc[group] = []
+                    acc[group].push(curr)
+                    return acc
+                  },
+                  {} as Record<string, typeof filteredConnections>
+                )
               ).map(([group, conns]) => (
                 <div key={group}>
                   <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 pl-1">
@@ -294,7 +389,9 @@ export function ConnectionSidebar({
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-background border border-border/50 overflow-hidden shadow-sm">
-                            {DB_MINI_LOGOS[connection.dbType] ?? <Database className="w-3.5 h-3.5 text-muted-foreground" />}
+                            {DB_MINI_LOGOS[connection.dbType] ?? (
+                              <Database className="w-3.5 h-3.5 text-muted-foreground" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0 pr-6">
                             <div className="flex items-center gap-1.5">
@@ -378,12 +475,16 @@ export function ConnectionSidebar({
               <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
                 <AlertTriangle className="w-6 h-6 text-destructive" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{t('dashboard.connectionSidebar.deleteTitle')}</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                {t('dashboard.connectionSidebar.deleteTitle')}
+              </h3>
               <p className="text-sm text-muted-foreground mb-1">
                 {t('dashboard.connectionSidebar.deleteConfirmText')}
               </p>
               <p className="text-sm font-medium mb-1">
-                {filteredConnections.find(c => c.id === deleteConfirmId)?.name || t('dashboard.connectionSidebar.thisConnection')}?
+                {filteredConnections.find((c) => c.id === deleteConfirmId)?.name ||
+                  t('dashboard.connectionSidebar.thisConnection')}
+                ?
               </p>
               <p className="text-xs text-muted-foreground mb-6">
                 {t('dashboard.connectionSidebar.deleteWarning')}

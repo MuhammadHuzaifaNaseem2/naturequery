@@ -4,9 +4,36 @@
  */
 
 import { Pool as PgPool } from 'pg'
-import type { DBCredentials, ColumnDefinition, ForeignKey, TableSchema, QueryResultRow } from '@/actions/db'
+import type {
+  DBCredentials,
+  ColumnDefinition,
+  ForeignKey,
+  TableSchema,
+  QueryResultRow,
+} from '@/actions/db'
 
-export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'redshift' | 'mongodb' | 'oracle' | 'mariadb' | 'snowflake' | 'bigquery' | 'cockroachdb' | 'clickhouse' | 'duckdb' | 'cassandra' | 'db2' | 'dynamodb' | 'firestore' | 'planetscale' | 'neon' | 'turso'
+export type DatabaseType =
+  | 'postgresql'
+  | 'mysql'
+  | 'sqlite'
+  | 'sqlserver'
+  | 'redshift'
+  | 'mongodb'
+  | 'oracle'
+  | 'mariadb'
+  | 'snowflake'
+  | 'bigquery'
+  | 'cockroachdb'
+  | 'clickhouse'
+  | 'duckdb'
+  | 'cassandra'
+  | 'db2'
+  | 'dynamodb'
+  | 'firestore'
+  | 'planetscale'
+  | 'neon'
+  | 'turso'
+  | 'magic'
 
 /** Maximum rows returned from any user query. Prevents OOM on huge result sets.
  * ADMIN gets 10,000 rows; regular users get 1,000.
@@ -110,9 +137,20 @@ export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver
         pool.query(fkQuery),
       ])
       const fkMap = new Map<string, ForeignKey[]>()
-      for (const fk of fkResult.rows as { from_table: string; from_column: string; to_table: string; to_column: string }[]) {
+      for (const fk of fkResult.rows as {
+        from_table: string
+        from_column: string
+        to_table: string
+        to_column: string
+      }[]) {
         if (!fkMap.has(fk.from_table)) fkMap.set(fk.from_table, [])
-        fkMap.get(fk.from_table)!.push({ column: fk.from_column, referencedTable: fk.to_table, referencedColumn: fk.to_column })
+        fkMap
+          .get(fk.from_table)!
+          .push({
+            column: fk.from_column,
+            referencedTable: fk.to_table,
+            referencedColumn: fk.to_column,
+          })
       }
       return groupSchemaRows(colResult.rows, fkMap)
     },
@@ -190,7 +228,8 @@ export function createMysqlDriver(credentials: DBCredentials): DatabaseDriver {
 
     async fetchSchema() {
       const p = await getPool()
-      const [rows] = await p.query(`
+      const [rows] = await p.query(
+        `
         SELECT
           TABLE_NAME as table_name,
           COLUMN_NAME as column_name,
@@ -201,7 +240,9 @@ export function createMysqlDriver(credentials: DBCredentials): DatabaseDriver {
         FROM information_schema.COLUMNS
         WHERE TABLE_SCHEMA = ?
         ORDER BY TABLE_NAME, ORDINAL_POSITION
-      `, [credentials.database])
+      `,
+        [credentials.database]
+      )
 
       interface MysqlSchemaRow {
         table_name: string
@@ -212,14 +253,16 @@ export function createMysqlDriver(credentials: DBCredentials): DatabaseDriver {
         column_key: string
       }
 
-      return groupSchemaRows((rows as MysqlSchemaRow[]).map((r) => ({
-        table_name: r.table_name,
-        column_name: r.column_name,
-        data_type: r.data_type,
-        is_nullable: r.is_nullable,
-        column_default: r.column_default,
-        is_primary_key: r.column_key === 'PRI',
-      })))
+      return groupSchemaRows(
+        (rows as MysqlSchemaRow[]).map((r) => ({
+          table_name: r.table_name,
+          column_name: r.column_name,
+          data_type: r.data_type,
+          is_nullable: r.is_nullable,
+          column_default: r.column_default,
+          is_primary_key: r.column_key === 'PRI',
+        }))
+      )
     },
 
     async executeQuery(sql: string, maxRows?: number) {
@@ -288,9 +331,11 @@ export function createSqliteDriver(credentials: DBCredentials): DatabaseDriver {
 
     async fetchSchema() {
       const d = getDb()
-      const tables = d.prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-      ).all() as { name: string }[]
+      const tables = d
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )
+        .all() as { name: string }[]
 
       const result: TableSchema[] = []
       for (const { name } of tables) {
@@ -315,13 +360,15 @@ export function createSqliteDriver(credentials: DBCredentials): DatabaseDriver {
         const columns = d.prepare(`PRAGMA table_info("${name}")`).all() as SqliteColumnInfo[]
         result.push({
           tableName: name,
-          columns: columns.map((c): ColumnDefinition => ({
-            name: c.name,
-            type: c.type || 'TEXT',
-            nullable: c.notnull === 0,
-            defaultValue: c.dflt_value,
-            isPrimaryKey: c.pk === 1,
-          })),
+          columns: columns.map(
+            (c): ColumnDefinition => ({
+              name: c.name,
+              type: c.type || 'TEXT',
+              nullable: c.notnull === 0,
+              defaultValue: c.dflt_value,
+              isPrimaryKey: c.pk === 1,
+            })
+          ),
         })
       }
       return result
@@ -343,10 +390,16 @@ export function createSqliteDriver(credentials: DBCredentials): DatabaseDriver {
       })
 
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(
-          `Query timed out after ${DEFAULT_QUERY_TIMEOUT_MS / 1000} seconds. ` +
-          'Try adding filters or a LIMIT clause to reduce the result set.'
-        )), DEFAULT_QUERY_TIMEOUT_MS)
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `Query timed out after ${DEFAULT_QUERY_TIMEOUT_MS / 1000} seconds. ` +
+                  'Try adding filters or a LIMIT clause to reduce the result set.'
+              )
+            ),
+          DEFAULT_QUERY_TIMEOUT_MS
+        )
       })
 
       let rows = await Promise.race([queryPromise, timeoutPromise])
@@ -426,14 +479,16 @@ export function createSqlServerDriver(credentials: DBCredentials): DatabaseDrive
         ORDER BY t.TABLE_NAME, c.ORDINAL_POSITION
       `)
 
-      return groupSchemaRows(result.recordset.map((r: any) => ({
-        table_name: r.table_name,
-        column_name: r.column_name,
-        data_type: r.data_type,
-        is_nullable: r.is_nullable,
-        column_default: r.column_default,
-        is_primary_key: r.is_primary_key === 1,
-      })))
+      return groupSchemaRows(
+        result.recordset.map((r: any) => ({
+          table_name: r.table_name,
+          column_name: r.column_name,
+          data_type: r.data_type,
+          is_nullable: r.is_nullable,
+          column_default: r.column_default,
+          is_primary_key: r.is_primary_key === 1,
+        }))
+      )
     },
 
     async executeQuery(sql: string, maxRows?: number) {
@@ -527,9 +582,20 @@ export function createRedshiftDriver(credentials: DBCredentials): DatabaseDriver
         pool.query(fkQuery),
       ])
       const fkMap = new Map<string, ForeignKey[]>()
-      for (const fk of fkResult.rows as { from_table: string; from_column: string; to_table: string; to_column: string }[]) {
+      for (const fk of fkResult.rows as {
+        from_table: string
+        from_column: string
+        to_table: string
+        to_column: string
+      }[]) {
         if (!fkMap.has(fk.from_table)) fkMap.set(fk.from_table, [])
-        fkMap.get(fk.from_table)!.push({ column: fk.from_column, referencedTable: fk.to_table, referencedColumn: fk.to_column })
+        fkMap
+          .get(fk.from_table)!
+          .push({
+            column: fk.from_column,
+            referencedTable: fk.to_table,
+            referencedColumn: fk.to_column,
+          })
       }
       return groupSchemaRows(colResult.rows, fkMap)
     },
@@ -620,23 +686,24 @@ export function createSnowflakeDriver(credentials: DBCredentials): DatabaseDrive
         WHERE TABLE_SCHEMA != 'INFORMATION_SCHEMA' AND TABLE_SCHEMA != 'PERFORMANCE_SCHEMA'
         ORDER BY TABLE_NAME, ORDINAL_POSITION;
       `
-      
-      const runQuery = (sql: string): Promise<any[]> => new Promise((resolve, reject) => {
-        conn.execute({
-          sqlText: sql,
-          complete: (err: any, stmt: any, rows: any) => (err ? reject(err) : resolve(rows)),
+
+      const runQuery = (sql: string): Promise<any[]> =>
+        new Promise((resolve, reject) => {
+          conn.execute({
+            sqlText: sql,
+            complete: (err: any, stmt: any, rows: any) => (err ? reject(err) : resolve(rows)),
+          })
         })
-      })
 
       const colResult = await runQuery(schemaQuery)
-      
+
       const lowercaseColResult = colResult.map((r: any) => ({
         table_name: r.table_name,
         column_name: r.column_name,
         data_type: r.data_type,
         is_nullable: r.is_nullable === 'YES',
         column_default: r.column_default,
-        is_primary_key: false
+        is_primary_key: false,
       }))
 
       return groupSchemaRows(lowercaseColResult)
@@ -645,7 +712,7 @@ export function createSnowflakeDriver(credentials: DBCredentials): DatabaseDrive
     async executeQuery(sql: string, maxRows?: number) {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const conn = await getConnection()
-      
+
       const rows: any[] = await new Promise((resolve, reject) => {
         conn.execute({
           sqlText: sql,
@@ -653,7 +720,7 @@ export function createSnowflakeDriver(credentials: DBCredentials): DatabaseDrive
           complete: (err: any, stmt: any, _rows: any) => (err ? reject(err) : resolve(_rows)),
         })
       })
-      
+
       const fields = rows.length > 0 ? Object.keys(rows[0]) : []
       const truncated = rows.length > limit
       const finalRows = truncated ? rows.slice(0, limit) : rows
@@ -679,9 +746,9 @@ export function createBigQueryDriver(credentials: DBCredentials): DatabaseDriver
     if (!bigquery) {
       const { BigQuery } = await import('@google-cloud/bigquery')
       bigquery = new BigQuery({
-        projectId: credentials.database, 
+        projectId: credentials.database,
         credentials: {
-          client_email: credentials.user, 
+          client_email: credentials.user,
           private_key: credentials.password.replace(/\\n/g, '\n'), // handle newlines in private keys
         },
       })
@@ -700,7 +767,7 @@ export function createBigQueryDriver(credentials: DBCredentials): DatabaseDriver
       const bq = await getClient()
       const [datasets] = await bq.getDatasets()
       if (datasets.length === 0) return []
-      
+
       const dataset = datasets[0]
       const [tables] = await dataset.getTables()
       const schemaOutput: TableSchema[] = []
@@ -708,7 +775,7 @@ export function createBigQueryDriver(credentials: DBCredentials): DatabaseDriver
       for (const tableObj of tables) {
         const [metadata] = await tableObj.getMetadata()
         const fields = metadata.schema?.fields || []
-        
+
         schemaOutput.push({
           tableName: tableObj.id || 'unknown',
           columns: fields.map((f: any) => ({
@@ -726,12 +793,12 @@ export function createBigQueryDriver(credentials: DBCredentials): DatabaseDriver
     async executeQuery(sql: string, maxRows?: number) {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const bq = await getClient()
-      
+
       const options = {
         query: sql,
         timeoutMs: DEFAULT_QUERY_TIMEOUT_MS,
       }
-      
+
       const [rows] = await bq.query(options)
       const fields = rows.length > 0 ? Object.keys(rows[0]) : []
       const truncated = rows.length > limit
@@ -739,7 +806,7 @@ export function createBigQueryDriver(credentials: DBCredentials): DatabaseDriver
       return { rows: finalRows, fields, rowCount: rows.length, truncated }
     },
 
-    async close() {}
+    async close() {},
   }
 }
 
@@ -758,7 +825,8 @@ export function createMongoDriver(credentials: DBCredentials): DatabaseDriver {
           : ''
         // Use mongodb+srv only for Atlas-style hosts (no port, contains dots).
         // Direct host:port connections (localhost, IPs, self-hosted) use mongodb://.
-        const isSrv = !credentials.port && credentials.host.includes('.') && !/^[\d.]+$/.test(credentials.host)
+        const isSrv =
+          !credentials.port && credentials.host.includes('.') && !/^[\d.]+$/.test(credentials.host)
         if (isSrv) {
           uri = `mongodb+srv://${auth}${credentials.host}/${credentials.database}?retryWrites=true&w=majority`
         } else {
@@ -782,7 +850,7 @@ export function createMongoDriver(credentials: DBCredentials): DatabaseDriver {
       const c = await getClient()
       const db = c.db(credentials.database)
       const collections = await db.listCollections().toArray()
-      
+
       const schemaOutput: TableSchema[] = []
       for (const coll of collections) {
         if (coll.type === 'view' || coll.name.startsWith('system.')) continue
@@ -808,12 +876,14 @@ export function createMongoDriver(credentials: DBCredentials): DatabaseDriver {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const c = await getClient()
       const db = c.db(credentials.database)
-      
-      let parsed: { collection: string, pipeline: any[] } | null = null
+
+      let parsed: { collection: string; pipeline: any[] } | null = null
       try {
         parsed = JSON.parse(mongoQuery)
       } catch (e) {
-        throw new Error("Invalid MongoDB pipeline generated by AI. It must be valid JSON matching { collection, pipeline }.")
+        throw new Error(
+          'Invalid MongoDB pipeline generated by AI. It must be valid JSON matching { collection, pipeline }.'
+        )
       }
 
       if (!parsed || !parsed.collection || !Array.isArray(parsed.pipeline)) {
@@ -821,10 +891,12 @@ export function createMongoDriver(credentials: DBCredentials): DatabaseDriver {
       }
 
       parsed.pipeline.push({ $limit: limit + 1 })
-      
-      const cursor = db.collection(parsed.collection).aggregate(parsed.pipeline, { maxTimeMS: DEFAULT_QUERY_TIMEOUT_MS })
+
+      const cursor = db
+        .collection(parsed.collection)
+        .aggregate(parsed.pipeline, { maxTimeMS: DEFAULT_QUERY_TIMEOUT_MS })
       const rows = await cursor.toArray()
-      
+
       const displayRows = rows.map((r: any) => {
         const clean = { ...r }
         for (const k in clean) {
@@ -834,7 +906,7 @@ export function createMongoDriver(credentials: DBCredentials): DatabaseDriver {
         }
         return clean
       })
-      
+
       const truncated = displayRows.length > limit
       const finalRows = truncated ? displayRows.slice(0, limit) : displayRows
       const fields = finalRows.length > 0 ? Object.keys(finalRows[0]) : []
@@ -884,7 +956,7 @@ export function createClickHouseDriver(credentials: DBCredentials): DatabaseDriv
       `
       const result = await c.query({ query })
       const rows = await result.json()
-      
+
       const mapped = rows.data.map((r: any) => ({
         table_name: r.table_name,
         column_name: r.column_name,
@@ -900,17 +972,17 @@ export function createClickHouseDriver(credentials: DBCredentials): DatabaseDriv
       const limit = maxRows ?? MAX_QUERY_ROWS
       const c = await getClient()
       const hasLimit = /\blimit\s+\d+/i.test(sql)
-      const safeSql = hasLimit 
-        ? sql.trim().replace(/;$/, '') 
+      const safeSql = hasLimit
+        ? sql.trim().replace(/;$/, '')
         : sql.trim().replace(/;$/, '') + ` LIMIT ${limit + 1}`
-      
+
       const result = await c.query({ query: safeSql, format: 'JSONEachRow' })
-      let rows = await result.json() as QueryResultRow[]
-      
+      let rows = (await result.json()) as QueryResultRow[]
+
       const fields = rows.length > 0 ? Object.keys(rows[0]) : []
       const truncated = rows.length > limit
       if (truncated) rows = rows.slice(0, limit)
-      
+
       return { rows, fields, rowCount: rows.length, truncated }
     },
 
@@ -946,24 +1018,28 @@ export function createTursoDriver(credentials: DBCredentials): DatabaseDriver {
 
     async fetchSchema() {
       const c = await getClient()
-      const tablesResult = await c.execute(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`)
+      const tablesResult = await c.execute(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+      )
       const tables = tablesResult.rows as unknown as { name: string }[]
-      
+
       const result: TableSchema[] = []
       for (const { name } of tables) {
         if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) continue
         const colsResult = await c.execute(`PRAGMA table_info("${name}")`)
         const columns = colsResult.rows as any[]
-        
+
         result.push({
           tableName: name,
-          columns: columns.map((col: any): ColumnDefinition => ({
-            name: col.name,
-            type: col.type || 'TEXT',
-            nullable: col.notnull === 0,
-            defaultValue: col.dflt_value,
-            isPrimaryKey: col.pk === 1,
-          })),
+          columns: columns.map(
+            (col: any): ColumnDefinition => ({
+              name: col.name,
+              type: col.type || 'TEXT',
+              nullable: col.notnull === 0,
+              defaultValue: col.dflt_value,
+              isPrimaryKey: col.pk === 1,
+            })
+          ),
         })
       }
       return result
@@ -973,12 +1049,12 @@ export function createTursoDriver(credentials: DBCredentials): DatabaseDriver {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const c = await getClient()
       const result = await c.execute(sql)
-      
+
       let rows = result.rows as unknown as QueryResultRow[]
       const fields = rows.length > 0 ? Object.keys(rows[0]) : []
       const truncated = rows.length > limit
       if (truncated) rows = rows.slice(0, limit)
-      
+
       return { rows, fields, rowCount: result.rows.length, truncated }
     },
 
@@ -1005,7 +1081,7 @@ export function createDynamoDBDriver(credentials: DBCredentials): DatabaseDriver
         credentials: {
           accessKeyId: credentials.user,
           secretAccessKey: credentials.password,
-        }
+        },
       })
     }
     return client
@@ -1023,12 +1099,12 @@ export function createDynamoDBDriver(credentials: DBCredentials): DatabaseDriver
       const { ListTablesCommand } = await import('@aws-sdk/client-dynamodb')
       const result = await c.send(new ListTablesCommand({}))
       const tables = result.TableNames || []
-      
+
       // DynamoDB is schemaless, so we just return the table names without columns
       // The AI will generate PartiQL queries (which DynamoDB supports)
       return tables.map((t: string) => ({
         tableName: t,
-        columns: []
+        columns: [],
       }))
     },
 
@@ -1036,10 +1112,10 @@ export function createDynamoDBDriver(credentials: DBCredentials): DatabaseDriver
       const limit = maxRows ?? MAX_QUERY_ROWS
       const c = await getClient()
       const { ExecuteStatementCommand } = await import('@aws-sdk/client-dynamodb')
-      
+
       // AI will generate PartiQL for DynamoDB
       const result = await c.send(new ExecuteStatementCommand({ Statement: sql }))
-      
+
       // Convert DynamoDB JSON to standard JSON objects
       let rows: QueryResultRow[] = []
       if (result.Items) {
@@ -1056,7 +1132,7 @@ export function createDynamoDBDriver(credentials: DBCredentials): DatabaseDriver
           return row
         })
       }
-      
+
       const fields = rows.length > 0 ? Object.keys(rows[0]) : []
       const truncated = rows.length > limit
       if (truncated) rows = rows.slice(0, limit)
@@ -1084,7 +1160,7 @@ export function createFirestoreDriver(credentials: DBCredentials): DatabaseDrive
             projectId: credentials.database,
             clientEmail: credentials.user,
             privateKey: credentials.password.replace(/\\n/g, '\n'),
-          })
+          }),
         })
       }
       db = admin.firestore()
@@ -1102,7 +1178,7 @@ export function createFirestoreDriver(credentials: DBCredentials): DatabaseDrive
       const d = await getDb()
       const collections = await d.listCollections()
       const schemaOutput: TableSchema[] = []
-      
+
       for (const coll of collections) {
         // Fetch 1 document to infer schema
         const snapshot = await coll.limit(1).get()
@@ -1127,13 +1203,18 @@ export function createFirestoreDriver(credentials: DBCredentials): DatabaseDrive
     async executeQuery(jsonQuery: string, maxRows?: number) {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const d = await getDb()
-      
+
       // Wait for AI to generate JSON format like MongoDB: { collection: "users", conditions: [{ field: "age", op: ">", value: 18 }] }
-      let parsed: { collection: string, conditions?: any[], orderBy?: string, desc?: boolean } | null = null
+      let parsed: {
+        collection: string
+        conditions?: any[]
+        orderBy?: string
+        desc?: boolean
+      } | null = null
       try {
         parsed = JSON.parse(jsonQuery)
       } catch (e) {
-        throw new Error("Invalid Firestore query generated by AI. Must be valid JSON.")
+        throw new Error('Invalid Firestore query generated by AI. Must be valid JSON.')
       }
 
       if (!parsed || !parsed.collection) {
@@ -1141,7 +1222,7 @@ export function createFirestoreDriver(credentials: DBCredentials): DatabaseDrive
       }
 
       let query = d.collection(parsed.collection).limit(limit + 1)
-      
+
       if (parsed.conditions && Array.isArray(parsed.conditions)) {
         for (const cond of parsed.conditions) {
           query = query.where(cond.field, cond.op, cond.value)
@@ -1150,10 +1231,10 @@ export function createFirestoreDriver(credentials: DBCredentials): DatabaseDrive
       if (parsed.orderBy) {
         query = query.orderBy(parsed.orderBy, parsed.desc ? 'desc' : 'asc')
       }
-      
+
       const snapshot = await query.get()
       const displayRows = snapshot.docs.map((doc: any) => ({ _id: doc.id, ...doc.data() }))
-      
+
       const truncated = displayRows.length > limit
       const finalRows = truncated ? displayRows.slice(0, limit) : displayRows
       const fields = finalRows.length > 0 ? Object.keys(finalRows[0]) : []
@@ -1204,7 +1285,7 @@ export function createOracleDriver(credentials: DBCredentials): DatabaseDriver {
       `
       const result = await c.execute(query)
       const rows = result.rows as any[]
-      
+
       // Basic PK mapping logic can be expanded
       const mapped = rows.map((r: any) => ({
         table_name: r.TABLE_NAME,
@@ -1220,21 +1301,19 @@ export function createOracleDriver(credentials: DBCredentials): DatabaseDriver {
     async executeQuery(sql: string, maxRows?: number) {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const c = await getConnection()
-      
+
       const hasFetchFirst = /\bfetch\s+first\b/i.test(sql)
       const baseSql = sql.replace(/;$/, '')
-      const safeSql = hasFetchFirst 
-        ? baseSql 
-        : baseSql + ` FETCH FIRST ${limit + 1} ROWS ONLY`
-      
+      const safeSql = hasFetchFirst ? baseSql : baseSql + ` FETCH FIRST ${limit + 1} ROWS ONLY`
+
       try {
         const result = await c.execute(safeSql)
         let rows = result.rows as QueryResultRow[]
-        
+
         const fields = result.metaData ? result.metaData.map((m: any) => m.name) : []
         const truncated = rows.length > limit
         if (truncated) rows = rows.slice(0, limit)
-        
+
         return { rows, fields, rowCount: rows.length, truncated }
       } catch (err: any) {
         // Fallback for pre-12c syntax where FETCH FIRST fails (ORA-00933)
@@ -1268,7 +1347,10 @@ export function createCassandraDriver(credentials: DBCredentials): DatabaseDrive
   const getClient = async () => {
     if (!client) {
       const cassandra = await import('cassandra-driver')
-      const authProvider = new cassandra.auth.PlainTextAuthProvider(credentials.user, credentials.password)
+      const authProvider = new cassandra.auth.PlainTextAuthProvider(
+        credentials.user,
+        credentials.password
+      )
       client = new cassandra.Client({
         contactPoints: [credentials.host],
         localDataCenter: credentials.database || 'datacenter1', // Using database field as datacenter
@@ -1308,12 +1390,12 @@ export function createCassandraDriver(credentials: DBCredentials): DatabaseDrive
     async executeQuery(sql: string, maxRows?: number) {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const c = await getClient()
-      
+
       const hasLimit = /\blimit\s+\d+/i.test(sql)
-      const safeSql = hasLimit 
-        ? sql.replace(/;$/, '') 
+      const safeSql = hasLimit
+        ? sql.replace(/;$/, '')
         : sql.replace(/;$/, '') + ` LIMIT ${limit + 1}`
-      
+
       const result = await c.execute(safeSql, [], { prepare: false })
       let rows = result.rows.map((r: any) => {
         const obj: any = {}
@@ -1322,7 +1404,7 @@ export function createCassandraDriver(credentials: DBCredentials): DatabaseDrive
         }
         return obj
       })
-      
+
       const fields = rows.length > 0 ? Object.keys(rows[0]) : []
       const truncated = rows.length > limit
       if (truncated) rows = rows.slice(0, limit)
@@ -1335,9 +1417,55 @@ export function createCassandraDriver(credentials: DBCredentials): DatabaseDrive
   }
 }
 
+// ─── Magic Dataset Driver ────────────────────────────────────────────
+// Backs user-uploaded CSVs. Delegates ingestion + querying to the
+// magic-dataset module which owns schema isolation and SQL validation.
+
+export function createMagicDriver(credentials: DBCredentials): DatabaseDriver {
+  // For magic connections, the `user` field carries the owning user id (see
+  // upload-dataset.ts) and `database` carries the single table created by
+  // the most recent ingest for this connection.
+  const userId = credentials.user
+  const tableName = credentials.database
+
+  return {
+    async testConnection() {
+      // The backing database is the app's own Postgres — if the app is
+      // serving requests, this driver is reachable. Nothing further to probe.
+    },
+
+    async fetchSchema() {
+      const { fetchMagicSchema } = await import('./magic-dataset')
+      const tables = await fetchMagicSchema(userId)
+      // Only surface the table that belongs to this connection. Other magic
+      // uploads by the same user are separate connections and show up there.
+      return tables.filter((t) => t.tableName === tableName)
+    },
+
+    async executeQuery(sql: string, maxRows?: number) {
+      const { runMagicQuery } = await import('./magic-dataset')
+      const limit = maxRows ?? MAX_QUERY_ROWS
+      const result = await runMagicQuery({
+        userId,
+        sql,
+        maxRows: limit,
+        timeoutMs: DEFAULT_QUERY_TIMEOUT_MS,
+      })
+      return result
+    },
+
+    async close() {
+      // The magic-dataset module owns its own pool; nothing per-driver to close.
+    },
+  }
+}
+
 // ─── Factory ─────────────────────────────────────────────────────────
 
-export function createDriver(credentials: DBCredentials, type: DatabaseType = 'postgresql'): DatabaseDriver {
+export function createDriver(
+  credentials: DBCredentials,
+  type: DatabaseType = 'postgresql'
+): DatabaseDriver {
   switch (type) {
     case 'mysql':
       return createMysqlDriver(credentials)
@@ -1345,6 +1473,8 @@ export function createDriver(credentials: DBCredentials, type: DatabaseType = 'p
       return createMysqlDriver(credentials)
     case 'sqlite':
       return createSqliteDriver(credentials)
+    case 'magic':
+      return createMagicDriver(credentials)
     case 'sqlserver':
       return createSqlServerDriver(credentials)
     case 'redshift':
@@ -1386,7 +1516,14 @@ export function createDriver(credentials: DBCredentials, type: DatabaseType = 'p
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 function groupSchemaRows(
-  rows: { table_name: string; column_name: string; data_type: string; is_nullable: string | boolean; column_default: string | null; is_primary_key: boolean }[],
+  rows: {
+    table_name: string
+    column_name: string
+    data_type: string
+    is_nullable: string | boolean
+    column_default: string | null
+    is_primary_key: boolean
+  }[],
   fkMap?: Map<string, ForeignKey[]>
 ): TableSchema[] {
   const tablesMap = new Map<string, ColumnDefinition[]>()
