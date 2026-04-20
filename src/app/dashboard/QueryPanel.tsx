@@ -622,9 +622,9 @@ export function QueryPanel({
                     <Bookmark className="w-3 h-3" />
                   )}
                   {saveState === 'saving'
-                    ? t('common.saving') || 'Saving...'
+                    ? 'Saving...'
                     : saveState === 'saved'
-                      ? t('common.saved') || 'Saved'
+                      ? 'Saved'
                       : t('common.save')}
                 </button>
                 {onSQLChange && (
