@@ -274,12 +274,12 @@ export default function DashboardPage() {
             <div className="h-1 w-full bg-gradient-to-r from-primary to-accent flex-shrink-0" />
             <button
               onClick={dashboard.handleCloseScheduler}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors z-10"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors z-20"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto px-6 pt-12 pb-6">
               <QueryScheduler
                 queries={dashboard.scheduledQueries}
                 onCreateSchedule={dashboard.handleCreateSchedule}
