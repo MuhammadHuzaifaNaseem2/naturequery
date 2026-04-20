@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 import type { QueryHistoryItem, SavedQueryItem } from '@/actions/queries'
 import {
@@ -12,14 +12,46 @@ import {
 import { generateShareLink } from '@/actions/sharing'
 import { SavedConnection } from '@/app/dashboard/types'
 
+const COUNTS_CACHE_KEY = 'rf_sidebar_counts'
+
+function readCachedCounts(): { history: number; saved: number } {
+  if (typeof window === 'undefined') return { history: 0, saved: 0 }
+  try {
+    const raw = localStorage.getItem(COUNTS_CACHE_KEY)
+    if (!raw) return { history: 0, saved: 0 }
+    const parsed = JSON.parse(raw)
+    return {
+      history: typeof parsed.history === 'number' ? parsed.history : 0,
+      saved: typeof parsed.saved === 'number' ? parsed.saved : 0,
+    }
+  } catch {
+    return { history: 0, saved: 0 }
+  }
+}
+
 export function useDashboardHistory(
   activeConnectionId: string | null,
   activeConnection: SavedConnection | undefined
 ) {
   const [queryHistory, setQueryHistory] = useState<QueryHistoryItem[]>([])
-  // True total from the server — may be > queryHistory.length when DB has > pageSize entries
-  const [queryHistoryTotal, setQueryHistoryTotal] = useState(0)
+  // Hydrate totals from localStorage cache so the badges render instantly on
+  // repeat dashboard loads, then get replaced with fresh server data.
+  const [queryHistoryTotal, setQueryHistoryTotal] = useState(() => readCachedCounts().history)
   const [savedQueries, setSavedQueries] = useState<SavedQueryItem[]>([])
+  const [cachedSavedCount, setCachedSavedCount] = useState(() => readCachedCounts().saved)
+
+  // Persist counts whenever they change so the next load is flicker-free
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(
+        COUNTS_CACHE_KEY,
+        JSON.stringify({ history: queryHistoryTotal, saved: savedQueries.length })
+      )
+    } catch {}
+    // Once real saved data arrives, stop using the stale cached count
+    setCachedSavedCount(savedQueries.length)
+  }, [queryHistoryTotal, savedQueries.length])
 
   // Handle saving a query
   const handleSaveQuery = useCallback(
@@ -133,6 +165,7 @@ export function useDashboardHistory(
     setQueryHistoryTotal,
     savedQueries,
     setSavedQueries,
+    cachedSavedCount,
     handleSaveQuery,
     handleDeleteSavedQuery,
     handleToggleFavorite,

@@ -49,6 +49,7 @@ export default function DashboardPage() {
     nlQuery: dashboard.nlQuery,
     onNlQueryChange: dashboard.setNlQuery,
     savedQueries: dashboard.savedQueries,
+    cachedSavedCount: dashboard.cachedSavedCount,
     onSelectSavedQuery: dashboard.handleSelectSavedQuery,
     onDeleteSavedQuery: dashboard.handleDeleteSavedQuery,
     onToggleFavorite: dashboard.handleToggleFavorite,

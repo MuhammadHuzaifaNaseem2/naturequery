@@ -176,6 +176,7 @@ export function useDashboard() {
     setQueryHistoryTotal,
     savedQueries,
     setSavedQueries,
+    cachedSavedCount,
     handleSaveQuery,
     handleDeleteSavedQuery,
     handleToggleFavorite,
@@ -1193,6 +1194,7 @@ export function useDashboard() {
 
     // Saved queries
     savedQueries,
+    cachedSavedCount,
     handleSaveQuery,
     handleDeleteSavedQuery,
     handleSelectSavedQuery,
