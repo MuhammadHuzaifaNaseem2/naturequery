@@ -23,7 +23,7 @@ export function useDashboardHistory(
 
   // Handle saving a query
   const handleSaveQuery = useCallback(
-    async (name: string, question: string, sql: string) => {
+    async (name: string, question: string, sql: string): Promise<boolean> => {
       const connectionName = activeConnection?.name || null
       // Demo connection exists only in localStorage — don't try to persist the FK to the DB
       const isDemo = activeConnection?.isDemo === true
@@ -37,9 +37,10 @@ export function useDashboardHistory(
       if (result.success && result.data) {
         setSavedQueries((prev) => [result.data!, ...prev])
         toast.success('Query saved')
-      } else {
-        toast.error('Failed to save query', { description: result.error })
+        return true
       }
+      toast.error('Failed to save query', { description: result.error })
+      return false
     },
     [activeConnectionId, activeConnection]
   )

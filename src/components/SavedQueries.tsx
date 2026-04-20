@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { Bookmark, Trash2, Play, Star, Globe, Link2 } from 'lucide-react'
 import type { SavedQueryItem } from '@/actions/queries'
 import { useTranslation } from '@/contexts/LocaleContext'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 
 interface SavedQueriesProps {
   queries: SavedQueryItem[]
@@ -22,6 +24,7 @@ export function SavedQueries({
   onShareQuery,
 }: SavedQueriesProps) {
   const { t } = useTranslation()
+  const [pendingDelete, setPendingDelete] = useState<SavedQueryItem | null>(null)
   // Favorites first, then active connection, then by date
   const sorted = [...queries].sort((a, b) => {
     if (a.isFavorite && !b.isFavorite) return -1
@@ -56,7 +59,9 @@ export function SavedQueries({
               <div className="flex items-center gap-1.5">
                 <h4 className="text-sm font-medium truncate">{query.name}</h4>
                 {query.isPublic && (
-                  <span title="Public"><Globe className="w-3 h-3 text-blue-500 shrink-0" /></span>
+                  <span title="Public">
+                    <Globe className="w-3 h-3 text-blue-500 shrink-0" />
+                  </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground truncate mt-0.5">{query.question}</p>
@@ -69,7 +74,11 @@ export function SavedQueries({
                     onToggleFavorite(query.id)
                   }}
                   className="p-1 hover:bg-yellow-500/10 rounded transition-colors"
-                  title={query.isFavorite ? t('dashboard.savedQueries.removeFromFavorites') : t('dashboard.savedQueries.addToFavorites')}
+                  title={
+                    query.isFavorite
+                      ? t('dashboard.savedQueries.removeFromFavorites')
+                      : t('dashboard.savedQueries.addToFavorites')
+                  }
                 >
                   <Star
                     className={`w-3 h-3 ${query.isFavorite ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`}
@@ -83,9 +92,15 @@ export function SavedQueries({
                     onShareQuery(query.id)
                   }}
                   className="p-1 hover:bg-blue-500/10 rounded transition-colors"
-                  title={query.shareToken ? t('dashboard.savedQueries.copyShareLink') : t('dashboard.savedQueries.shareQuery')}
+                  title={
+                    query.shareToken
+                      ? t('dashboard.savedQueries.copyShareLink')
+                      : t('dashboard.savedQueries.shareQuery')
+                  }
                 >
-                  <Link2 className={`w-3 h-3 ${query.shareToken ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                  <Link2
+                    className={`w-3 h-3 ${query.shareToken ? 'text-blue-500' : 'text-muted-foreground'}`}
+                  />
                 </button>
               )}
               <button
@@ -101,7 +116,7 @@ export function SavedQueries({
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  onDeleteQuery(query.id)
+                  setPendingDelete(query)
                 }}
                 className="p-1 hover:bg-destructive/10 rounded transition-colors"
                 title={t('common.delete')}
@@ -137,6 +152,24 @@ export function SavedQueries({
           )}
         </div>
       ))}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete saved query?"
+        description={
+          pendingDelete
+            ? `"${pendingDelete.name}" will be permanently deleted. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingDelete) onDeleteQuery(pendingDelete.id)
+          setPendingDelete(null)
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

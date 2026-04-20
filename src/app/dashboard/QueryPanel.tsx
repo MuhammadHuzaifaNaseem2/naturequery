@@ -74,7 +74,11 @@ interface QueryPanelProps {
   onExecuteSQL: (overrideSql?: string) => void
   onFixQuery?: () => void
   onExport: (format: 'excel' | 'csv') => void
-  onSaveQuery: (name: string, question: string, sql: string) => void
+  onSaveQuery: (
+    name: string,
+    question: string,
+    sql: string
+  ) => void | boolean | Promise<boolean | void>
   onPinToDashboard?: (
     question: string,
     sql: string,
@@ -155,6 +159,8 @@ export function QueryPanel({
   const [isExplaining, setIsExplaining] = useState(false)
   const [inputMode, setInputMode] = useState<'ai' | 'sql'>('ai')
   const [rawSQL, setRawSQL] = useState('')
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [templateState, setTemplateState] = useState<'idle' | 'saving' | 'saved'>('idle')
 
   // Suggestions toggle — persisted to localStorage
   const [suggestionsEnabled, setSuggestionsEnabled] = useState(() => {
@@ -586,14 +592,40 @@ export function QueryPanel({
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    if (saveState !== 'idle') return
                     const name = nlQuery.slice(0, 50) || 'Untitled Query'
-                    onSaveQuery(name, nlQuery, generatedSQL)
+                    setSaveState('saving')
+                    const result = await onSaveQuery(name, nlQuery, generatedSQL)
+                    // void-returning callers: assume success since toasts are emitted in the hook
+                    const ok = result === undefined ? true : !!result
+                    if (ok) {
+                      setSaveState('saved')
+                      setTimeout(() => setSaveState('idle'), 2000)
+                    } else {
+                      setSaveState('idle')
+                    }
                   }}
-                  className="text-xs text-muted-foreground hover:text-primary font-medium flex items-center gap-1 transition-colors"
+                  disabled={saveState !== 'idle'}
+                  className={clsx(
+                    'text-xs font-medium flex items-center gap-1 transition-colors',
+                    saveState === 'saved'
+                      ? 'text-success'
+                      : 'text-muted-foreground hover:text-primary'
+                  )}
                 >
-                  <Bookmark className="w-3 h-3" />
-                  {t('common.save')}
+                  {saveState === 'saving' ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : saveState === 'saved' ? (
+                    <CheckCircle2 className="w-3 h-3" />
+                  ) : (
+                    <Bookmark className="w-3 h-3" />
+                  )}
+                  {saveState === 'saving'
+                    ? t('common.saving') || 'Saving...'
+                    : saveState === 'saved'
+                      ? t('common.saved') || 'Saved'
+                      : t('common.save')}
                 </button>
                 {onSQLChange && (
                   <button
@@ -615,7 +647,9 @@ export function QueryPanel({
                 )}
                 <button
                   onClick={async () => {
+                    if (templateState !== 'idle') return
                     const name = nlQuery.slice(0, 50) || 'Custom Template'
+                    setTemplateState('saving')
                     const result = await saveAsTemplate({
                       name,
                       question: nlQuery,
@@ -624,15 +658,34 @@ export function QueryPanel({
                     })
                     if (result.success) {
                       toast.success('Template saved')
+                      setTemplateState('saved')
+                      setTimeout(() => setTemplateState('idle'), 2000)
                     } else {
                       toast.error('Failed to save template', { description: result.error })
+                      setTemplateState('idle')
                     }
                   }}
-                  className="text-xs text-muted-foreground hover:text-accent font-medium flex items-center gap-1 transition-colors"
+                  disabled={templateState !== 'idle'}
+                  className={clsx(
+                    'text-xs font-medium flex items-center gap-1 transition-colors',
+                    templateState === 'saved'
+                      ? 'text-success'
+                      : 'text-muted-foreground hover:text-accent'
+                  )}
                   title="Save as reusable template"
                 >
-                  <LayoutTemplate className="w-3 h-3" />
-                  {t('dashboard.queryPanel.template')}
+                  {templateState === 'saving' ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : templateState === 'saved' ? (
+                    <CheckCircle2 className="w-3 h-3" />
+                  ) : (
+                    <LayoutTemplate className="w-3 h-3" />
+                  )}
+                  {templateState === 'saving'
+                    ? 'Saving...'
+                    : templateState === 'saved'
+                      ? 'Saved'
+                      : t('dashboard.queryPanel.template')}
                 </button>
                 <button
                   onClick={handleExplain}
