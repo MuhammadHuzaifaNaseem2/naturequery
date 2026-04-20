@@ -24,18 +24,34 @@ export const metadata: Metadata = {
     default: 'NatureQuery - Natural Language to SQL',
     template: '%s | NatureQuery',
   },
-  description: 'Ask questions in plain English and get instant SQL queries with AI-powered insights. Connect to PostgreSQL, MySQL, or SQLite.',
-  keywords: ['natural language to SQL', 'AI SQL generator', 'database query', 'text to SQL', 'NatureQuery'],
+  description:
+    'Ask questions in plain English and get instant SQL queries with AI-powered insights. Connect to PostgreSQL, MySQL, or SQLite.',
+  keywords: [
+    'natural language to SQL',
+    'AI SQL generator',
+    'database query',
+    'text to SQL',
+    'NatureQuery',
+  ],
   authors: [{ name: 'NatureQuery' }],
   creator: 'NatureQuery',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://naturequery.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://naturequery.app'),
+  icons: {
+    icon: [
+      { url: '/naturequery-icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/naturequery-icon.svg',
+    apple: '/naturequery-icon.svg',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: '/',
     siteName: 'NatureQuery',
     title: 'NatureQuery - Ask Your Database in Plain English',
-    description: 'Convert natural language questions into SQL queries instantly. AI-powered database querying for everyone.',
+    description:
+      'Convert natural language questions into SQL queries instantly. AI-powered database querying for everyone.',
     images: [
       {
         url: '/og-image.png',
@@ -64,16 +80,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale()
   const messages = await getTranslations(locale)
 
   return (
-    <html lang={locale} className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html
+      lang={locale}
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -81,7 +97,10 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
+      <body
+        className="font-sans antialiased bg-background text-foreground"
+        suppressHydrationWarning
+      >
         <LocaleProvider initialLocale={locale} messages={messages}>
           <AuthProvider>
             <ThemeProvider>
