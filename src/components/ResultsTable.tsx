@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Filter, X } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+  Filter,
+  X,
+} from 'lucide-react'
 import { clsx } from 'clsx'
 import { QueryResultRow } from '@/actions/db'
 
@@ -21,12 +29,7 @@ interface ResultsTableProps {
   executionTime: number
 }
 
-export default function ResultsTable({
-  rows,
-  fields,
-  rowCount,
-  executionTime,
-}: ResultsTableProps) {
+export default function ResultsTable({ rows, fields, rowCount, executionTime }: ResultsTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [sortField, setSortField] = useState<string | null>(null)
@@ -51,7 +54,7 @@ export default function ResultsTable({
   const columnTypes = useMemo(() => {
     const types: Record<string, 'number' | 'text'> = {}
     for (const field of fields) {
-      const firstNonNull = rows.find(r => r[field] !== null && r[field] !== undefined)
+      const firstNonNull = rows.find((r) => r[field] !== null && r[field] !== undefined)
       types[field] = firstNonNull && typeof firstNonNull[field] === 'number' ? 'number' : 'text'
     }
     return types
@@ -64,8 +67,8 @@ export default function ResultsTable({
     // Global search
     if (globalSearch.trim()) {
       const q = globalSearch.toLowerCase()
-      result = result.filter(row =>
-        fields.some(f => {
+      result = result.filter((row) =>
+        fields.some((f) => {
           const val = row[f]
           if (val === null || val === undefined) return false
           return String(val).toLowerCase().includes(q)
@@ -77,7 +80,7 @@ export default function ResultsTable({
     for (const [field, filter] of Object.entries(columnFilters)) {
       if (filter.type === 'text' && filter.textValue?.trim()) {
         const q = filter.textValue.toLowerCase()
-        result = result.filter(row => {
+        result = result.filter((row) => {
           const val = row[field]
           if (val === null || val === undefined) return false
           return String(val).toLowerCase().includes(q)
@@ -88,7 +91,7 @@ export default function ResultsTable({
         if (hasMin || hasMax) {
           const minVal = hasMin ? Number(filter.min) : -Infinity
           const maxVal = hasMax ? Number(filter.max) : Infinity
-          result = result.filter(row => {
+          result = result.filter((row) => {
             const val = row[field]
             if (val === null || val === undefined) return false
             const num = Number(val)
@@ -142,16 +145,19 @@ export default function ResultsTable({
     setCurrentPage(1)
   }
 
-  const updateColumnFilter = useCallback((field: string, update: Partial<ColumnFilter>) => {
-    setColumnFilters(prev => ({
-      ...prev,
-      [field]: { ...prev[field], type: columnTypes[field] ?? 'text', ...update },
-    }))
-    setCurrentPage(1)
-  }, [columnTypes])
+  const updateColumnFilter = useCallback(
+    (field: string, update: Partial<ColumnFilter>) => {
+      setColumnFilters((prev) => ({
+        ...prev,
+        [field]: { ...prev[field], type: columnTypes[field] ?? 'text', ...update },
+      }))
+      setCurrentPage(1)
+    },
+    [columnTypes]
+  )
 
   const clearColumnFilter = useCallback((field: string) => {
-    setColumnFilters(prev => {
+    setColumnFilters((prev) => {
       const next = { ...prev }
       delete next[field]
       return next
@@ -165,26 +171,27 @@ export default function ResultsTable({
     setCurrentPage(1)
   }, [])
 
-  const activeFilterCount = Object.entries(columnFilters).filter(([, f]) => {
-    if (f.type === 'text') return f.textValue?.trim()
-    if (f.type === 'number') return (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== '')
-    return false
-  }).length + (globalSearch.trim() ? 1 : 0)
+  const activeFilterCount =
+    Object.entries(columnFilters).filter(([, f]) => {
+      if (f.type === 'text') return f.textValue?.trim()
+      if (f.type === 'number')
+        return (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== '')
+      return false
+    }).length + (globalSearch.trim() ? 1 : 0)
 
   const hasColumnFilter = (field: string) => {
     const f = columnFilters[field]
     if (!f) return false
     if (f.type === 'text') return !!f.textValue?.trim()
-    if (f.type === 'number') return (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== '')
+    if (f.type === 'number')
+      return (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== '')
     return false
   }
 
   if (fields.length === 0) {
     return (
       <div className="border border-border rounded-lg overflow-hidden">
-        <div className="p-8 text-center text-sm text-muted-foreground">
-          No data to display
-        </div>
+        <div className="p-8 text-center text-sm text-muted-foreground">No data to display</div>
       </div>
     )
   }
@@ -200,11 +207,12 @@ export default function ResultsTable({
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       {/* Stats Header + Global Search */}
-      <div className="bg-secondary px-4 py-3 border-b border-border">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="bg-secondary px-3 sm:px-4 py-3 border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span>
-              Rows: <span className="font-medium text-foreground">
+              Rows:{' '}
+              <span className="font-medium text-foreground">
                 {filteredRows.length !== rows.length
                   ? `${filteredRows.length} / ${rowCount}`
                   : rowCount}
@@ -216,8 +224,7 @@ export default function ResultsTable({
             </span>
             <span>-</span>
             <span>
-              Execution time:{' '}
-              <span className="font-medium text-foreground">{executionTime}ms</span>
+              Execution time: <span className="font-medium text-foreground">{executionTime}ms</span>
             </span>
             {sortField && (
               <>
@@ -245,7 +252,7 @@ export default function ResultsTable({
           </div>
 
           {/* Global Search */}
-          <div className="relative">
+          <div className="relative w-full sm:w-52 flex-shrink-0">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="text"
@@ -255,11 +262,14 @@ export default function ResultsTable({
                 setGlobalSearch(e.target.value)
                 setCurrentPage(1)
               }}
-              className="pl-8 pr-8 py-1.5 text-xs rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 w-52 transition-colors"
+              className="pl-8 pr-8 py-1.5 text-xs rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 w-full transition-colors"
             />
             {globalSearch && (
               <button
-                onClick={() => { setGlobalSearch(''); setCurrentPage(1) }}
+                onClick={() => {
+                  setGlobalSearch('')
+                  setCurrentPage(1)
+                }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="w-3.5 h-3.5" />
@@ -319,7 +329,9 @@ export default function ResultsTable({
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-foreground">Filter: {field}</span>
+                          <span className="text-xs font-semibold text-foreground">
+                            Filter: {field}
+                          </span>
                           {hasColumnFilter(field) && (
                             <button
                               onClick={() => clearColumnFilter(field)}
@@ -338,7 +350,9 @@ export default function ResultsTable({
                                 type="number"
                                 placeholder="Min"
                                 value={columnFilters[field]?.min ?? ''}
-                                onChange={(e) => updateColumnFilter(field, { type: 'number', min: e.target.value })}
+                                onChange={(e) =>
+                                  updateColumnFilter(field, { type: 'number', min: e.target.value })
+                                }
                                 className="flex-1 px-2 py-1.5 text-xs rounded border border-border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                               />
                             </div>
@@ -348,7 +362,9 @@ export default function ResultsTable({
                                 type="number"
                                 placeholder="Max"
                                 value={columnFilters[field]?.max ?? ''}
-                                onChange={(e) => updateColumnFilter(field, { type: 'number', max: e.target.value })}
+                                onChange={(e) =>
+                                  updateColumnFilter(field, { type: 'number', max: e.target.value })
+                                }
                                 className="flex-1 px-2 py-1.5 text-xs rounded border border-border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                               />
                             </div>
@@ -360,7 +376,12 @@ export default function ResultsTable({
                               type="text"
                               placeholder={`Search ${field}...`}
                               value={columnFilters[field]?.textValue ?? ''}
-                              onChange={(e) => updateColumnFilter(field, { type: 'text', textValue: e.target.value })}
+                              onChange={(e) =>
+                                updateColumnFilter(field, {
+                                  type: 'text',
+                                  textValue: e.target.value,
+                                })
+                              }
                               autoFocus
                               className="w-full pl-7 pr-2 py-1.5 text-xs rounded border border-border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                             />
@@ -374,12 +395,7 @@ export default function ResultsTable({
             </thead>
             <tbody>
               {paginatedRows.map((row, rowIndex) => (
-                <tr
-                  key={rowIndex}
-                  className={
-                    rowIndex % 2 === 0 ? 'bg-card' : 'bg-secondary/30'
-                  }
-                >
+                <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-card' : 'bg-secondary/30'}>
                   {fields.map((field) => (
                     <td
                       key={field}
@@ -400,7 +416,10 @@ export default function ResultsTable({
               ))}
               {paginatedRows.length === 0 && sortedRows.length === 0 && rows.length > 0 && (
                 <tr>
-                  <td colSpan={fields.length} className="p-12 text-center text-sm text-muted-foreground w-full">
+                  <td
+                    colSpan={fields.length}
+                    className="p-12 text-center text-sm text-muted-foreground w-full"
+                  >
                     No rows match your filters.{' '}
                     <button onClick={clearAllFilters} className="text-primary hover:underline">
                       Clear all filters
@@ -410,7 +429,10 @@ export default function ResultsTable({
               )}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={fields.length} className="p-12 text-center text-sm text-muted-foreground w-full">
+                  <td
+                    colSpan={fields.length}
+                    className="p-12 text-center text-sm text-muted-foreground w-full"
+                  >
                     Query returned no results
                   </td>
                 </tr>
@@ -421,10 +443,11 @@ export default function ResultsTable({
 
         {/* Pagination Footer */}
         {sortedRows.length > 0 && (
-          <div className="bg-secondary/50 px-4 py-3 border-t border-border flex items-center justify-between">
+          <div className="bg-secondary/50 px-3 sm:px-4 py-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             {/* Page size selector */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Rows per page:</span>
+              <span className="hidden sm:inline">Rows per page:</span>
+              <span className="sm:hidden">Per page:</span>
               <div className="flex gap-1">
                 {PAGE_SIZE_OPTIONS.map((size) => (
                   <button
@@ -444,8 +467,8 @@ export default function ResultsTable({
             </div>
 
             {/* Page navigation */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground mr-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-muted-foreground mr-2 whitespace-nowrap">
                 {(safeCurrentPage - 1) * pageSize + 1}-
                 {Math.min(safeCurrentPage * pageSize, sortedRows.length)} of {sortedRows.length}
               </span>

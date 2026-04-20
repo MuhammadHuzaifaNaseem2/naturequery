@@ -552,13 +552,13 @@ export function QueryPanel({
 
         {/* SQL Preview */}
         {generatedSQL && (
-          <div className="card p-5 animate-slideUp">
-            <div className="flex items-center justify-between mb-3">
+          <div className="card p-4 sm:p-5 animate-slideUp">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-md">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-md flex-shrink-0">
                   <Terminal className="w-4 h-4 text-white" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold">{t('dashboard.queryPanel.generatedSql')}</h3>
                   <p className="text-xs text-muted-foreground">
                     {t('dashboard.queryPanel.readyToExecute')}
@@ -568,7 +568,7 @@ export function QueryPanel({
               <button
                 onClick={() => onExecuteSQL()}
                 disabled={isExecuting}
-                className="btn-success text-sm py-1.5 hover-scale"
+                className="btn-success text-sm py-1.5 hover-scale w-full sm:w-auto justify-center"
               >
                 {isExecuting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -585,12 +585,12 @@ export function QueryPanel({
               <SQLExplainOverlay sql={generatedSQL} />
             </div>
 
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CheckCircle2 className="w-4 h-4 text-success" />
+                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
                 <span>{t('dashboard.queryPanel.validated')}</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <button
                   onClick={async () => {
                     if (saveState !== 'idle') return
@@ -741,23 +741,23 @@ export function QueryPanel({
         {queryResults && (
           <GlowCard
             key={queryResults.rowCount + '-' + queryResults.executionTime}
-            className="p-5 animate-slideUp"
+            className="p-4 sm:p-5 animate-slideUp"
           >
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-success to-primary flex items-center justify-center shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-success to-primary flex items-center justify-center shadow-md flex-shrink-0">
                   <CheckCircle2 className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">{t('dashboard.queryPanel.results')}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-semibold truncate">{t('dashboard.queryPanel.results')}</h3>
                   <p className="text-xs text-muted-foreground">
                     {queryResults.rowCount} {t('common.rows')} &bull; {queryResults.executionTime}ms
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap -mx-1 px-1 overflow-x-auto">
                 {/* View Toggle */}
                 <button
                   onClick={() => setResultsView('table')}
