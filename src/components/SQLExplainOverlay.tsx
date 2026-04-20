@@ -64,7 +64,11 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
     const result = await explainSQLClause(sql, selectedText)
     setTooltip((prev) =>
       prev?.text === selectedText
-        ? { ...prev, explanation: result.explanation || 'Could not explain this clause.', loading: false }
+        ? {
+            ...prev,
+            explanation: result.explanation || 'Could not explain this clause.',
+            loading: false,
+          }
         : prev
     )
   }, [sql])
@@ -76,23 +80,26 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
     <div ref={containerRef} className="relative">
       <pre
         className="text-foreground cursor-text select-text leading-relaxed"
-        style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', width: '100%', margin: 0 }}
+        style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word',
+          width: '100%',
+          margin: 0,
+        }}
         onMouseUp={handleTextSelect}
       >
         {tokens.map((token, i) => (
-          <span
-            key={i}
-            className={getTokenClass(token.type)}
-          >
+          <span key={i} className={getTokenClass(token.type)}>
             {token.value}
           </span>
         ))}
       </pre>
 
       {/* Hint */}
-      <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
-        <Lightbulb className="w-3 h-3" />
-        Select any part of the SQL to get an AI explanation
+      <div className="mt-2 flex items-center gap-1.5 text-xs leading-5 text-muted-foreground/60">
+        <Lightbulb className="w-3 h-3 shrink-0" />
+        <span>Select any part of the SQL to get an AI explanation</span>
       </div>
 
       {/* Tooltip */}
@@ -101,7 +108,10 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
           ref={tooltipRef}
           className="absolute z-50 animate-fadeIn"
           style={{
-            left: Math.max(0, Math.min(tooltip.x - 140, (containerRef.current?.offsetWidth || 300) - 280)),
+            left: Math.max(
+              0,
+              Math.min(tooltip.x - 140, (containerRef.current?.offsetWidth || 300) - 280)
+            ),
             top: tooltip.y,
             transform: 'translateY(-100%)',
           }}
@@ -138,26 +148,112 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
 // ─── SQL Tokenizer for syntax highlighting ──────────────────────────
 
 interface Token {
-  type: 'keyword' | 'function' | 'string' | 'number' | 'operator' | 'identifier' | 'whitespace' | 'punctuation'
+  type:
+    | 'keyword'
+    | 'function'
+    | 'string'
+    | 'number'
+    | 'operator'
+    | 'identifier'
+    | 'whitespace'
+    | 'punctuation'
   value: string
 }
 
 const SQL_KEYWORDS = new Set([
-  'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL', 'AS',
-  'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'FULL', 'CROSS', 'ON',
-  'GROUP', 'BY', 'ORDER', 'HAVING', 'LIMIT', 'OFFSET', 'DISTINCT',
-  'UNION', 'ALL', 'INTERSECT', 'EXCEPT', 'WITH', 'RECURSIVE',
-  'ASC', 'DESC', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'BETWEEN',
-  'LIKE', 'ILIKE', 'EXISTS', 'ANY', 'TRUE', 'FALSE', 'OVER', 'PARTITION',
-  'NULLS', 'FIRST', 'LAST', 'LATERAL', 'FETCH', 'NEXT', 'ROWS', 'ONLY',
+  'SELECT',
+  'FROM',
+  'WHERE',
+  'AND',
+  'OR',
+  'NOT',
+  'IN',
+  'IS',
+  'NULL',
+  'AS',
+  'JOIN',
+  'LEFT',
+  'RIGHT',
+  'INNER',
+  'OUTER',
+  'FULL',
+  'CROSS',
+  'ON',
+  'GROUP',
+  'BY',
+  'ORDER',
+  'HAVING',
+  'LIMIT',
+  'OFFSET',
+  'DISTINCT',
+  'UNION',
+  'ALL',
+  'INTERSECT',
+  'EXCEPT',
+  'WITH',
+  'RECURSIVE',
+  'ASC',
+  'DESC',
+  'CASE',
+  'WHEN',
+  'THEN',
+  'ELSE',
+  'END',
+  'BETWEEN',
+  'LIKE',
+  'ILIKE',
+  'EXISTS',
+  'ANY',
+  'TRUE',
+  'FALSE',
+  'OVER',
+  'PARTITION',
+  'NULLS',
+  'FIRST',
+  'LAST',
+  'LATERAL',
+  'FETCH',
+  'NEXT',
+  'ROWS',
+  'ONLY',
 ])
 
 const SQL_FUNCTIONS = new Set([
-  'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'COALESCE', 'CAST', 'EXTRACT',
-  'DATE_TRUNC', 'NOW', 'CURRENT_DATE', 'CURRENT_TIMESTAMP', 'UPPER', 'LOWER',
-  'TRIM', 'LENGTH', 'SUBSTRING', 'CONCAT', 'REPLACE', 'ROUND', 'FLOOR', 'CEIL',
-  'ABS', 'ROW_NUMBER', 'RANK', 'DENSE_RANK', 'LAG', 'LEAD', 'FIRST_VALUE',
-  'LAST_VALUE', 'STRING_AGG', 'ARRAY_AGG', 'JSON_AGG', 'TO_CHAR', 'TO_DATE',
+  'COUNT',
+  'SUM',
+  'AVG',
+  'MIN',
+  'MAX',
+  'COALESCE',
+  'CAST',
+  'EXTRACT',
+  'DATE_TRUNC',
+  'NOW',
+  'CURRENT_DATE',
+  'CURRENT_TIMESTAMP',
+  'UPPER',
+  'LOWER',
+  'TRIM',
+  'LENGTH',
+  'SUBSTRING',
+  'CONCAT',
+  'REPLACE',
+  'ROUND',
+  'FLOOR',
+  'CEIL',
+  'ABS',
+  'ROW_NUMBER',
+  'RANK',
+  'DENSE_RANK',
+  'LAG',
+  'LEAD',
+  'FIRST_VALUE',
+  'LAST_VALUE',
+  'STRING_AGG',
+  'ARRAY_AGG',
+  'JSON_AGG',
+  'TO_CHAR',
+  'TO_DATE',
 ])
 
 function tokenizeSQL(sql: string): Token[] {
@@ -193,7 +289,13 @@ function tokenizeSQL(sql: string): Token[] {
 
     // Operators & punctuation
     if ('(),;*=<>!+-/'.includes(sql[i])) {
-      tokens.push({ type: sql[i] === '(' || sql[i] === ')' || sql[i] === ',' || sql[i] === ';' ? 'punctuation' : 'operator', value: sql[i] })
+      tokens.push({
+        type:
+          sql[i] === '(' || sql[i] === ')' || sql[i] === ',' || sql[i] === ';'
+            ? 'punctuation'
+            : 'operator',
+        value: sql[i],
+      })
       i++
       continue
     }
