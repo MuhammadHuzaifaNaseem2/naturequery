@@ -2,7 +2,12 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { getNightlyInsights, getLiveInsightMetrics, type NightlyInsightRecord, type LiveInsightMetrics } from '@/actions/audit'
+import {
+  getNightlyInsights,
+  getLiveInsightMetrics,
+  type NightlyInsightRecord,
+  type LiveInsightMetrics,
+} from '@/actions/audit'
 import { InsightsClient } from './InsightsClient'
 
 export const metadata = { title: 'AI Insights — NatureQuery' }
@@ -11,16 +16,9 @@ export default async function InsightsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const [insightsResult, liveResult] = await Promise.all([
-    getNightlyInsights(20),
-    getLiveInsightMetrics(),
-  ])
-  const insights: NightlyInsightRecord[] = insightsResult.data ?? []
-  const liveMetrics: LiveInsightMetrics | undefined = liveResult.data
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Page header */}
+      {/* Page shell renders immediately; the data-heavy section below streams in */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
@@ -40,14 +38,24 @@ export default async function InsightsPage() {
         </p>
       </div>
 
-      {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <Suspense fallback={<InsightsSkeleton />}>
-          <InsightsClient insights={insights} liveMetrics={liveMetrics} />
+          <InsightsData />
         </Suspense>
       </div>
     </div>
   )
+}
+
+// Separate async server component so its awaits don't block the shell above.
+async function InsightsData() {
+  const [insightsResult, liveResult] = await Promise.all([
+    getNightlyInsights(20),
+    getLiveInsightMetrics(),
+  ])
+  const insights: NightlyInsightRecord[] = insightsResult.data ?? []
+  const liveMetrics: LiveInsightMetrics | undefined = liveResult.data
+  return <InsightsClient insights={insights} liveMetrics={liveMetrics} />
 }
 
 function InsightsSkeleton() {
