@@ -263,25 +263,35 @@ export default function DashboardPage() {
 
       {/* Query Scheduler Modal */}
       {dashboard.showScheduler && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="relative w-full max-w-3xl animate-scaleIn">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+          onClick={dashboard.handleCloseScheduler}
+        >
+          <div
+            className="relative w-full max-w-3xl max-h-[85vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-scaleIn flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-1 w-full bg-gradient-to-r from-primary to-accent flex-shrink-0" />
             <button
               onClick={dashboard.handleCloseScheduler}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-card border border-border rounded-full flex items-center justify-center hover:bg-secondary transition-colors z-10 shadow-lg"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors z-10"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
-            <QueryScheduler
-              queries={dashboard.scheduledQueries}
-              onCreateSchedule={dashboard.handleCreateSchedule}
-              onDeleteSchedule={dashboard.handleDeleteSchedule}
-              onToggleSchedule={dashboard.handleToggleSchedule}
-              onEditSchedule={() => {}}
-              currentQuestion={dashboard.schedulerContext?.question}
-              currentSql={dashboard.schedulerContext?.sql}
-              connectionId={dashboard.activeConnectionId ?? ''}
-              connectionName={dashboard.activeConnection?.name ?? ''}
-            />
+            <div className="flex-1 overflow-y-auto p-6">
+              <QueryScheduler
+                queries={dashboard.scheduledQueries}
+                onCreateSchedule={dashboard.handleCreateSchedule}
+                onDeleteSchedule={dashboard.handleDeleteSchedule}
+                onToggleSchedule={dashboard.handleToggleSchedule}
+                onEditSchedule={() => {}}
+                currentQuestion={dashboard.schedulerContext?.question}
+                currentSql={dashboard.schedulerContext?.sql}
+                connectionId={dashboard.activeConnectionId ?? ''}
+                connectionName={dashboard.activeConnection?.name ?? ''}
+              />
+            </div>
           </div>
         </div>
       )}
