@@ -6,23 +6,31 @@ import { checkMagicDatasetHealth } from '@/lib/magic-dataset'
 /**
  * GET /api/admin/magic-dataset-health
  *
- * Admin-only diagnostic for the Magic Dataset storage database.
- * Confirms MAGIC_DATABASE_URL (or DATABASE_URL fallback) is reachable
- * and reports whether dedicated-DB isolation is in effect.
+ * Diagnostic for the Magic Dataset storage database. Available to any
+ * authenticated user — exposes only whether the DB is reachable and
+ * whether dedicated-DB isolation is in effect (non-sensitive). Admin
+ * role additionally sees the Postgres version string.
  */
 export async function GET() {
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { role: true },
   })
-  if (user?.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const isAdmin = user?.role === 'ADMIN'
 
   const health = await checkMagicDatasetHealth()
-  return NextResponse.json(health, { status: health.ok ? 200 : 503 })
+  const body = isAdmin
+    ? health
+    : {
+        ok: health.ok,
+        usingDedicatedDb: health.usingDedicatedDb,
+        ...(health.error ? { error: health.error } : {}),
+      }
+
+  return NextResponse.json(body, { status: health.ok ? 200 : 503 })
 }
