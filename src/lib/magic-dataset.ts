@@ -20,10 +20,28 @@ import { parse, astVisitor, Statement } from 'pgsql-ast-parser'
 
 let pool: Pool | null = null
 
+// Hosts that are local — never force SSL for these.
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0'])
+
+function ensureSslMode(url: string): string {
+  // Cloud Postgres providers (Neon, Supabase, Railway, Vercel Postgres, RDS)
+  // all require SSL. If the user pasted a URL without sslmode= and the host
+  // isn't local, append sslmode=require so the connection just works.
+  try {
+    const u = new URL(url)
+    if (LOCAL_HOSTS.has(u.hostname)) return url
+    if (u.searchParams.has('sslmode')) return url
+    u.searchParams.set('sslmode', 'require')
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
 function getPool(): Pool {
   if (!pool) {
-    const url = process.env.MAGIC_DATABASE_URL || process.env.DATABASE_URL
-    if (!url) {
+    const raw = process.env.MAGIC_DATABASE_URL || process.env.DATABASE_URL
+    if (!raw) {
       throw new Error(
         'Magic Dataset storage not configured. Set MAGIC_DATABASE_URL or DATABASE_URL.'
       )
@@ -36,12 +54,47 @@ function getPool(): Pool {
       )
     }
     pool = new Pool({
-      connectionString: url,
+      connectionString: ensureSslMode(raw),
       max: 5,
-      idleTimeoutMillis: 30000,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
+    })
+    // Prevent "idle client" unhandled-rejection crashes (common with serverless
+    // cold starts against cloud PG). Log and move on — the pool recovers.
+    pool.on('error', (err) => {
+      console.error('[magic-dataset] Idle PG client error:', err.message)
     })
   }
   return pool
+}
+
+/**
+ * Verify the Magic Dataset database is reachable and writable. Useful for an
+ * admin/diagnostics endpoint so you can confirm MAGIC_DATABASE_URL is wired
+ * up correctly before any user uploads.
+ */
+export async function checkMagicDatasetHealth(): Promise<{
+  ok: boolean
+  usingDedicatedDb: boolean
+  error?: string
+  serverVersion?: string
+}> {
+  const usingDedicatedDb = !!process.env.MAGIC_DATABASE_URL
+  try {
+    const client = await getPool().connect()
+    try {
+      const res = await client.query<{ v: string }>('SELECT version() AS v')
+      return { ok: true, usingDedicatedDb, serverVersion: res.rows[0]?.v }
+    } finally {
+      client.release()
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      usingDedicatedDb,
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
 }
 
 // ── Identifier helpers ─────────────────────────────────────────────────
