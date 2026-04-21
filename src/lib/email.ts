@@ -61,7 +61,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ from, to, subject, html }),
@@ -188,11 +188,89 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
   await sendEmail(email, 'Welcome to NatureQuery!', html)
 }
 
+export interface ScheduleEmailResult {
+  rows: Record<string, unknown>[]
+  fields: string[]
+  rowCount: number
+  executionTimeMs: number
+  truncated?: boolean
+}
+
+const EMAIL_PREVIEW_ROWS = 20
+
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return '<span style="color:#a1a1aa;">null</span>'
+  const str = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function renderResultTable(result: ScheduleEmailResult): string {
+  const { rows, fields, rowCount, executionTimeMs, truncated } = result
+  const preview = rows.slice(0, EMAIL_PREVIEW_ROWS)
+  const hiddenRows = rowCount - preview.length
+
+  if (preview.length === 0 || fields.length === 0) {
+    return `
+      <p style="background:#f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; padding: 12px 16px; color: #52525b; font-size: 13px;">
+        Query returned no rows (completed in ${executionTimeMs}ms).
+      </p>
+    `
+  }
+
+  const header = fields
+    .map(
+      (f) =>
+        `<th style="text-align:left; padding:8px 12px; background:#f4f4f5; border-bottom:1px solid #e4e4e7; font-weight:600; font-size:12px; color:#52525b; text-transform:uppercase; letter-spacing:0.03em;">${escapeHtml(f)}</th>`
+    )
+    .join('')
+
+  const body = preview
+    .map((row) => {
+      const cells = fields
+        .map(
+          (f) =>
+            `<td style="padding:8px 12px; border-bottom:1px solid #f4f4f5; font-size:13px; color:#18181b; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">${escapeHtml(row[f])}</td>`
+        )
+        .join('')
+      return `<tr>${cells}</tr>`
+    })
+    .join('')
+
+  const caption = `
+    <p style="font-size:13px; color:#52525b; margin: 8px 0 16px;">
+      Showing ${preview.length.toLocaleString()} of ${rowCount.toLocaleString()} row${rowCount !== 1 ? 's' : ''}
+      · completed in ${executionTimeMs}ms${truncated ? ' · result set was capped by row limit' : ''}
+    </p>
+  `
+
+  const footer =
+    hiddenRows > 0
+      ? `<p style="font-size:12px; color:#71717a; margin-top:8px;">… ${hiddenRows.toLocaleString()} more row${hiddenRows !== 1 ? 's' : ''} not shown. Open the dashboard to view the full result.</p>`
+      : ''
+
+  return `
+    ${caption}
+    <div style="overflow-x:auto; border:1px solid #e4e4e7; border-radius: 8px;">
+      <table style="width:100%; border-collapse: collapse;">
+        <thead><tr>${header}</tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+    ${footer}
+  `
+}
+
 export async function sendScheduleNotificationEmail(
   email: string,
   scheduleName: string,
   status: 'success' | 'failed',
-  errorMessage?: string | null
+  errorMessage?: string | null,
+  result?: ScheduleEmailResult
 ): Promise<void> {
   const isSuccess = status === 'success'
   const subject = isSuccess
@@ -204,16 +282,18 @@ export async function sendScheduleNotificationEmail(
     return
   }
 
-  const html = baseTemplate(isSuccess
-    ? `
-      <p>Your scheduled query <strong>${scheduleName}</strong> completed successfully.</p>
+  const html = baseTemplate(
+    isSuccess
+      ? `
+      <p>Your scheduled query <strong>${escapeHtml(scheduleName)}</strong> completed successfully.</p>
+      ${result ? renderResultTable(result) : ''}
       <p style="text-align:center; margin: 24px 0;">
-        <a href="${appUrl}/dashboard" class="btn">View Dashboard</a>
+        <a href="${appUrl}/dashboard" class="btn">Open Dashboard</a>
       </p>
     `
-    : `
-      <p>Your scheduled query <strong>${scheduleName}</strong> failed with an error:</p>
-      <p style="background:#fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; color: #dc2626; font-family: monospace; font-size: 13px;">${errorMessage || 'Unknown error'}</p>
+      : `
+      <p>Your scheduled query <strong>${escapeHtml(scheduleName)}</strong> failed with an error:</p>
+      <p style="background:#fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; color: #dc2626; font-family: monospace; font-size: 13px;">${escapeHtml(errorMessage || 'Unknown error')}</p>
       <p>Please check your connection settings and query, then re-enable the schedule.</p>
       <p style="text-align:center; margin: 24px 0;">
         <a href="${appUrl}/dashboard" class="btn">Fix Schedule</a>

@@ -4,7 +4,11 @@ import { decrypt } from '@/lib/encryption'
 import { type DatabaseType, MAX_QUERY_ROWS } from '@/lib/db-drivers'
 import { getOrCreateDriver } from '@/lib/driver-pool'
 import { validateSQLSafety, ensureLimitClause } from '@/lib/sql-validator'
-import { sendScheduleNotificationEmail, isEmailConfigured } from '@/lib/email'
+import {
+  sendScheduleNotificationEmail,
+  isEmailConfigured,
+  type ScheduleEmailResult,
+} from '@/lib/email'
 import { auditQueryExecuted } from '@/lib/audit-immutable'
 import { checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
 import { createNotification } from '@/actions/notifications'
@@ -55,12 +59,15 @@ export async function GET(request: Request) {
   for (const schedule of due) {
     let status: 'success' | 'failed' = 'failed'
     let lastError: string | null = null
+    let emailResult: ScheduleEmailResult | undefined
 
     try {
       // Atomically check quota and record usage
       const planCheck = await checkAndRecordQuery(schedule.userId)
       if (!planCheck.allowed) {
-        throw new Error(`Monthly query limit reached (${planCheck.current}/${planCheck.limit} on ${planCheck.planName} plan)`)
+        throw new Error(
+          `Monthly query limit reached (${planCheck.current}/${planCheck.limit} on ${planCheck.planName} plan)`
+        )
       }
 
       // Validate the SQL is still safe before running
@@ -85,7 +92,9 @@ export async function GET(request: Request) {
       try {
         password = conn.password ? decrypt(conn.password) : ''
       } catch {
-        throw new Error('Could not decrypt connection credentials — re-add the connection to fix this')
+        throw new Error(
+          'Could not decrypt connection credentials — re-add the connection to fix this'
+        )
       }
       const dbType = conn.dbType as DatabaseType
       const driver = getOrCreateDriver(
@@ -107,6 +116,13 @@ export async function GET(request: Request) {
       const result = await driver.executeQuery(safeSql)
       const executionTimeMs = Date.now() - startTime
       status = 'success'
+      emailResult = {
+        rows: result.rows,
+        fields: result.fields,
+        rowCount: result.rowCount,
+        executionTimeMs,
+        truncated: result.truncated,
+      }
 
       // Usage already recorded atomically in checkAndRecordQuery above
       maybeNotifyQueryThreshold(schedule.userId).catch(() => {})
@@ -152,16 +168,25 @@ export async function GET(request: Request) {
       },
     })
 
-    results.push({ id: schedule.id, name: schedule.name, status, ...(lastError ? { error: lastError } : {}) })
+    results.push({
+      id: schedule.id,
+      name: schedule.name,
+      status,
+      ...(lastError ? { error: lastError } : {}),
+    })
 
     // Send notification emails (fire-and-forget — never block the cron response)
     if (isEmailConfigured() && schedule.notifyEmails.length > 0) {
       const notifyStatus = status as 'success' | 'failed'
       Promise.all(
         schedule.notifyEmails.map((email: string) =>
-          sendScheduleNotificationEmail(email, schedule.name, notifyStatus, lastError).catch((err) =>
-            console.warn(`[cron] Failed to send notification to ${email}:`, err)
-          )
+          sendScheduleNotificationEmail(
+            email,
+            schedule.name,
+            notifyStatus,
+            lastError,
+            emailResult
+          ).catch((err) => console.warn(`[cron] Failed to send notification to ${email}:`, err))
         )
       ).catch(() => {})
     }
@@ -175,10 +200,15 @@ export async function GET(request: Request) {
 
 function getNextRunAt(frequency: string, from: Date): Date {
   switch (frequency) {
-    case 'HOURLY':  return new Date(from.getTime() + 60 * 60 * 1000)
-    case 'DAILY':   return new Date(from.getTime() + 24 * 60 * 60 * 1000)
-    case 'WEEKLY':  return new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000)
-    case 'MONTHLY': return new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000)
-    default:        return new Date(from.getTime() + 24 * 60 * 60 * 1000)
+    case 'HOURLY':
+      return new Date(from.getTime() + 60 * 60 * 1000)
+    case 'DAILY':
+      return new Date(from.getTime() + 24 * 60 * 60 * 1000)
+    case 'WEEKLY':
+      return new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000)
+    case 'MONTHLY':
+      return new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000)
+    default:
+      return new Date(from.getTime() + 24 * 60 * 60 * 1000)
   }
 }
