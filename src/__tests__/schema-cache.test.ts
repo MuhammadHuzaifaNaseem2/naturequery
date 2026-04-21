@@ -20,34 +20,33 @@ describe('Schema Cache', () => {
   })
 
   it('returns null for uncached entry', () => {
-    expect(schemaCache.get('localhost', 5432, 'mydb')).toBeNull()
+    expect(schemaCache.get('conn-1')).toBeNull()
   })
 
   it('stores and retrieves a schema', () => {
-    schemaCache.set('localhost', 5432, 'mydb', mockSchema)
-    const result = schemaCache.get('localhost', 5432, 'mydb')
+    schemaCache.set('conn-1', mockSchema)
+    const result = schemaCache.get('conn-1')
     expect(result).toEqual(mockSchema)
   })
 
-  it('differentiates by host/port/database', () => {
-    schemaCache.set('localhost', 5432, 'db1', mockSchema)
-    expect(schemaCache.get('localhost', 5432, 'db2')).toBeNull()
-    expect(schemaCache.get('localhost', 5433, 'db1')).toBeNull()
-    expect(schemaCache.get('remotehost', 5432, 'db1')).toBeNull()
+  it('differentiates by connectionId', () => {
+    schemaCache.set('conn-1', mockSchema)
+    expect(schemaCache.get('conn-2')).toBeNull()
+    expect(schemaCache.get('conn-3')).toBeNull()
   })
 
   it('invalidates a specific entry', () => {
-    schemaCache.set('localhost', 5432, 'mydb', mockSchema)
-    schemaCache.invalidate('localhost', 5432, 'mydb')
-    expect(schemaCache.get('localhost', 5432, 'mydb')).toBeNull()
+    schemaCache.set('conn-1', mockSchema)
+    schemaCache.invalidate('conn-1')
+    expect(schemaCache.get('conn-1')).toBeNull()
   })
 
   it('clears all entries', () => {
-    schemaCache.set('host1', 5432, 'db1', mockSchema)
-    schemaCache.set('host2', 5432, 'db2', mockSchema)
+    schemaCache.set('conn-1', mockSchema)
+    schemaCache.set('conn-2', mockSchema)
     schemaCache.clear()
-    expect(schemaCache.get('host1', 5432, 'db1')).toBeNull()
-    expect(schemaCache.get('host2', 5432, 'db2')).toBeNull()
+    expect(schemaCache.get('conn-1')).toBeNull()
+    expect(schemaCache.get('conn-2')).toBeNull()
   })
 
   it('expires entries after TTL', () => {
@@ -55,15 +54,15 @@ describe('Schema Cache', () => {
     const now = Date.now()
     vi.spyOn(Date, 'now').mockReturnValue(now)
 
-    schemaCache.set('localhost', 5432, 'mydb', mockSchema)
+    schemaCache.set('conn-1', mockSchema)
 
     // Still within TTL (4 minutes later)
     vi.spyOn(Date, 'now').mockReturnValue(now + 4 * 60 * 1000)
-    expect(schemaCache.get('localhost', 5432, 'mydb')).toEqual(mockSchema)
+    expect(schemaCache.get('conn-1')).toEqual(mockSchema)
 
     // After TTL (6 minutes later)
     vi.spyOn(Date, 'now').mockReturnValue(now + 6 * 60 * 1000)
-    expect(schemaCache.get('localhost', 5432, 'mydb')).toBeNull()
+    expect(schemaCache.get('conn-1')).toBeNull()
 
     vi.restoreAllMocks()
   })

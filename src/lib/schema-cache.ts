@@ -1,6 +1,10 @@
 /**
  * Client-side schema cache with TTL.
  * Avoids refetching database schema on every connection switch.
+ *
+ * Keyed by connectionId. Previously keyed by host:port/database, but that
+ * collided for Magic Dataset connections (all have host=magic, port=0) and
+ * also leaked across users sharing a DB host.
  */
 
 import { DatabaseSchema } from '@/actions/db'
@@ -21,22 +25,14 @@ class SchemaCache {
   }
 
   /**
-   * Generate a cache key from connection parameters.
-   */
-  private key(host: string, port: number, database: string): string {
-    return `${host}:${port}/${database}`
-  }
-
-  /**
    * Get a cached schema if it exists and hasn't expired.
    */
-  get(host: string, port: number, database: string): DatabaseSchema | null {
-    const k = this.key(host, port, database)
-    const entry = this.cache.get(k)
+  get(connectionId: string): DatabaseSchema | null {
+    const entry = this.cache.get(connectionId)
     if (!entry) return null
 
     if (Date.now() - entry.timestamp > this.ttl) {
-      this.cache.delete(k)
+      this.cache.delete(connectionId)
       return null
     }
 
@@ -46,17 +42,15 @@ class SchemaCache {
   /**
    * Store a schema in the cache.
    */
-  set(host: string, port: number, database: string, schema: DatabaseSchema): void {
-    const k = this.key(host, port, database)
-    this.cache.set(k, { schema, timestamp: Date.now() })
+  set(connectionId: string, schema: DatabaseSchema): void {
+    this.cache.set(connectionId, { schema, timestamp: Date.now() })
   }
 
   /**
    * Invalidate a specific cache entry.
    */
-  invalidate(host: string, port: number, database: string): void {
-    const k = this.key(host, port, database)
-    this.cache.delete(k)
+  invalidate(connectionId: string): void {
+    this.cache.delete(connectionId)
   }
 
   /**

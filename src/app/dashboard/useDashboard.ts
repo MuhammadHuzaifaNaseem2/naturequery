@@ -325,7 +325,7 @@ export function useDashboard() {
           await Promise.allSettled(
             sorted.map(async (conn) => {
               if (cancelled) return
-              const cached = schemaCache.get(conn.host, conn.port, conn.database)
+              const cached = schemaCache.get(conn.id)
               if (cached) {
                 setConnections((prev) =>
                   prev.map((c) =>
@@ -336,7 +336,7 @@ export function useDashboard() {
               }
               const result = await fetchSchemaByConnection(conn.id)
               if (!cancelled && result.success && result.data) {
-                schemaCache.set(conn.host, conn.port, conn.database, result.data)
+                schemaCache.set(conn.id, result.data)
                 setConnections((prev) =>
                   prev.map((c) =>
                     c.id === conn.id ? { ...c, schema: result.data, status: 'active' as const } : c
@@ -589,7 +589,7 @@ export function useDashboard() {
         if (connection.isDemo) return
 
         // Check cache first
-        const cached = schemaCache.get(connection.host, connection.port, connection.database)
+        const cached = schemaCache.get(connectionId)
         if (cached) {
           setConnections((prev) =>
             prev.map((c) =>
@@ -601,7 +601,7 @@ export function useDashboard() {
           // Fetch schema server-side (credentials decrypted on server)
           const result = await fetchSchemaByConnection(connectionId)
           if (result.success && result.data) {
-            schemaCache.set(connection.host, connection.port, connection.database, result.data)
+            schemaCache.set(connectionId, result.data)
             setConnections((prev) =>
               prev.map((c) =>
                 c.id === connectionId ? { ...c, schema: result.data, status: 'active' as const } : c
