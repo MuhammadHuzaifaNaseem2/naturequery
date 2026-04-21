@@ -15,10 +15,20 @@ function mapStatus(stripeStatus: string): SubscriptionStatus {
   return map[stripeStatus] ?? 'ACTIVE'
 }
 
-function planFromPriceId(priceId: string): SubscriptionPlan {
-  if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) return 'ENTERPRISE'
-  if (priceId === process.env.STRIPE_PRO_PRICE_ID) return 'PRO'
-  return 'FREE'
+function planFromPriceId(priceId: string): SubscriptionPlan | null {
+  if (!priceId) return 'FREE'
+  const proId = process.env.STRIPE_PRO_PRICE_ID
+  const entId = process.env.STRIPE_ENTERPRISE_PRICE_ID
+  if (entId && priceId === entId) return 'ENTERPRISE'
+  if (proId && priceId === proId) return 'PRO'
+  // Unknown priceId — likely a misconfigured env var. Do NOT silently
+  // downgrade a paying customer to FREE; return null so the caller skips
+  // the plan write and surfaces the issue loudly.
+  console.error(
+    `[CRITICAL] Stripe priceId "${priceId}" does not match STRIPE_PRO_PRICE_ID ` +
+      `or STRIPE_ENTERPRISE_PRICE_ID. Check Vercel env vars. Skipping plan update.`
+  )
+  return null
 }
 
 async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
@@ -43,12 +53,16 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   const periodStart = firstItem?.current_period_start
   const periodEnd = firstItem?.current_period_end
 
+  const resolvedPlan = planFromPriceId(priceId)
+
   await prisma.subscription.upsert({
     where: { userId },
     update: {
       stripeSubscriptionId: subscription.id,
       stripePriceId: priceId,
-      plan: planFromPriceId(priceId),
+      // Only overwrite plan when we recognize the price — otherwise leave
+      // existing value to avoid downgrading a paying customer on misconfig.
+      ...(resolvedPlan ? { plan: resolvedPlan } : {}),
       status: mapStatus(subscription.status),
       currentPeriodStart: periodStart ? new Date(periodStart * 1000) : undefined,
       currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : undefined,
@@ -62,7 +76,7 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
           : subscription.customer.id,
       stripeSubscriptionId: subscription.id,
       stripePriceId: priceId,
-      plan: planFromPriceId(priceId),
+      plan: resolvedPlan ?? 'FREE',
       status: mapStatus(subscription.status),
       currentPeriodStart: periodStart ? new Date(periodStart * 1000) : undefined,
       currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : undefined,
@@ -78,7 +92,7 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
       resource: 'subscription',
       resourceId: subscription.id,
       metadata: {
-        plan: planFromPriceId(priceId),
+        plan: resolvedPlan ?? 'UNKNOWN',
         status: subscription.status,
       },
     },
@@ -96,8 +110,8 @@ export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     console.error(
       '[CRITICAL] STRIPE_WEBHOOK_SECRET is not configured. ' +
-      'Billing webhook events are NOT being processed. ' +
-      'Subscription changes, payment failures, and cancellations will be silently dropped.'
+        'Billing webhook events are NOT being processed. ' +
+        'Subscription changes, payment failures, and cancellations will be silently dropped.'
     )
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 503 })
   }
@@ -123,12 +137,11 @@ export async function POST(request: NextRequest) {
     case 'invoice.payment_failed': {
       const invoice = event.data.object as Stripe.Invoice
       const subDetails = invoice.parent?.subscription_details
-      const subId =
-        subDetails
-          ? typeof subDetails.subscription === 'string'
-            ? subDetails.subscription
-            : subDetails.subscription?.id
-          : undefined
+      const subId = subDetails
+        ? typeof subDetails.subscription === 'string'
+          ? subDetails.subscription
+          : subDetails.subscription?.id
+        : undefined
       if (subId) {
         await prisma.subscription.updateMany({
           where: { stripeSubscriptionId: subId },
@@ -155,12 +168,11 @@ export async function POST(request: NextRequest) {
       // Payment succeeded — ensure subscription is ACTIVE and reset usage if new billing period
       const invoice = event.data.object as Stripe.Invoice
       const subDetails = invoice.parent?.subscription_details
-      const subId =
-        subDetails
-          ? typeof subDetails.subscription === 'string'
-            ? subDetails.subscription
-            : subDetails.subscription?.id
-          : undefined
+      const subId = subDetails
+        ? typeof subDetails.subscription === 'string'
+          ? subDetails.subscription
+          : subDetails.subscription?.id
+        : undefined
       if (subId) {
         await prisma.subscription.updateMany({
           where: { stripeSubscriptionId: subId },

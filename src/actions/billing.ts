@@ -177,13 +177,22 @@ export async function syncSubscriptionFromStripe() {
 
     const firstItem = stripeSub.items.data[0]
     const priceId = firstItem?.price?.id
-    const plan: 'FREE' | 'PRO' | 'ENTERPRISE' = priceId
-      ? priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID
-        ? 'ENTERPRISE'
-        : priceId === process.env.STRIPE_PRO_PRICE_ID
-          ? 'PRO'
-          : 'FREE'
-      : 'FREE'
+    const proId = process.env.STRIPE_PRO_PRICE_ID
+    const entId = process.env.STRIPE_ENTERPRISE_PRICE_ID
+    let plan: 'FREE' | 'PRO' | 'ENTERPRISE' | null
+    if (!priceId) {
+      plan = 'FREE'
+    } else if (entId && priceId === entId) {
+      plan = 'ENTERPRISE'
+    } else if (proId && priceId === proId) {
+      plan = 'PRO'
+    } else {
+      console.error(
+        `[CRITICAL] Stripe priceId "${priceId}" does not match STRIPE_PRO_PRICE_ID ` +
+          `or STRIPE_ENTERPRISE_PRICE_ID. Leaving plan unchanged.`
+      )
+      plan = null
+    }
 
     const statusMap: Record<
       string,
@@ -203,7 +212,9 @@ export async function syncSubscriptionFromStripe() {
     await prisma.subscription.update({
       where: { userId: user.id! },
       data: {
-        plan,
+        // Only overwrite plan when we recognize the price — otherwise leave
+        // existing value to avoid downgrading a paying customer on misconfig.
+        ...(plan ? { plan } : {}),
         status: statusMap[stripeSub.status] ?? 'ACTIVE',
         stripeSubscriptionId: stripeSub.id,
         stripePriceId: priceId || null,
