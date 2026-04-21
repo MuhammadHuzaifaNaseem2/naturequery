@@ -399,12 +399,24 @@ export function ConnectionSidebar({
                               {connection.status === 'active' && (
                                 <span className="flex h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
                               )}
+                              {connection.status === 'error' && (
+                                <span className="flex h-1.5 w-1.5 rounded-full bg-destructive flex-shrink-0" />
+                              )}
                             </div>
-                            <p className="text-[11px] text-muted-foreground truncate">
-                              {connection.schema
-                                ? `${connection.schema.tables.length} ${t('common.tables')}`
-                                : '…'}
-                            </p>
+                            {connection.status === 'error' && connection.schemaError ? (
+                              <p
+                                className="text-[11px] text-destructive truncate"
+                                title={connection.schemaError}
+                              >
+                                {connection.schemaError}
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                {connection.schema
+                                  ? `${connection.schema.tables.length} ${t('common.tables')}`
+                                  : '…'}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <button

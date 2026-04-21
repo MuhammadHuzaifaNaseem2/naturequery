@@ -10,7 +10,8 @@ export interface SavedConnection {
   dbType: string
   isActive: boolean
   schema?: DatabaseSchema
-  status: 'active' | 'inactive'
+  status: 'active' | 'inactive' | 'error'
+  schemaError?: string
   isDemo?: boolean
   teamId?: string | null
   teamName?: string

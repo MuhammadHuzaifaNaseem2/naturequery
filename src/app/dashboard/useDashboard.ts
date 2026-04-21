@@ -335,17 +335,28 @@ export function useDashboard() {
                 return
               }
               const result = await fetchSchemaByConnection(conn.id)
-              if (!cancelled && result.success && result.data) {
+              if (cancelled) return
+              if (result.success && result.data) {
                 schemaCache.set(conn.id, result.data)
                 setConnections((prev) =>
                   prev.map((c) =>
-                    c.id === conn.id ? { ...c, schema: result.data, status: 'active' as const } : c
+                    c.id === conn.id
+                      ? {
+                          ...c,
+                          schema: result.data,
+                          status: 'active' as const,
+                          schemaError: undefined,
+                        }
+                      : c
                   )
                 )
               } else {
-                console.error(
-                  `[schema-fetch] ${conn.name} (${conn.dbType}):`,
-                  JSON.stringify(result)
+                const errMsg = result.error || 'Failed to load schema'
+                console.error(`[schema-fetch] ${conn.name} (${conn.dbType}):`, errMsg)
+                setConnections((prev) =>
+                  prev.map((c) =>
+                    c.id === conn.id ? { ...c, status: 'error' as const, schemaError: errMsg } : c
+                  )
                 )
               }
             })
@@ -604,10 +615,25 @@ export function useDashboard() {
             schemaCache.set(connectionId, result.data)
             setConnections((prev) =>
               prev.map((c) =>
-                c.id === connectionId ? { ...c, schema: result.data, status: 'active' as const } : c
+                c.id === connectionId
+                  ? {
+                      ...c,
+                      schema: result.data,
+                      status: 'active' as const,
+                      schemaError: undefined,
+                    }
+                  : c
               )
             )
             runDiscovery(connectionId, result.data)
+          } else {
+            const errMsg = result.error || 'Failed to load schema'
+            console.error(`[schema-fetch] ${connection.name} (${connection.dbType}):`, errMsg)
+            setConnections((prev) =>
+              prev.map((c) =>
+                c.id === connectionId ? { ...c, status: 'error' as const, schemaError: errMsg } : c
+              )
+            )
           }
         }
       } else if (connection?.schema) {
