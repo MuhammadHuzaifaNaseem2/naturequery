@@ -416,40 +416,50 @@ export interface MagicTableInfo {
   }[]
 }
 
-export async function fetchMagicSchema(userId: string): Promise<MagicTableInfo[]> {
+export async function fetchMagicSchema(
+  userId: string,
+  tableName?: string
+): Promise<MagicTableInfo[]> {
   const schema = userSchemaName(userId)
   const client = await getPool().connect()
   try {
-    const tables = await client.query<{ table_name: string }>(
-      `SELECT table_name FROM information_schema.tables
-       WHERE table_schema = $1 ORDER BY table_name`,
-      [schema]
-    )
-    const result: MagicTableInfo[] = []
-    for (const { table_name } of tables.rows) {
-      const cols = await client.query<{
-        column_name: string
-        data_type: string
-        is_nullable: string
-      }>(
-        `SELECT column_name, data_type, is_nullable
-         FROM information_schema.columns
-         WHERE table_schema = $1 AND table_name = $2
-         ORDER BY ordinal_position`,
-        [schema, table_name]
-      )
-      result.push({
-        tableName: table_name,
-        columns: cols.rows.map((c) => ({
-          name: c.column_name,
-          type: c.data_type,
-          nullable: c.is_nullable === 'YES',
-          defaultValue: null,
-          isPrimaryKey: false,
-        })),
+    // Single query for all columns (optionally filtered to one table).
+    // Previously this was 1 + N queries (list tables, then per-table columns),
+    // which was slow for the common magic-driver path that only needs a single
+    // table's columns.
+    const params: (string | undefined)[] = [schema]
+    let sql = `SELECT table_name, column_name, data_type, is_nullable
+               FROM information_schema.columns
+               WHERE table_schema = $1`
+    if (tableName) {
+      sql += ` AND table_name = $2`
+      params.push(tableName)
+    }
+    sql += ` ORDER BY table_name, ordinal_position`
+
+    const rows = await client.query<{
+      table_name: string
+      column_name: string
+      data_type: string
+      is_nullable: string
+    }>(sql, params)
+
+    const byTable = new Map<string, MagicTableInfo>()
+    for (const r of rows.rows) {
+      let t = byTable.get(r.table_name)
+      if (!t) {
+        t = { tableName: r.table_name, columns: [] }
+        byTable.set(r.table_name, t)
+      }
+      t.columns.push({
+        name: r.column_name,
+        type: r.data_type,
+        nullable: r.is_nullable === 'YES',
+        defaultValue: null,
+        isPrimaryKey: false,
       })
     }
-    return result
+    return Array.from(byTable.values())
   } finally {
     client.release()
   }

@@ -144,13 +144,11 @@ export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver
         to_column: string
       }[]) {
         if (!fkMap.has(fk.from_table)) fkMap.set(fk.from_table, [])
-        fkMap
-          .get(fk.from_table)!
-          .push({
-            column: fk.from_column,
-            referencedTable: fk.to_table,
-            referencedColumn: fk.to_column,
-          })
+        fkMap.get(fk.from_table)!.push({
+          column: fk.from_column,
+          referencedTable: fk.to_table,
+          referencedColumn: fk.to_column,
+        })
       }
       return groupSchemaRows(colResult.rows, fkMap)
     },
@@ -589,13 +587,11 @@ export function createRedshiftDriver(credentials: DBCredentials): DatabaseDriver
         to_column: string
       }[]) {
         if (!fkMap.has(fk.from_table)) fkMap.set(fk.from_table, [])
-        fkMap
-          .get(fk.from_table)!
-          .push({
-            column: fk.from_column,
-            referencedTable: fk.to_table,
-            referencedColumn: fk.to_column,
-          })
+        fkMap.get(fk.from_table)!.push({
+          column: fk.from_column,
+          referencedTable: fk.to_table,
+          referencedColumn: fk.to_column,
+        })
       }
       return groupSchemaRows(colResult.rows, fkMap)
     },
@@ -1436,10 +1432,9 @@ export function createMagicDriver(credentials: DBCredentials): DatabaseDriver {
 
     async fetchSchema() {
       const { fetchMagicSchema } = await import('./magic-dataset')
-      const tables = await fetchMagicSchema(userId)
-      // Only surface the table that belongs to this connection. Other magic
-      // uploads by the same user are separate connections and show up there.
-      return tables.filter((t) => t.tableName === tableName)
+      // Pass tableName so the module fetches only this connection's table in
+      // a single round-trip, instead of listing all user tables and filtering.
+      return fetchMagicSchema(userId, tableName)
     },
 
     async executeQuery(sql: string, maxRows?: number) {
