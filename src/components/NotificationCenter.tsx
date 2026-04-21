@@ -163,7 +163,7 @@ export function NotificationCenter() {
       {isOpen && (
         <div
           ref={panelRef}
-          className="absolute right-0 top-full mt-2 w-[min(400px,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-scaleIn"
+          className="fixed left-2 right-2 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[400px] bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-scaleIn"
         >
           {/* Gradient accent top bar */}
           <div className="h-[3px] bg-gradient-to-r from-primary via-accent to-primary" />

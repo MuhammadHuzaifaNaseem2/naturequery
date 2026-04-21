@@ -370,29 +370,32 @@
   @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background;
 }
 
-/* Button variants */
-.btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all focus-ring disabled:opacity-50 disabled:cursor-not-allowed;
-}
+/* Button variants — wrapped in @layer components so Tailwind utilities
+   like `hidden` / `sm:flex` can still override `display: inline-flex` */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all focus-ring disabled:opacity-50 disabled:cursor-not-allowed;
+  }
 
-.btn-primary {
-  @apply btn bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md;
-}
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md;
+  }
 
-.btn-secondary {
-  @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border;
-}
+  .btn-secondary {
+    @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border;
+  }
 
-.btn-ghost {
-  @apply btn hover:bg-secondary;
-}
+  .btn-ghost {
+    @apply btn hover:bg-secondary;
+  }
 
-.btn-destructive {
-  @apply btn bg-destructive text-destructive-foreground hover:bg-destructive/90;
-}
+  .btn-destructive {
+    @apply btn bg-destructive text-destructive-foreground hover:bg-destructive/90;
+  }
 
-.btn-success {
-  @apply btn bg-success text-success-foreground hover:bg-success/90;
+  .btn-success {
+    @apply btn bg-success text-success-foreground hover:bg-success/90;
+  }
 }
 
 /* Input styles */
@@ -410,8 +413,10 @@
 }
 
 /* Gradient button */
-.btn-gradient {
-  @apply btn bg-gradient-to-r from-primary to-accent text-white shadow-md hover:shadow-lg hover:brightness-110;
+@layer components {
+  .btn-gradient {
+    @apply btn bg-gradient-to-r from-primary to-accent text-white shadow-md hover:shadow-lg hover:brightness-110;
+  }
 }
 
 /* Glass card */
