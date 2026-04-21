@@ -237,10 +237,10 @@ export function QueryPanel({
   }
 
   return (
-    <div className="flex-1 min-w-0 overflow-y-auto px-6 pb-6 pt-2">
+    <div className="flex-1 min-w-0 overflow-y-auto px-3 sm:px-6 pb-6 pt-2">
       <div className="max-w-6xl mx-auto space-y-5">
         {/* Natural Language Input */}
-        <GlowCard className="pt-5 pb-7 px-7 lg:pt-6 lg:pb-10 lg:px-10 animate-fadeIn">
+        <GlowCard className="pt-5 pb-7 px-4 sm:px-7 lg:pt-6 lg:pb-10 lg:px-10 animate-fadeIn">
           {/* Mode Toggle: Ask AI / SQL Editor */}
           <div className="flex items-center gap-2 mb-5">
             <button

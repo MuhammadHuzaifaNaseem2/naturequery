@@ -55,17 +55,17 @@ export default function SettingsClient({ initialTwoFactorEnabled }: SettingsClie
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => router.push('/dashboard')}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            className="p-2 hover:bg-secondary rounded-lg transition-colors flex-shrink-0"
             title={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-lg font-semibold">{t('settings.title')}</h1>
-            <p className="text-sm text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold truncate">{t('settings.title')}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
               Manage your account, teams, and API access
             </p>
           </div>
@@ -73,16 +73,16 @@ export default function SettingsClient({ initialTwoFactorEnabled }: SettingsClie
       </header>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-6 flex gap-6">
-        {/* Sidebar Navigation */}
-        <nav className="w-48 flex-shrink-0">
-          <div className="space-y-1">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Sidebar Navigation — horizontal scroll on mobile, vertical on desktop */}
+        <nav className="lg:w-48 lg:flex-shrink-0">
+          <div className="flex lg:block gap-1 lg:gap-0 lg:space-y-1 overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0 lg:overflow-visible pb-2 lg:pb-0">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
                 className={clsx(
-                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  'flex items-center gap-2 lg:gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full',
                   activeTab === id
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-secondary'

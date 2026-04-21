@@ -21,7 +21,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const { update: updateSession } = useSession()
-  
+
   const [name, setName] = useState(user.name || '')
   const [isEditing, setIsEditing] = useState(false)
   const [tempName, setTempName] = useState(name)
@@ -50,7 +50,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         })
 
         if (!res.ok) throw new Error('Failed to update name')
-        
+
         setName(tempName)
         setIsEditing(false)
         await updateSession({ name: tempName })
@@ -85,7 +85,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         })
 
         if (!res.ok) throw new Error('Failed to update image')
-        
+
         await updateSession({ image: base64Data })
         toast.success('Profile picture updated successfully')
         router.refresh()
@@ -118,7 +118,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 </div>
               ) : null}
-              {user.image && !user.image.includes('twimg') /* handle generic fallback if necessary */ ? (
+              {user.image &&
+              !user.image.includes('twimg') /* handle generic fallback if necessary */ ? (
                 <img src={user.image} alt={name} className="w-14 h-14 object-cover" />
               ) : (
                 <User className="w-6 h-6 text-primary" />
@@ -152,7 +153,11 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   disabled={isPending}
                   className="p-1.5 bg-success/10 text-success hover:bg-success/20 rounded-md transition-colors"
                 >
-                  {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  {isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
                 </button>
                 <button
                   onClick={() => {
@@ -177,7 +182,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 </button>
               </div>
             )}
-            <p className="text-sm text-muted-foreground mt-0.5">{user.email}</p>
+            <p className="text-sm text-muted-foreground mt-0.5 break-all">{user.email}</p>
             <span className="inline-block mt-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium capitalize">
               {(user.role || 'analyst').toLowerCase()}
             </span>
@@ -211,9 +216,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
       <div className="card p-5">
         <h4 className="font-medium mb-3">Account</h4>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between py-1.5">
-            <span className="text-muted-foreground">Email</span>
-            <span>{user.email}</span>
+          <div className="flex justify-between gap-3 py-1.5">
+            <span className="text-muted-foreground flex-shrink-0">Email</span>
+            <span className="text-right break-all min-w-0">{user.email}</span>
           </div>
           <div className="flex justify-between py-1.5">
             <span className="text-muted-foreground">Role</span>
