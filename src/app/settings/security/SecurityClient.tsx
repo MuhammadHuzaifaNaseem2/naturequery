@@ -162,7 +162,7 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Toast notification */}
         {toast && (
@@ -182,18 +182,20 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
           </div>
         )}
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('settings.security.title')}</h1>
-          <p className="text-muted-foreground">{t('settings.security.description')}</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('settings.security.title')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            {t('settings.security.description')}
+          </p>
         </div>
 
         {/* 2FA Section */}
-        <div className="glass-card rounded-2xl p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-              <Shield className="w-6 h-6 text-white" />
+        <div className="glass-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+              <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 w-full min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
                 <h2 className="text-xl font-bold">Two-Factor Authentication</h2>
                 <div
@@ -230,7 +232,7 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
                       ✓ Your account is protected with 2FA
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setShowRegenerateConfirm(true)}
                       disabled={isRegenerating}
@@ -256,17 +258,19 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
         </div>
 
         {/* Change Password */}
-        <div className="glass-card rounded-2xl p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-              <Key className="w-6 h-6 text-white" />
+        <div className="glass-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+              <Key className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold mb-1">{t('settings.security.changePassword')}</h2>
+            <div className="flex-1 w-full min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold mb-1">
+                {t('settings.security.changePassword')}
+              </h2>
               <p className="text-sm text-muted-foreground mb-4">
                 {t('settings.security.changePasswordDesc')}
               </p>
-              <div className="space-y-3 max-w-sm">
+              <div className="space-y-3 w-full sm:max-w-sm">
                 {/* Current password */}
                 <div>
                   <label className="text-sm font-medium mb-1.5 block">Current Password</label>
@@ -365,13 +369,15 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
         </div>
 
         {/* Danger Zone */}
-        <div className="glass-card rounded-2xl p-6 mb-6 border border-destructive/20">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center flex-shrink-0">
-              <Trash2 className="w-6 h-6 text-destructive" />
+        <div className="glass-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 border border-destructive/20">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-destructive/10 flex items-center justify-center flex-shrink-0">
+              <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 text-destructive" />
             </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold mb-1">{t('settings.security.dangerZone')}</h2>
+            <div className="flex-1 w-full min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold mb-1">
+                {t('settings.security.dangerZone')}
+              </h2>
               <p className="text-sm text-muted-foreground mb-4">
                 {t('settings.security.dangerZoneDesc')}
               </p>
@@ -387,13 +393,13 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
         </div>
 
         {/* Security Tips */}
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-warning/20 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-6 h-6 text-warning" />
+        <div className="glass-card rounded-2xl p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-warning/20 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
             </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold mb-2">Security Tips</h2>
+            <div className="flex-1 w-full min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold mb-2">Security Tips</h2>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-1">•</span>
