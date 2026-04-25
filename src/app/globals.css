@@ -66,6 +66,16 @@
       'rlig' 1,
       'calt' 1;
   }
+  /* Eliminate 300ms tap delay on Android */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  [role='button'] {
+    touch-action: manipulation;
+  }
 }
 
 @layer utilities {

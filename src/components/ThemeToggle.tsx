@@ -51,15 +51,16 @@ export function ThemeToggle() {
     <button
       suppressHydrationWarning
       onClick={cycleTheme}
-      className="relative p-2 rounded-lg bg-secondary hover:bg-secondary/80 border border-border transition-all duration-200 focus-ring group"
+      className="relative p-2 rounded-lg bg-secondary hover:bg-secondary/80 border border-border transition-all duration-200 focus-ring group flex-shrink-0"
       title={`Current: ${theme} (${resolvedTheme})`}
     >
       {/* Sun icon */}
       <svg
-        className={`w-5 h-5 transition-all duration-300 ${resolvedTheme === 'light'
-          ? 'text-warning scale-100 rotate-0'
-          : 'text-muted-foreground scale-0 -rotate-90 absolute'
-          }`}
+        className={`w-5 h-5 transition-all duration-300 ${
+          resolvedTheme === 'light'
+            ? 'text-warning scale-100 rotate-0'
+            : 'text-muted-foreground scale-0 -rotate-90 absolute'
+        }`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -74,10 +75,11 @@ export function ThemeToggle() {
 
       {/* Moon icon */}
       <svg
-        className={`w-5 h-5 transition-all duration-300 ${resolvedTheme === 'dark'
-          ? 'text-primary scale-100 rotate-0'
-          : 'text-muted-foreground scale-0 rotate-90 absolute'
-          }`}
+        className={`w-5 h-5 transition-all duration-300 ${
+          resolvedTheme === 'dark'
+            ? 'text-primary scale-100 rotate-0'
+            : 'text-muted-foreground scale-0 rotate-90 absolute'
+        }`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -97,4 +99,3 @@ export function ThemeToggle() {
     </button>
   )
 }
-

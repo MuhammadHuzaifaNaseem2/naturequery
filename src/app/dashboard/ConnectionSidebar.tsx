@@ -285,7 +285,7 @@ export function ConnectionSidebar({
               <p className="text-xs text-muted-foreground">{t('dashboard.sidebar.nlToSql')}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <ThemeToggle />
             {onClose && (
               <button

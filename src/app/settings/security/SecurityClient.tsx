@@ -194,10 +194,10 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
                 <h2 className="text-xl font-bold">Two-Factor Authentication</h2>
                 <div
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium w-fit ${
                     twoFactorEnabled
                       ? 'bg-success/10 text-success border border-success/50'
                       : 'bg-muted text-muted-foreground border border-border'
@@ -279,12 +279,12 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
                         setPwError('')
                       }}
                       placeholder="Enter current password"
-                      className="input w-full pr-10"
+                      className="input w-full pr-12"
                     />
                     <button
                       type="button"
                       onClick={() => setShowCurrentPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
                     >
                       {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -302,12 +302,12 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
                         setPwError('')
                       }}
                       placeholder="Min 8 chars, 3 of 4 types"
-                      className="input w-full pr-10"
+                      className="input w-full pr-12"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
                     >
                       {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -325,12 +325,12 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
                         setPwError('')
                       }}
                       placeholder="Repeat new password"
-                      className="input w-full pr-10"
+                      className="input w-full pr-12"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
                     >
                       {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
