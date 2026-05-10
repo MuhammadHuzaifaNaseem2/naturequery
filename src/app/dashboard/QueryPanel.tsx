@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Loader2,
   XCircle,
+  ShieldAlert,
   FileSpreadsheet,
   FileText,
   Table2,
@@ -506,7 +507,50 @@ export function QueryPanel({
         {/* Error Message */}
         {error &&
           (() => {
-            const isGroqLimit = error.toLowerCase().includes('groq api rate limit')
+            const lc = error.toLowerCase()
+            const isGroqLimit = lc.includes('groq api rate limit')
+            const isSecurityBlock =
+              lc.includes('only select queries are allowed') || lc.includes('read-only to protect')
+
+            if (isSecurityBlock) {
+              return (
+                <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-4 animate-slideUp">
+                  <div className="flex items-start gap-3">
+                    <ShieldAlert className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-amber-600 dark:text-amber-400">
+                        Read-only Protection
+                      </h4>
+                      <p className="text-sm text-amber-600/80 dark:text-amber-400/80 mt-1">
+                        {error}
+                      </p>
+                      <div className="mt-3 space-y-1.5">
+                        <p className="text-xs font-medium text-foreground/70">
+                          Try rephrasing as a question:
+                        </p>
+                        <ul className="text-xs text-muted-foreground space-y-1 ml-1">
+                          <li>
+                            <span className="text-amber-500 font-bold">→</span> Instead of{' '}
+                            <em>&quot;delete all customers&quot;</em> try{' '}
+                            <strong className="text-foreground/80">
+                              &quot;show me all customers&quot;
+                            </strong>
+                          </li>
+                          <li>
+                            <span className="text-amber-500 font-bold">→</span> Instead of{' '}
+                            <em>&quot;update prices to 100&quot;</em> try{' '}
+                            <strong className="text-foreground/80">
+                              &quot;list products with their prices&quot;
+                            </strong>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
             return (
               <div
                 className={`border rounded-xl p-4 flex items-start justify-between gap-3 animate-slideUp ${isGroqLimit ? 'bg-amber-500/10 border-amber-500/30' : 'bg-destructive/10 border-destructive/30'}`}
@@ -536,37 +580,20 @@ export function QueryPanel({
                     )}
                   </div>
                 </div>
-                {/* Never show AI Fix It for rate-limit or read-only security errors */}
-                {(() => {
-                  const isSecurityBlock =
-                    error.toLowerCase().includes('only select queries are allowed') ||
-                    error.toLowerCase().includes('read-only to protect')
-                  if (isSecurityBlock) {
-                    return (
-                      <p className="text-xs text-muted-foreground max-w-[200px] text-right">
-                        Rephrase as a question, e.g. &quot;Show me all customers&quot; instead of
-                        &quot;Delete customers&quot;.
-                      </p>
-                    )
-                  }
-                  return (
-                    onFixQuery &&
-                    !isGroqLimit && (
-                      <button
-                        onClick={onFixQuery}
-                        disabled={isFixing}
-                        className="btn-secondary whitespace-nowrap text-sm bg-background border-destructive/20 hover:bg-destructive/10 text-destructive flex items-center gap-2"
-                      >
-                        {isFixing ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-4 h-4" />
-                        )}
-                        {t('dashboard.queryPanel.aiFixIt')}
-                      </button>
-                    )
-                  )
-                })()}
+                {onFixQuery && !isGroqLimit && (
+                  <button
+                    onClick={onFixQuery}
+                    disabled={isFixing}
+                    className="btn-secondary whitespace-nowrap text-sm bg-background border-destructive/20 hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                  >
+                    {isFixing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    {t('dashboard.queryPanel.aiFixIt')}
+                  </button>
+                )}
               </div>
             )
           })()}
