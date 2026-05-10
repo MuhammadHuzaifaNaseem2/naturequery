@@ -381,8 +381,11 @@ export default function SettingsForm({
 }: SettingsFormProps) {
   const [step, setStep] = useState<1 | 2>(1)
   const [dbType, setDbType] = useState<DatabaseType | null>(null)
+  // connectionName is intentionally separate from credentials so the paste
+  // handler can never accidentally write a URI (including its password) into it.
+  const [connectionName, setConnectionName] = useState('')
+  const [nameError, setNameError] = useState('')
   const [credentials, setCredentials] = useState<DBCredentials>({
-    name: '',
     host: '',
     port: 5432,
     database: '',
@@ -392,6 +395,35 @@ export default function SettingsForm({
     teamId: '',
   })
   const [pasteError, setPasteError] = useState('')
+
+  const CONNECTION_STRING_RE = /^(postgresql|postgres|mysql|mongodb(\+srv)?|redis|sqlite):\/\//i
+
+  const sanitizeName = (raw: string) =>
+    raw
+      .trim()
+      .slice(0, 50)
+      .replace(/[<>"'&]/g, '') // strip XSS chars
+
+  const validateName = (value: string): string => {
+    const trimmed = value.trim()
+    if (!trimmed) return 'Connection name is required.'
+    if (CONNECTION_STRING_RE.test(trimmed))
+      return 'Connection name cannot be a connection string. Enter a friendly name like "Production DB".'
+    if (trimmed.length > 50) return 'Max 50 characters.'
+    return ''
+  }
+
+  const handleNameChange = (raw: string) => {
+    // Silently block connection-string pastes — user should use the button below
+    if (CONNECTION_STRING_RE.test(raw.trim())) {
+      setNameError(
+        'That looks like a connection string — use the "Paste connection string" button below instead.'
+      )
+      return
+    }
+    setConnectionName(raw.slice(0, 50))
+    setNameError(validateName(raw))
+  }
 
   const [teams, setTeams] = useState<any[]>([])
   const [showPassword, setShowPassword] = useState(false)
@@ -419,6 +451,8 @@ export default function SettingsForm({
 
   const handleSelectDatabase = (type: DatabaseType, port: number) => {
     setDbType(type)
+    setConnectionName('')
+    setNameError('')
     setCredentials((prev) => ({
       ...prev,
       dbType: type,
@@ -427,7 +461,6 @@ export default function SettingsForm({
       database: '',
       user: '',
       password: '',
-      name: '',
     }))
     setPasteError('')
     setConnectionStatus('idle')
@@ -441,17 +474,16 @@ export default function SettingsForm({
     try {
       const text = await navigator.clipboard.readText()
       const trimmed = text.trim()
-      // Support postgresql:// or postgres:// URIs
       const match = trimmed.match(
         /^(?:postgresql|postgres):\/\/([^:@]+)(?::([^@]*))?@([^/:]+)(?::(\d+))?\/([^?]+)(?:\?.*)?$/
       )
       if (!match) {
-        setPasteError(
-          'Could not parse connection string. Expected format: postgresql://user:pass@host:port/database'
-        )
+        setPasteError('Could not parse. Expected: postgresql://user:pass@host:port/database')
         return
       }
       const [, user, password, host, port, database] = match
+      // IMPORTANT: never set connectionName here — the name field is for a
+      // human-readable label only and must never contain credential data.
       setCredentials((prev) => ({
         ...prev,
         user: decodeURIComponent(user || ''),
@@ -503,7 +535,9 @@ export default function SettingsForm({
   }
 
   const isFormValid =
-    dbType === 'sqlite'
+    !!connectionName.trim() &&
+    !validateName(connectionName) &&
+    (dbType === 'sqlite'
       ? !!credentials.database
       : !!(
           credentials.host &&
@@ -511,7 +545,7 @@ export default function SettingsForm({
           credentials.database &&
           credentials.user &&
           credentials.password
-        )
+        ))
 
   const selectedDbLabel =
     DB_OPTIONS.flatMap((g) => g.items).find((i) => i.type === dbType)?.label || 'Database'
@@ -633,22 +667,38 @@ export default function SettingsForm({
             </div>
 
             <div className="space-y-4">
-              {/* Connection Name */}
+              {/* Connection Name — intentionally separate from credentials */}
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-foreground">
-                  Connection Name{' '}
-                  <span className="text-muted-foreground font-normal">
-                    (how it appears in your sidebar)
+                  Connection Name <span className="text-destructive">*</span>
+                  <span className="text-muted-foreground font-normal ml-1">
+                    (friendly label shown in your sidebar)
                   </span>
                 </label>
                 <input
                   type="text"
-                  value={credentials.name || ''}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder={`e.g. Production DB, Analytics, ${dbType === 'mysql' ? 'My MySQL' : 'Supabase Staging'}`}
-                  maxLength={60}
-                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
+                  value={connectionName}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="e.g. Production DB, Analytics, Supabase Staging"
+                  maxLength={50}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className={`w-full px-4 py-2.5 bg-background border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all text-foreground ${
+                    nameError
+                      ? 'border-destructive focus:ring-destructive/20'
+                      : 'border-border hover:border-primary/50 focus:ring-primary/20'
+                  }`}
                 />
+                {nameError ? (
+                  <p className="text-xs text-destructive mt-1.5 flex items-center gap-1">
+                    <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    {nameError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {connectionName.length}/50 — never include passwords or connection strings here
+                  </p>
+                )}
               </div>
 
               {/* Paste connection string — only for network databases */}
@@ -912,7 +962,17 @@ export default function SettingsForm({
 
                 {onConnectionSuccess && (
                   <button
-                    onClick={() => onConnectionSuccess(credentials, schema)}
+                    onClick={() => {
+                      const err = validateName(connectionName)
+                      if (err) {
+                        setNameError(err)
+                        return
+                      }
+                      onConnectionSuccess(
+                        { ...credentials, name: sanitizeName(connectionName) },
+                        schema
+                      )
+                    }}
                     className="w-full mt-6 px-4 py-3.5 bg-green-500 hover:bg-green-400 text-white rounded-xl text-sm font-bold tracking-wide hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
