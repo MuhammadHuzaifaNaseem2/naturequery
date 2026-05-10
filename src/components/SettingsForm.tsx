@@ -17,6 +17,7 @@ import {
 import { testConnection, fetchSchema, DBCredentials, DatabaseSchema } from '@/actions/db'
 import { getUserTeams } from '@/actions/team'
 import type { DatabaseType } from '@/lib/db-drivers'
+import { parseConnectionString } from '@/lib/parse-connection-string'
 
 interface SettingsFormProps {
   onSchemaFetched?: (schema: DatabaseSchema) => void
@@ -473,24 +474,21 @@ export default function SettingsForm({
     setPasteError('')
     try {
       const text = await navigator.clipboard.readText()
-      const trimmed = text.trim()
-      const match = trimmed.match(
-        /^(?:postgresql|postgres):\/\/([^:@]+)(?::([^@]*))?@([^/:]+)(?::(\d+))?\/([^?]+)(?:\?.*)?$/
-      )
-      if (!match) {
-        setPasteError('Could not parse. Expected: postgresql://user:pass@host:port/database')
+      const result = parseConnectionString(text)
+      if (!result.success) {
+        // Empty clipboard → show nothing; malformed → show the error
+        if (result.error) setPasteError(result.error)
         return
       }
-      const [, user, password, host, port, database] = match
       // IMPORTANT: never set connectionName here — the name field is for a
       // human-readable label only and must never contain credential data.
       setCredentials((prev) => ({
         ...prev,
-        user: decodeURIComponent(user || ''),
-        password: decodeURIComponent(password || ''),
-        host,
-        port: port ? parseInt(port) : prev.port,
-        database: database.split('?')[0],
+        user: result.data.user,
+        password: result.data.password,
+        host: result.data.host,
+        port: result.data.port ?? prev.port,
+        database: result.data.database,
       }))
       setConnectionStatus('idle')
       setStatusMessage('')
