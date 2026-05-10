@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AppLogo } from '@/components/AppLogo'
+import { PricingCTAButton } from './PricingCTAButton'
 import {
   Check,
   X,
@@ -20,7 +21,8 @@ import {
 
 export const metadata: Metadata = {
   title: 'Pricing - Plans for Every Team',
-  description: 'Simple, transparent pricing. Start free, upgrade when you need more power. No credit card required.',
+  description:
+    'Simple, transparent pricing. Start free, upgrade when you need more power. No credit card required.',
 }
 
 const PLANS = [
@@ -43,6 +45,7 @@ const PLANS = [
     ],
     cta: 'Get Started Free',
     href: '/register',
+    planKey: null as 'PRO' | 'ENTERPRISE' | null,
     highlighted: false,
     badge: null,
   },
@@ -65,6 +68,7 @@ const PLANS = [
     ],
     cta: 'Start 7-Day Free Trial',
     href: '/register?plan=pro',
+    planKey: 'PRO' as 'PRO' | 'ENTERPRISE' | null,
     highlighted: true,
     badge: 'Most Popular',
   },
@@ -84,48 +88,64 @@ const PLANS = [
     ],
     cta: 'Contact Sales',
     href: '/register?plan=enterprise',
+    planKey: 'ENTERPRISE' as 'PRO' | 'ENTERPRISE' | null,
     highlighted: false,
     badge: null,
   },
 ]
 
 const COMPARISON = [
-  { category: 'AI Features', features: [
-    { name: 'Natural Language to SQL', free: true, pro: true, enterprise: true },
-    { name: 'Conversational Follow-ups', free: true, pro: true, enterprise: true },
-    { name: 'Chain-of-Thought Reasoning', free: true, pro: true, enterprise: true },
-    { name: 'AI Fix It', free: true, pro: true, enterprise: true },
-    { name: 'AI Schema Discovery', free: true, pro: true, enterprise: true },
-    { name: 'SQL Explanation', free: true, pro: true, enterprise: true },
-  ]},
-  { category: 'Data & Export', features: [
-    { name: 'Queries per month', free: '50', pro: 'Unlimited', enterprise: 'Unlimited' },
-    { name: 'Database connections', free: '1', pro: '10', enterprise: 'Unlimited' },
-    { name: 'Excel & CSV export', free: true, pro: true, enterprise: true },
-    { name: 'Column filters & search', free: true, pro: true, enterprise: true },
-    { name: 'Query history', free: '30 days', pro: 'Unlimited', enterprise: 'Unlimited' },
-    { name: 'Magic CSV Upload', free: true, pro: true, enterprise: true },
-  ]},
-  { category: 'Dashboards', features: [
-    { name: 'Pin to dashboard', free: false, pro: true, enterprise: true },
-    { name: 'Scheduled queries', free: false, pro: true, enterprise: true },
-    { name: 'Shared query links', free: false, pro: true, enterprise: true },
-    { name: 'Auto visualizations', free: true, pro: true, enterprise: true },
-  ]},
-  { category: 'Team & Admin', features: [
-    { name: 'Team members', free: false, pro: '5', enterprise: 'Unlimited' },
-    { name: 'Role-based access', free: false, pro: true, enterprise: true },
-    { name: 'API access', free: false, pro: true, enterprise: true },
-    { name: 'Audit logs', free: false, pro: false, enterprise: true },
-    { name: 'GDPR data export', free: false, pro: false, enterprise: true },
-    { name: 'Dedicated support & SLA', free: false, pro: false, enterprise: true },
-  ]},
-  { category: 'Security', features: [
-    { name: 'AES-256 encryption', free: true, pro: true, enterprise: true },
-    { name: 'Two-factor auth (2FA)', free: true, pro: true, enterprise: true },
-    { name: 'SQL injection prevention', free: true, pro: true, enterprise: true },
-    { name: 'Rate limiting', free: true, pro: true, enterprise: true },
-  ]},
+  {
+    category: 'AI Features',
+    features: [
+      { name: 'Natural Language to SQL', free: true, pro: true, enterprise: true },
+      { name: 'Conversational Follow-ups', free: true, pro: true, enterprise: true },
+      { name: 'Chain-of-Thought Reasoning', free: true, pro: true, enterprise: true },
+      { name: 'AI Fix It', free: true, pro: true, enterprise: true },
+      { name: 'AI Schema Discovery', free: true, pro: true, enterprise: true },
+      { name: 'SQL Explanation', free: true, pro: true, enterprise: true },
+    ],
+  },
+  {
+    category: 'Data & Export',
+    features: [
+      { name: 'Queries per month', free: '50', pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Database connections', free: '1', pro: '10', enterprise: 'Unlimited' },
+      { name: 'Excel & CSV export', free: true, pro: true, enterprise: true },
+      { name: 'Column filters & search', free: true, pro: true, enterprise: true },
+      { name: 'Query history', free: '30 days', pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Magic CSV Upload', free: true, pro: true, enterprise: true },
+    ],
+  },
+  {
+    category: 'Dashboards',
+    features: [
+      { name: 'Pin to dashboard', free: false, pro: true, enterprise: true },
+      { name: 'Scheduled queries', free: false, pro: true, enterprise: true },
+      { name: 'Shared query links', free: false, pro: true, enterprise: true },
+      { name: 'Auto visualizations', free: true, pro: true, enterprise: true },
+    ],
+  },
+  {
+    category: 'Team & Admin',
+    features: [
+      { name: 'Team members', free: false, pro: '5', enterprise: 'Unlimited' },
+      { name: 'Role-based access', free: false, pro: true, enterprise: true },
+      { name: 'API access', free: false, pro: true, enterprise: true },
+      { name: 'Audit logs', free: false, pro: false, enterprise: true },
+      { name: 'GDPR data export', free: false, pro: false, enterprise: true },
+      { name: 'Dedicated support & SLA', free: false, pro: false, enterprise: true },
+    ],
+  },
+  {
+    category: 'Security',
+    features: [
+      { name: 'AES-256 encryption', free: true, pro: true, enterprise: true },
+      { name: 'Two-factor auth (2FA)', free: true, pro: true, enterprise: true },
+      { name: 'SQL injection prevention', free: true, pro: true, enterprise: true },
+      { name: 'Rate limiting', free: true, pro: true, enterprise: true },
+    ],
+  },
 ]
 
 const FAQS = [
@@ -135,7 +155,7 @@ const FAQS = [
   },
   {
     q: 'What databases do you support?',
-    a: 'PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift. We\'re constantly adding more.',
+    a: "PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift. We're constantly adding more.",
   },
   {
     q: 'Can I change plans anytime?',
@@ -147,11 +167,11 @@ const FAQS = [
   },
   {
     q: 'Do you offer annual billing?',
-    a: 'Annual billing is coming soon with a 20% discount. Sign up for monthly now and we\'ll automatically apply the discount when it launches.',
+    a: "Annual billing is coming soon with a 20% discount. Sign up for monthly now and we'll automatically apply the discount when it launches.",
   },
   {
     q: 'What happens when my trial ends?',
-    a: 'You\'ll be automatically moved to the Free plan. No charges, no data loss. You can upgrade to Pro whenever you\'re ready.',
+    a: "You'll be automatically moved to the Free plan. No charges, no data loss. You can upgrade to Pro whenever you're ready.",
   },
 ]
 
@@ -176,15 +196,38 @@ export default function PricingPage() {
             <AppLogo size="md" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link href="/pricing" className="text-sm text-foreground font-medium">Pricing</Link>
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
-            <Link href="/register" className="btn-primary text-sm py-2">Get Started Free</Link>
+            <Link
+              href="/features"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Features
+            </Link>
+            <Link href="/pricing" className="text-sm text-foreground font-medium">
+              Pricing
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/login"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link href="/register" className="btn-primary text-sm py-2">
+              Get Started Free
+            </Link>
           </div>
           <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">Sign In</Link>
-            <Link href="/register" className="btn-primary text-sm py-2">Sign Up</Link>
+            <Link href="/login" className="btn-ghost text-sm py-2">
+              Sign In
+            </Link>
+            <Link href="/register" className="btn-primary text-sm py-2">
+              Sign Up
+            </Link>
           </div>
         </div>
       </nav>
@@ -202,7 +245,8 @@ export default function PricingPage() {
             <span className="gradient-text block">zero surprises</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start free with 50 queries/month. Upgrade to Pro for unlimited power. No credit card required.
+            Start free with 50 queries/month. Upgrade to Pro for unlimited power. No credit card
+            required.
           </p>
         </div>
       </section>
@@ -241,20 +285,18 @@ export default function PricingPage() {
                       ) : (
                         <X className="w-4 h-4 text-muted-foreground/30 flex-shrink-0 mt-0.5" />
                       )}
-                      <span className={feature.included ? '' : 'text-muted-foreground/50'}>{feature.text}</span>
+                      <span className={feature.included ? '' : 'text-muted-foreground/50'}>
+                        {feature.text}
+                      </span>
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href={plan.href}
-                  className={`block w-full text-center py-3 rounded-xl text-sm font-semibold transition-all ${
-                    plan.highlighted
-                      ? 'btn-primary shadow-lg'
-                      : 'btn-secondary'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+                <PricingCTAButton
+                  planKey={plan.planKey}
+                  fallbackHref={plan.href}
+                  label={plan.cta}
+                  highlighted={plan.highlighted}
+                />
               </div>
             ))}
           </div>
@@ -266,7 +308,9 @@ export default function PricingPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold tracking-tight mb-4">Compare plans in detail</h2>
-            <p className="text-muted-foreground text-lg">Every feature, every plan, side by side.</p>
+            <p className="text-muted-foreground text-lg">
+              Every feature, every plan, side by side.
+            </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -291,7 +335,9 @@ export default function PricingPage() {
             {COMPARISON.map((category) => (
               <div key={category.category}>
                 <div className="px-4 py-3 bg-secondary/30 border-b border-border">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{category.category}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {category.category}
+                  </p>
                 </div>
                 {category.features.map((feature, i) => (
                   <div
@@ -299,9 +345,15 @@ export default function PricingPage() {
                     className={`grid grid-cols-4 ${i < category.features.length - 1 ? 'border-b border-border/50' : 'border-b border-border'}`}
                   >
                     <div className="p-3.5 text-sm">{feature.name}</div>
-                    <div className="p-3.5 text-center"><CellValue value={feature.free} /></div>
-                    <div className="p-3.5 text-center bg-primary/[0.02] border-x border-primary/5"><CellValue value={feature.pro} /></div>
-                    <div className="p-3.5 text-center"><CellValue value={feature.enterprise} /></div>
+                    <div className="p-3.5 text-center">
+                      <CellValue value={feature.free} />
+                    </div>
+                    <div className="p-3.5 text-center bg-primary/[0.02] border-x border-primary/5">
+                      <CellValue value={feature.pro} />
+                    </div>
+                    <div className="p-3.5 text-center">
+                      <CellValue value={feature.enterprise} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -311,13 +363,19 @@ export default function PricingPage() {
             <div className="grid grid-cols-4 bg-secondary/30">
               <div className="p-4" />
               <div className="p-4 text-center">
-                <Link href="/register" className="btn-secondary text-xs py-2 px-4">Get Started</Link>
+                <Link href="/register" className="btn-secondary text-xs py-2 px-4">
+                  Get Started
+                </Link>
               </div>
               <div className="p-4 text-center bg-primary/5 border-x border-primary/10">
-                <Link href="/register?plan=pro" className="btn-primary text-xs py-2 px-4">Start Trial</Link>
+                <Link href="/register?plan=pro" className="btn-primary text-xs py-2 px-4">
+                  Start Trial
+                </Link>
               </div>
               <div className="p-4 text-center">
-                <Link href="/register?plan=enterprise" className="btn-secondary text-xs py-2 px-4">Contact Sales</Link>
+                <Link href="/register?plan=enterprise" className="btn-secondary text-xs py-2 px-4">
+                  Contact Sales
+                </Link>
               </div>
             </div>
           </div>
@@ -337,7 +395,10 @@ export default function PricingPage() {
 
           <div className="space-y-4">
             {FAQS.map((faq) => (
-              <div key={faq.q} className="border border-border/60 rounded-xl p-5 bg-card hover:border-border transition-colors">
+              <div
+                key={faq.q}
+                className="border border-border/60 rounded-xl p-5 bg-card hover:border-border transition-colors"
+              >
                 <h3 className="font-semibold text-sm mb-2">{faq.q}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
               </div>
@@ -353,9 +414,12 @@ export default function PricingPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
             <div className="relative px-8 py-16 sm:px-16 sm:py-20 text-center">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Start querying in under 2 minutes</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Start querying in under 2 minutes
+              </h2>
               <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                No credit card. No setup headaches. Just connect your database and start asking questions.
+                No credit card. No setup headaches. Just connect your database and start asking
+                questions.
               </p>
               <Link
                 href="/register"
@@ -374,12 +438,20 @@ export default function PricingPage() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <AppLogo size="xs" showText={false} />
-            <span className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} NatureQuery. All rights reserved.</span>
+            <span className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
+            </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-            <Link href="/features" className="hover:text-foreground transition-colors">Features</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">
+              Privacy
+            </Link>
+            <Link href="/features" className="hover:text-foreground transition-colors">
+              Features
+            </Link>
           </div>
         </div>
       </footer>

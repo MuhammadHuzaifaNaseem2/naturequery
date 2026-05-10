@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
-import { Lock, Zap, X, Database, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { Lock, Zap, X, Database, ArrowRight, Loader2 } from 'lucide-react'
+import { createCheckoutSession } from '@/actions/billing'
 
 interface PlanLimitModalProps {
   onClose: () => void
@@ -16,6 +17,20 @@ export function PlanLimitModal({
   description = "You've reached the maximum number of database connections allowed on the Free plan.",
   reason = 'connection',
 }: PlanLimitModalProps) {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleUpgrade = async () => {
+    setIsLoading(true)
+    try {
+      const { url } = await createCheckoutSession('PRO')
+      if (url) window.location.href = url
+    } catch {
+      window.location.href = '/pricing'
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn"
@@ -23,7 +38,7 @@ export function PlanLimitModal({
     >
       <div
         className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-scaleIn"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Top accent bar */}
         <div className="h-1 w-full bg-gradient-to-r from-primary to-accent" />
@@ -73,14 +88,18 @@ export function PlanLimitModal({
 
           {/* Actions */}
           <div className="flex gap-3">
-            <Link
-              href="/pricing"
-              onClick={onClose}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+            <button
+              onClick={handleUpgrade}
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20 disabled:opacity-70"
             >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ArrowRight className="w-4 h-4" />
+              )}
               Upgrade to Pro
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            </button>
             <button
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl text-sm font-medium border border-border bg-secondary hover:bg-secondary/80 transition-colors"
