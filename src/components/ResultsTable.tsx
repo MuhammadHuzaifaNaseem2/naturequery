@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { QueryResultRow } from '@/actions/db'
+import { formatCellValue } from '@/lib/format-cell-value'
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 250]
 
@@ -194,51 +195,6 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
         <div className="p-8 text-center text-sm text-muted-foreground">No data to display</div>
       </div>
     )
-  }
-
-  const formatCellValue = (value: unknown, field?: string): string => {
-    if (value === null || value === undefined) return 'NULL'
-    if (typeof value === 'boolean') return value ? 'true' : 'false'
-    if (typeof value === 'object') {
-      if (value instanceof Date) return formatDateValue(value)
-      return JSON.stringify(value)
-    }
-    // ISO date strings from PostgreSQL (e.g. "2025-01-15T00:00:00.000Z")
-    if (typeof value === 'string') {
-      if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(value)) {
-        const d = new Date(value)
-        if (!isNaN(d.getTime())) return formatDateValue(d, value.includes('T'))
-      }
-    }
-    // Money / numeric columns
-    if (typeof value === 'number' && field) {
-      const lf = field.toLowerCase()
-      const isMoney =
-        /amount|price|revenue|total|cost|fee|salary|balance|earnings|spend|budget/.test(lf)
-      if (isMoney)
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 2,
-        }).format(value)
-      // Large integers → add thousands separators
-      if (Number.isInteger(value) && Math.abs(value) >= 1000)
-        return new Intl.NumberFormat('en-US').format(value)
-    }
-    return String(value)
-  }
-
-  const formatDateValue = (d: Date, hasTime = false): string => {
-    if (hasTime && (d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0)) {
-      return d.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      })
-    }
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
   return (
