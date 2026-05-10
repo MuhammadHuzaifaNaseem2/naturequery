@@ -1,4 +1,4 @@
-/**
+﻿/**
  * POST /api/insights/trigger-test
  *
  * Directly runs the tenant analysis pipeline steps for the logged-in user
@@ -20,9 +20,9 @@ export async function POST(_req: NextRequest) {
   const userId = session.user.id
 
   try {
-    // ── 1. Fetch activity metrics ──────────────────────────────────────────
+    // â”€â”€ 1. Fetch activity metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const now = Date.now()
-    const d7  = new Date(now - 7  * 24 * 60 * 60 * 1000)
+    const d7 = new Date(now - 7 * 24 * 60 * 60 * 1000)
     const d14 = new Date(now - 14 * 24 * 60 * 60 * 1000)
     const d30 = new Date(now - 30 * 24 * 60 * 60 * 1000)
 
@@ -35,7 +35,9 @@ export async function POST(_req: NextRequest) {
       topConnections,
     ] = await Promise.all([
       prisma.usageRecord.count({ where: { userId, action: 'QUERY', createdAt: { gte: d7 } } }),
-      prisma.usageRecord.count({ where: { userId, action: 'QUERY', createdAt: { gte: d14, lt: d7 } } }),
+      prisma.usageRecord.count({
+        where: { userId, action: 'QUERY', createdAt: { gte: d14, lt: d7 } },
+      }),
       prisma.usageRecord.count({ where: { userId, action: 'QUERY', createdAt: { gte: d30 } } }),
       prisma.databaseConnection.count({ where: { userId, isActive: true } }),
       prisma.savedQuery.count({ where: { userId, isTemplate: false } }),
@@ -49,9 +51,12 @@ export async function POST(_req: NextRequest) {
     ])
 
     // WoW: if no queries last week, treat any queries this week as +100% growth
-    const rawDelta = queries7d_prev === 0
-      ? (queries7d > 0 ? 100 : 0)
-      : Math.round(((queries7d - queries7d_prev) / queries7d_prev) * 100)
+    const rawDelta =
+      queries7d_prev === 0
+        ? queries7d > 0
+          ? 100
+          : 0
+        : Math.round(((queries7d - queries7d_prev) / queries7d_prev) * 100)
     const wowDelta = Math.max(-999, Math.min(999, rawDelta))
 
     const metrics = {
@@ -59,7 +64,10 @@ export async function POST(_req: NextRequest) {
       queries7d_prev,
       queries30d,
       wowDelta,
-      wowDirection: (wowDelta > 5 ? 'up' : wowDelta < -5 ? 'down' : 'stable') as 'up' | 'down' | 'stable',
+      wowDirection: (wowDelta > 5 ? 'up' : wowDelta < -5 ? 'down' : 'stable') as
+        | 'up'
+        | 'down'
+        | 'stable',
       connectionCount,
       savedQueryCount,
       topConnections: topConnections.map((c) => ({
@@ -68,16 +76,17 @@ export async function POST(_req: NextRequest) {
       })),
     }
 
-    // ── 2. Generate narrative ──────────────────────────────────────────────
+    // â”€â”€ 2. Generate narrative â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
     const name = user?.name ?? 'there'
 
     let narrative: string
 
     if (getGroqClient()) {
-      const topConnStr = metrics.topConnections.length > 0
-        ? metrics.topConnections.map((c) => `${c.name} (${c.count} queries)`).join(', ')
-        : 'no connections used'
+      const topConnStr =
+        metrics.topConnections.length > 0
+          ? metrics.topConnections.map((c) => `${c.name} (${c.count} queries)`).join(', ')
+          : 'no connections used'
 
       const prompt = `Write a weekly data digest for ${name} with these stats:
 - Queries this week: ${metrics.queries7d} (previous week: ${metrics.queries7d_prev}, ${metrics.wowDelta > 0 ? '+' : ''}${metrics.wowDelta}% week-over-week)
@@ -89,20 +98,22 @@ export async function POST(_req: NextRequest) {
 Mention the trend (${metrics.wowDirection}), highlight the most-used connection if relevant, and end with one actionable suggestion.`
 
       try {
-        const completion = await withKeyRotation(groq => groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a concise business intelligence analyst writing a weekly data digest email.
+        const completion = await withKeyRotation((groq) =>
+          groq.chat.completions.create({
+            model: 'llama-3.1-8b-instant',
+            messages: [
+              {
+                role: 'system',
+                content: `You are a concise business intelligence analyst writing a weekly data digest email.
 Write in a professional but friendly tone. Be specific with numbers. Keep it under 150 words.
-Output plain text only — no markdown, no bullet points, no headers.`,
-            },
-            { role: 'user', content: prompt },
-          ],
-          max_tokens: 300,
-          temperature: 0.4,
-        }))
+Output plain text only â€” no markdown, no bullet points, no headers.`,
+              },
+              { role: 'user', content: prompt },
+            ],
+            max_tokens: 300,
+            temperature: 0.4,
+          })
+        )
         narrative = completion.choices[0]?.message?.content?.trim() ?? buildFallback(name, metrics)
       } catch {
         narrative = buildFallback(name, metrics)
@@ -111,7 +122,7 @@ Output plain text only — no markdown, no bullet points, no headers.`,
       narrative = buildFallback(name, metrics)
     }
 
-    // ── 3. Save to DB ──────────────────────────────────────────────────────
+    // â”€â”€ 3. Save to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await prisma.auditLog.create({
       data: {
         userId,
@@ -135,16 +146,25 @@ Output plain text only — no markdown, no bullet points, no headers.`,
   }
 }
 
-function buildFallback(name: string, m: {
-  queries7d: number; queries7d_prev: number; queries30d: number
-  wowDelta: number; wowDirection: string; connectionCount: number
-  savedQueryCount: number; topConnections: { name: string; count: number }[]
-}): string {
-  const direction = m.wowDirection === 'up'
-    ? `up ${m.wowDelta}%`
-    : m.wowDirection === 'down'
-    ? `down ${Math.abs(m.wowDelta)}%`
-    : 'steady'
+function buildFallback(
+  name: string,
+  m: {
+    queries7d: number
+    queries7d_prev: number
+    queries30d: number
+    wowDelta: number
+    wowDirection: string
+    connectionCount: number
+    savedQueryCount: number
+    topConnections: { name: string; count: number }[]
+  }
+): string {
+  const direction =
+    m.wowDirection === 'up'
+      ? `up ${m.wowDelta}%`
+      : m.wowDirection === 'down'
+        ? `down ${Math.abs(m.wowDelta)}%`
+        : 'steady'
   const top = m.topConnections[0]
-  return `Hi ${name}, here's your NatureQuery weekly digest. You ran ${m.queries7d} queries this week — ${direction} from last week — and ${m.queries30d} total this month. ${top ? `Your most active connection was "${top.name}" with ${top.count} queries. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved ${m.savedQueryCount !== 1 ? 'queries' : 'query'}. Keep exploring your data!`
+  return `Hi ${name}, here's your NatureQuery weekly digest. You ran ${m.queries7d} queries this week â€” ${direction} from last week â€” and ${m.queries30d} total this month. ${top ? `Your most active connection was "${top.name}" with ${top.count} queries. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved ${m.savedQueryCount !== 1 ? 'queries' : 'query'}. Keep exploring your data!`
 }

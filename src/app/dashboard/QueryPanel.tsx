@@ -162,6 +162,29 @@ export function QueryPanel({
   const [rawSQL, setRawSQL] = useState('')
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [templateState, setTemplateState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [retryCountdown, setRetryCountdown] = useState<number | null>(null)
+
+  // Parse Groq retry delay from error message and start countdown
+  useEffect(() => {
+    if (!error || !error.toLowerCase().includes('groq api rate limit')) {
+      setRetryCountdown(null)
+      return
+    }
+    const match = error.match(/try again in ([\d.]+[ms]+)/i)
+    if (!match) return
+    const timeStr = match[1]
+    const minutes = parseInt(timeStr.match(/(\d+)m/)?.[1] ?? '0')
+    const seconds = parseFloat(timeStr.match(/([\d.]+)s/)?.[1] ?? '0')
+    const total = Math.ceil(minutes * 60 + seconds)
+    if (total > 0) setRetryCountdown(total)
+  }, [error])
+
+  // Countdown tick
+  useEffect(() => {
+    if (retryCountdown === null || retryCountdown <= 0) return
+    const timer = setTimeout(() => setRetryCountdown((n) => (n !== null ? n - 1 : null)), 1000)
+    return () => clearTimeout(timer)
+  }, [retryCountdown])
 
   // Suggestions toggle — persisted to localStorage
   const [suggestionsEnabled, setSuggestionsEnabled] = useState(() => {
@@ -580,10 +603,30 @@ export function QueryPanel({
                       {error}
                     </p>
                     {isGroqLimit && (
-                      <p className="text-xs text-muted-foreground mt-1.5">
-                        This is Groq&apos;s server-side limit, not ours. Use the{' '}
-                        <strong>SQL Editor</strong> tab to run queries directly while waiting.
-                      </p>
+                      <>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          This is Groq&apos;s server-side limit, not ours. Use the{' '}
+                          <strong>SQL Editor</strong> tab to run queries directly while waiting.
+                        </p>
+                        {retryCountdown !== null && (
+                          <div className="mt-2 flex items-center gap-2">
+                            {retryCountdown > 0 ? (
+                              <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 animate-pulse" />
+                                Ready to retry in {retryCountdown}s
+                              </span>
+                            ) : (
+                              <button
+                                onClick={onGenerateSQL}
+                                className="text-xs font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 transition-colors"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Retry now
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

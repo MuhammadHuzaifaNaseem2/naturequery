@@ -1,9 +1,9 @@
-import { inngest } from '@/lib/inngest'
+﻿import { inngest } from '@/lib/inngest'
 import { prisma } from '@/lib/prisma'
 import { withKeyRotation, getGroqClient } from '@/lib/groq-keys'
 
 // ---------------------------------------------------------------------------
-// Orchestrator — 2AM UTC nightly, fans out one event per eligible tenant
+// Orchestrator â€” 2AM UTC nightly, fans out one event per eligible tenant
 // ---------------------------------------------------------------------------
 
 export const nightlyInsightOrchestrator = inngest.createFunction(
@@ -37,7 +37,7 @@ export const nightlyInsightOrchestrator = inngest.createFunction(
 
 // ---------------------------------------------------------------------------
 // Per-tenant analysis pipeline
-// Steps: fetch activity → compute trends → generate narrative → email → persist
+// Steps: fetch activity â†’ compute trends â†’ generate narrative â†’ email â†’ persist
 // ---------------------------------------------------------------------------
 
 export const tenantAnalysisPipeline = inngest.createFunction(
@@ -51,7 +51,7 @@ export const tenantAnalysisPipeline = inngest.createFunction(
   async ({ event, step }) => {
     const { tenantId } = (event as unknown as { data: { tenantId: string } }).data
 
-    // ── Step 1: Load tenant profile ──────────────────────────────────────────
+    // â”€â”€ Step 1: Load tenant profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const tenantProfile = await step.run('load-tenant-profile', async () => {
       const user = await prisma.user.findUnique({
         where: { id: tenantId },
@@ -61,10 +61,10 @@ export const tenantAnalysisPipeline = inngest.createFunction(
       return user
     })
 
-    // ── Step 2: Fetch activity metrics ───────────────────────────────────────
+    // â”€â”€ Step 2: Fetch activity metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const metrics = await step.run('fetch-metrics', async () => {
       const now = Date.now()
-      const d7  = new Date(now - 7  * 24 * 60 * 60 * 1000)
+      const d7 = new Date(now - 7 * 24 * 60 * 60 * 1000)
       const d14 = new Date(now - 14 * 24 * 60 * 60 * 1000)
       const d30 = new Date(now - 30 * 24 * 60 * 60 * 1000)
 
@@ -99,9 +99,8 @@ export const tenantAnalysisPipeline = inngest.createFunction(
         }),
       ])
 
-      const wowDelta = queries7d_prev === 0
-        ? 0
-        : Math.round(((queries7d - queries7d_prev) / queries7d_prev) * 100)
+      const wowDelta =
+        queries7d_prev === 0 ? 0 : Math.round(((queries7d - queries7d_prev) / queries7d_prev) * 100)
 
       return {
         queries7d,
@@ -121,7 +120,7 @@ export const tenantAnalysisPipeline = inngest.createFunction(
     // Inngest JSON-serializes step results; re-assert the literal union
     const typedMetrics = metrics as Metrics
 
-    // ── Step 3: Generate narrative via Groq ──────────────────────────────────
+    // â”€â”€ Step 3: Generate narrative via Groq â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const narrative = await step.run('generate-narrative', async () => {
       if (!getGroqClient()) {
         return buildFallbackNarrative(tenantProfile.name, typedMetrics)
@@ -130,38 +129,43 @@ export const tenantAnalysisPipeline = inngest.createFunction(
       const prompt = buildNarrativePrompt(tenantProfile.name, typedMetrics)
 
       try {
-        const completion = await withKeyRotation(groq => groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a concise business intelligence analyst writing a weekly data digest email.
+        const completion = await withKeyRotation((groq) =>
+          groq.chat.completions.create({
+            model: 'llama-3.1-8b-instant',
+            messages: [
+              {
+                role: 'system',
+                content: `You are a concise business intelligence analyst writing a weekly data digest email.
 Write in a professional but friendly tone. Be specific with numbers. Keep it under 150 words.
-Output plain text only — no markdown, no bullet points, no headers.`,
-            },
-            { role: 'user', content: prompt },
-          ],
-          max_tokens: 300,
-          temperature: 0.4,
-        }))
-        return completion.choices[0]?.message?.content?.trim() ?? buildFallbackNarrative(tenantProfile.name, typedMetrics)
+Output plain text only â€” no markdown, no bullet points, no headers.`,
+              },
+              { role: 'user', content: prompt },
+            ],
+            max_tokens: 300,
+            temperature: 0.4,
+          })
+        )
+        return (
+          completion.choices[0]?.message?.content?.trim() ??
+          buildFallbackNarrative(tenantProfile.name, typedMetrics)
+        )
       } catch {
         return buildFallbackNarrative(tenantProfile.name, typedMetrics)
       }
     })
 
-    // ── Step 4: Build insight record ─────────────────────────────────────────
+    // â”€â”€ Step 4: Build insight record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const insightData = {
       narrative,
       metrics: typedMetrics,
       generatedAt: new Date().toISOString(),
     }
 
-    // ── Step 5: Send email digest ────────────────────────────────────────────
+    // â”€â”€ Step 5: Send email digest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const emailSent = await step.run('send-email', async () => {
       const { isEmailConfigured } = await import('@/lib/email')
       if (!isEmailConfigured()) {
-        console.log(`[INSIGHT] Email not configured — skipping for ${tenantProfile.email}`)
+        console.log(`[INSIGHT] Email not configured â€” skipping for ${tenantProfile.email}`)
         console.log(`[INSIGHT] Narrative:\n${narrative}`)
         return false
       }
@@ -175,7 +179,7 @@ Output plain text only — no markdown, no bullet points, no headers.`,
       return true
     })
 
-    // ── Step 6: Persist insight to DB ────────────────────────────────────────
+    // â”€â”€ Step 6: Persist insight to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const saved = await step.run('persist-insight', async () => {
       return prisma.auditLog.create({
         data: {
@@ -199,7 +203,7 @@ Output plain text only — no markdown, no bullet points, no headers.`,
 )
 
 // ---------------------------------------------------------------------------
-// Audit chain integrity check — 2:30AM UTC
+// Audit chain integrity check â€” 2:30AM UTC
 // ---------------------------------------------------------------------------
 
 export const auditChainVerifier = inngest.createFunction(
@@ -250,9 +254,10 @@ type Metrics = {
 }
 
 function buildNarrativePrompt(name: string | null, m: Metrics): string {
-  const topConnStr = m.topConnections.length > 0
-    ? m.topConnections.map((c) => `${c.name} (${c.count} queries)`).join(', ')
-    : 'no connections used'
+  const topConnStr =
+    m.topConnections.length > 0
+      ? m.topConnections.map((c) => `${c.name} (${c.count} queries)`).join(', ')
+      : 'no connections used'
 
   return `Write a weekly data digest for ${name ?? 'a user'} with these stats:
 - Queries this week: ${m.queries7d} (previous week: ${m.queries7d_prev}, ${m.wowDelta > 0 ? '+' : ''}${m.wowDelta}% week-over-week)
@@ -265,15 +270,16 @@ Mention the trend (${m.wowDirection}), highlight the most-used connection if rel
 }
 
 function buildFallbackNarrative(name: string | null, m: Metrics): string {
-  const direction = m.wowDirection === 'up'
-    ? `up ${m.wowDelta}%`
-    : m.wowDirection === 'down'
-    ? `down ${Math.abs(m.wowDelta)}%`
-    : 'steady'
+  const direction =
+    m.wowDirection === 'up'
+      ? `up ${m.wowDelta}%`
+      : m.wowDirection === 'down'
+        ? `down ${Math.abs(m.wowDelta)}%`
+        : 'steady'
 
   const top = m.topConnections[0]
 
-  return `Hi ${name ?? 'there'}, here's your NatureQuery weekly digest. You ran ${m.queries7d} queries this week — ${direction} from last week — and ${m.queries30d} total this month. ${top ? `Your most active connection was "${top.name}" with ${top.count} queries. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved ${m.savedQueryCount !== 1 ? 'queries' : 'query'}. Keep exploring your data!`
+  return `Hi ${name ?? 'there'}, here's your NatureQuery weekly digest. You ran ${m.queries7d} queries this week â€” ${direction} from last week â€” and ${m.queries30d} total this month. ${top ? `Your most active connection was "${top.name}" with ${top.count} queries. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved ${m.savedQueryCount !== 1 ? 'queries' : 'query'}. Keep exploring your data!`
 }
 
 async function sendInsightEmail(
@@ -285,17 +291,19 @@ async function sendInsightEmail(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const from = process.env.EMAIL_FROM || 'NatureQuery <onboarding@resend.dev>'
 
-  const trendBadgeColor = metrics.wowDirection === 'up'
-    ? '#10b981'
-    : metrics.wowDirection === 'down'
-    ? '#ef4444'
-    : '#6366f1'
+  const trendBadgeColor =
+    metrics.wowDirection === 'up'
+      ? '#10b981'
+      : metrics.wowDirection === 'down'
+        ? '#ef4444'
+        : '#6366f1'
 
-  const trendLabel = metrics.wowDirection === 'up'
-    ? `↑ ${metrics.wowDelta}% vs last week`
-    : metrics.wowDirection === 'down'
-    ? `↓ ${Math.abs(metrics.wowDelta)}% vs last week`
-    : '→ Steady vs last week'
+  const trendLabel =
+    metrics.wowDirection === 'up'
+      ? `â†‘ ${metrics.wowDelta}% vs last week`
+      : metrics.wowDirection === 'down'
+        ? `â†“ ${Math.abs(metrics.wowDelta)}% vs last week`
+        : 'â†’ Steady vs last week'
 
   const html = `
 <!DOCTYPE html>
@@ -355,25 +363,31 @@ async function sendInsightEmail(
       </div>
     </div>
 
-    ${metrics.topConnections.length > 0 ? `
+    ${
+      metrics.topConnections.length > 0
+        ? `
     <p style="font-size:13px; font-weight:600; color:#18181b; margin-bottom:8px;">Most active connections this week</p>
     <div class="top-connections">
-      ${metrics.topConnections.map((c, i) => {
-        const maxCount = metrics.topConnections[0].count
-        const pct = Math.round((c.count / maxCount) * 100)
-        return `<div class="conn-row">
+      ${metrics.topConnections
+        .map((c, i) => {
+          const maxCount = metrics.topConnections[0].count
+          const pct = Math.round((c.count / maxCount) * 100)
+          return `<div class="conn-row">
           <span style="color:#3f3f46; min-width:120px;">${c.name}</span>
           <div class="conn-bar-wrap"><div class="conn-bar" style="width:${pct}%"></div></div>
           <span style="color:#71717a; min-width:60px; text-align:right;">${c.count} queries</span>
         </div>`
-      }).join('')}
-    </div>` : ''}
+        })
+        .join('')}
+    </div>`
+        : ''
+    }
 
     <p style="text-align:center; margin: 28px 0 8px;">
-      <a href="${appUrl}/dashboard" class="btn">Open Dashboard →</a>
+      <a href="${appUrl}/dashboard" class="btn">Open Dashboard â†’</a>
     </p>
   </div>
-  <div class="footer">&copy; ${new Date().getFullYear()} NatureQuery · <a href="${appUrl}/settings" style="color:#a1a1aa;">Manage notifications</a></div>
+  <div class="footer">&copy; ${new Date().getFullYear()} NatureQuery Â· <a href="${appUrl}/settings" style="color:#a1a1aa;">Manage notifications</a></div>
 </div>
 </body>
 </html>`
@@ -388,7 +402,7 @@ async function sendInsightEmail(
       body: JSON.stringify({
         from,
         to: email,
-        subject: `Your NatureQuery weekly digest — ${metrics.queries7d} queries this week`,
+        subject: `Your NatureQuery weekly digest â€” ${metrics.queries7d} queries this week`,
         html,
       }),
     })
@@ -408,7 +422,7 @@ async function sendInsightEmail(
     await transporter.sendMail({
       from,
       to: email,
-      subject: `Your NatureQuery weekly digest — ${metrics.queries7d} queries this week`,
+      subject: `Your NatureQuery weekly digest â€” ${metrics.queries7d} queries this week`,
       html,
     })
   }

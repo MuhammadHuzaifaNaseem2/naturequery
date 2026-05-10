@@ -1,10 +1,10 @@
-'use server'
+﻿'use server'
 
 import { QueryResultRow } from './db'
 import { DatabaseSchema } from './db'
 import { getGroqClient, withKeyRotation } from '@/lib/groq-keys'
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface KeyFinding {
   type: 'positive' | 'negative' | 'neutral' | 'warning'
@@ -78,7 +78,7 @@ export interface AnalyzeResult {
   error?: string
 }
 
-// ─── Statistical Analysis ───────────────────────────────────────────────────
+// â”€â”€â”€ Statistical Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function calculateStatistics(rows: QueryResultRow[], fields: string[]): FieldStatistics[] {
   return fields.map((field) => {
@@ -254,7 +254,7 @@ function recommendChart(
   const categoricalFields = statistics.filter((s) => s.type === 'categorical' || s.type === 'text')
   const dateFields = statistics.filter((s) => s.type === 'date')
 
-  // Time series data → Line chart
+  // Time series data â†’ Line chart
   if (dateFields.length > 0 && numericFields.length > 0) {
     return {
       type: 'line',
@@ -265,7 +265,7 @@ function recommendChart(
     }
   }
 
-  // Few categories with numeric values → Bar chart
+  // Few categories with numeric values â†’ Bar chart
   if (categoricalFields.length > 0 && numericFields.length > 0) {
     const primaryCategorical = categoricalFields[0]
     if (primaryCategorical.uniqueCount <= 15) {
@@ -279,7 +279,7 @@ function recommendChart(
     }
   }
 
-  // Proportions with few categories → Pie chart
+  // Proportions with few categories â†’ Pie chart
   if (categoricalFields.length === 1 && numericFields.length === 1) {
     const cat = categoricalFields[0]
     if (cat.uniqueCount <= 8 && cat.uniqueCount >= 2) {
@@ -293,7 +293,7 @@ function recommendChart(
     }
   }
 
-  // Two numeric fields → Scatter plot
+  // Two numeric fields â†’ Scatter plot
   if (numericFields.length >= 2 && categoricalFields.length === 0) {
     return {
       type: 'scatter',
@@ -304,7 +304,7 @@ function recommendChart(
     }
   }
 
-  // Cumulative or flowing data → Area chart
+  // Cumulative or flowing data â†’ Area chart
   if (numericFields.length === 1 && rows.length > 10) {
     return {
       type: 'area',
@@ -351,7 +351,7 @@ function calculateDataQualityScore(statistics: FieldStatistics[]): number {
   return Math.round(totalScore / fieldCount)
 }
 
-// ─── AI-Powered Analysis ────────────────────────────────────────────────────
+// â”€â”€â”€ AI-Powered Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const INSIGHTS_SYSTEM_PROMPT = `You are a data analyst AI. Analyze the provided query results and generate insights.
 
@@ -399,7 +399,7 @@ async function generateAIInsights(
   try {
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: INSIGHTS_SYSTEM_PROMPT },
           { role: 'user', content: `Analyze this data:\n${JSON.stringify(dataSummary, null, 2)}` },
@@ -483,7 +483,7 @@ function generateMockAIInsights(
   return { summary, keyFindings, followUpQuestions }
 }
 
-// ─── Main Export ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function analyzeResults(request: AnalyzeRequest): Promise<AnalyzeResult> {
   try {

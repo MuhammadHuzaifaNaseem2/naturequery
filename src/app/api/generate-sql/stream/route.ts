@@ -1,13 +1,13 @@
-/**
+﻿/**
  * SSE Chain-of-Thought SQL Generation Stream
  *
  * Streams the AI's reasoning process token-by-token before delivering the
  * final SQL. Client receives two event types:
  *
- *   event: thought   — CoT reasoning tokens (before <sql> tag)
- *   event: sql       — final validated SQL (once </sql> is detected)
- *   event: error     — recoverable error with a message
- *   event: done      — stream complete, carries { queryId } for HITL feedback
+ *   event: thought   â€” CoT reasoning tokens (before <sql> tag)
+ *   event: sql       â€” final validated SQL (once </sql> is detected)
+ *   event: error     â€” recoverable error with a message
+ *   event: done      â€” stream complete, carries { queryId } for HITL feedback
  *
  * Messy data fixes:
  *   1. Sample rows (3 per table) are sent to the AI so it understands actual
@@ -36,37 +36,36 @@ import Groq from 'groq-sdk'
 import { getGroqClient, markKeyExhausted, isRateLimitError } from '@/lib/groq-keys'
 
 // ---------------------------------------------------------------------------
-// System prompt builder — DB-aware + messy data hardened
+// System prompt builder â€” DB-aware + messy data hardened
 // ---------------------------------------------------------------------------
 
 function buildSystemPrompt(dbType: string, schemaDesc: string, sampleRowsDesc: string): string {
   const dialect = ['mysql', 'mariadb', 'planetscale'].includes(dbType)
     ? 'MySQL'
     : dbType === 'sqlite'
-    ? 'SQLite'
-    : dbType === 'sqlserver'
-    ? 'SQL Server (T-SQL)'
-    : dbType === 'snowflake'
-    ? 'Snowflake SQL'
-    : dbType === 'bigquery'
-    ? 'BigQuery SQL'
-    : 'PostgreSQL'
+      ? 'SQLite'
+      : dbType === 'sqlserver'
+        ? 'SQL Server (T-SQL)'
+        : dbType === 'snowflake'
+          ? 'Snowflake SQL'
+          : dbType === 'bigquery'
+            ? 'BigQuery SQL'
+            : 'PostgreSQL'
 
   const castFn = ['mysql', 'mariadb', 'planetscale', 'sqlite'].includes(dbType)
     ? 'CAST(col AS DECIMAL) or CAST(col AS UNSIGNED)'
     : dbType === 'sqlserver'
-    ? 'TRY_CAST(col AS FLOAT)'
-    : 'CAST(col AS NUMERIC) or col::NUMERIC'
+      ? 'TRY_CAST(col AS FLOAT)'
+      : 'CAST(col AS NUMERIC) or col::NUMERIC'
 
-  const limitSyntax = dbType === 'sqlserver'
-    ? 'TOP 100 in SELECT clause'
-    : 'LIMIT 100 at end of query'
+  const limitSyntax =
+    dbType === 'sqlserver' ? 'TOP 100 in SELECT clause' : 'LIMIT 100 at end of query'
 
   return `You are an expert data analyst and ${dialect} engineer specializing in handling real-world messy databases.
 
 When given a question, a database schema, and SAMPLE DATA, you MUST:
 
-1. STUDY THE SAMPLE DATA FIRST — before writing any SQL:
+1. STUDY THE SAMPLE DATA FIRST â€” before writing any SQL:
    - Identify what each column actually contains (the column name may be cryptic like "col1" or "flag")
    - Spot NULL values, empty strings, mixed formats, inconsistent casing
    - Understand the real data types (e.g. a VARCHAR column storing numbers as "1,200" or "PKR 500")
@@ -83,10 +82,10 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - Use TRIM(col) for columns that may have leading/trailing whitespace
    - Use ${castFn} when a text column stores numbers
    - Use IS NOT NULL / IS NULL filters when NULLs would skew results
-   - For date columns stored as text: NEVER try to cast them directly. Use the row's primary key (integer ID) as a proxy for ordering by "latest" — it is always reliable.
-   - Never assume a column is clean — check the sample data
+   - For date columns stored as text: NEVER try to cast them directly. Use the row's primary key (integer ID) as a proxy for ordering by "latest" â€” it is always reliable.
+   - Never assume a column is clean â€” check the sample data
 
-4. STRING COMPARISONS (CRITICAL) — this is the #1 cause of empty results:
+4. STRING COMPARISONS (CRITICAL) â€” this is the #1 cause of empty results:
    - YOU WILL BE PENALIZED IF YOU DO NOT FOLLOW THIS: NEVER use regular '=' for strings!
    - Real databases use UPPER ('ACTIVE'), lower ('active'), or Mixed ('Active').
    - YOU MUST ALWAYS, ALWAYS use LOWER(column) = LOWER('value') or ILIKE for ALL string comparisons.
@@ -94,28 +93,28 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - Example RIGHT: LOWER(party_type) = 'customer'
    - Even if the sample data implies correct casing, YOU MUST USE LOWER() to catch mixed-case rows!
 
-5. JOIN strategy & Logic — Critical for accuracy:
+5. JOIN strategy & Logic â€” Critical for accuracy:
    - ALWAYS use LEFT JOIN by default unless specifically filtering.
-   - If a user asks for "overdue", "active", "pending", etc. — ALWAYS look for a status/flag column AND a date column. Do not just use dates, and do not just use statuses. Combine them (e.g. LOWER(status) != 'paid' AND due_dt < CURRENT_DATE).
+   - If a user asks for "overdue", "active", "pending", etc. â€” ALWAYS look for a status/flag column AND a date column. Do not just use dates, and do not just use statuses. Combine them (e.g. LOWER(status) != 'paid' AND due_dt < CURRENT_DATE).
 
 6. Ordering "last N" or "latest" records:
-   - NEVER ORDER BY a date column that is stored as VARCHAR/TEXT — it will sort alphabetically, not chronologically.
+   - NEVER ORDER BY a date column that is stored as VARCHAR/TEXT â€” it will sort alphabetically, not chronologically.
    - Instead, ORDER BY the table's integer primary key DESC (e.g. ORDER BY ord_id DESC, ORDER BY id DESC). Integer PKs are auto-increment and reliably reflect insertion order.
 
 7. Output your final SQL wrapped in <sql></sql> tags.
 
 CRITICAL RULES:
-- Use ${dialect} syntax ONLY — not other SQL dialects
-- SELECT statements ONLY — no INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE
+- Use ${dialect} syntax ONLY â€” not other SQL dialects
+- SELECT statements ONLY â€” no INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE
 - Use ${limitSyntax} for open-ended queries without aggregation
 - Use table aliases for readability
 - NEVER reference a column that does not exist in the schema
-- NEVER invent or assume table names — ONLY use table names listed in DATABASE SCHEMA below.
-- ALWAYS USE LOWER(col) = LOWER('val') FOR EVERY STRING COMPARISON — NEVER USE = WITHOUT LOWER!
+- NEVER invent or assume table names â€” ONLY use table names listed in DATABASE SCHEMA below.
+- ALWAYS USE LOWER(col) = LOWER('val') FOR EVERY STRING COMPARISON â€” NEVER USE = WITHOUT LOWER!
 - Interpret business terms robustly (e.g., "overdue" means date passed AND status not paid).
 
 Output format:
-[Step-by-step reasoning — what the sample data reveals, which tables and columns to use, how to handle data quality issues]
+[Step-by-step reasoning â€” what the sample data reveals, which tables and columns to use, how to handle data quality issues]
 
 <sql>
 [Your final ${dialect} SELECT query]
@@ -131,13 +130,11 @@ ${sampleRowsDesc}`
 // ---------------------------------------------------------------------------
 
 function makeSSEMessage(event: string, data: unknown): Uint8Array {
-  return new TextEncoder().encode(
-    `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
-  )
+  return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
 }
 
 // ---------------------------------------------------------------------------
-// SQL extractor — parse <sql>...</sql> from AI response
+// SQL extractor â€” parse <sql>...</sql> from AI response
 // ---------------------------------------------------------------------------
 
 function extractSQL(text: string): string {
@@ -158,7 +155,7 @@ async function streamGroqResponse(
   emitThoughts: boolean
 ): Promise<{ chainOfThought: string; sqlContent: string }> {
   const groqStream = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
+    model: 'llama-3.1-8b-instant',
     stream: true,
     messages,
     max_tokens: 2048,
@@ -253,19 +250,24 @@ export async function POST(request: NextRequest) {
     }
     if (!question || !connectionId) throw new Error('missing fields')
   } catch {
-    return new Response('Invalid JSON body — question and connectionId required', { status: 400 })
+    return new Response('Invalid JSON body â€” question and connectionId required', { status: 400 })
   }
 
   const MAX_QUESTION_LENGTH = 2000
   if (question.length > MAX_QUESTION_LENGTH) {
     return new Response(
-      JSON.stringify({ error: `Question too long (${question.length} chars). Maximum is ${MAX_QUESTION_LENGTH} characters.` }),
+      JSON.stringify({
+        error: `Question too long (${question.length} chars). Maximum is ${MAX_QUESTION_LENGTH} characters.`,
+      }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     )
   }
 
-  const userTeams = await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } })
-  const teamIds = userTeams.map(t => t.teamId)
+  const userTeams = await prisma.teamMember.findMany({
+    where: { userId },
+    select: { teamId: true },
+  })
+  const teamIds = userTeams.map((t) => t.teamId)
   const conn = await prisma.databaseConnection.findFirst({
     where: {
       id: connectionId,
@@ -283,12 +285,15 @@ export async function POST(request: NextRequest) {
 
   ;(async () => {
     try {
-      // 1. Decrypt credentials & get driver (always — needed for sample rows)
+      // 1. Decrypt credentials & get driver (always â€” needed for sample rows)
       let decryptedPassword: string
       try {
         decryptedPassword = decrypt(conn.password)
       } catch {
-        await send('error', { message: 'Could not decrypt connection credentials. Please delete and re-add this connection.' })
+        await send('error', {
+          message:
+            'Could not decrypt connection credentials. Please delete and re-add this connection.',
+        })
         return
       }
 
@@ -302,7 +307,7 @@ export async function POST(request: NextRequest) {
       }
       const driver = getOrCreateDriver(credentials, credentials.dbType)
 
-      // 2. Fetch schema — Redis cache first
+      // 2. Fetch schema â€” Redis cache first
       let schema: DatabaseSchema | null = await getCachedSchema<DatabaseSchema>(connectionId)
       if (!schema) {
         const tables = await driver.fetchSchema()
@@ -311,22 +316,22 @@ export async function POST(request: NextRequest) {
       }
 
       // 3. Filter schema to relevant tables
-      const contextTerms = conversationContext?.map(t => t.question).join(' ') ?? ''
+      const contextTerms = conversationContext?.map((t) => t.question).join(' ') ?? ''
       const filteredSchema = filterSchemaForQuestion(question + ' ' + contextTerms, schema)
       const schemaDescription = formatSchemaForPrompt(filteredSchema)
 
-      // 4. Fetch sample rows (3 per relevant table) — covers ALL filtered tables, not just first 8
+      // 4. Fetch sample rows (3 per relevant table) â€” covers ALL filtered tables, not just first 8
       const sampleRows: { tableName: string; rows: Record<string, unknown>[] }[] = []
       await Promise.all(
         filteredSchema.tables.map(async (table) => {
           try {
-            const result = await driver.executeQuery(
-              `SELECT * FROM ${table.tableName} LIMIT 3`,
-              3
-            )
-            sampleRows.push({ tableName: table.tableName, rows: result.rows as Record<string, unknown>[] })
+            const result = await driver.executeQuery(`SELECT * FROM ${table.tableName} LIMIT 3`, 3)
+            sampleRows.push({
+              tableName: table.tableName,
+              rows: result.rows as Record<string, unknown>[],
+            })
           } catch {
-            // Table may have access restrictions — skip silently
+            // Table may have access restrictions â€” skip silently
             sampleRows.push({ tableName: table.tableName, rows: [] })
           }
         })
@@ -334,13 +339,18 @@ export async function POST(request: NextRequest) {
       const sampleRowsDescription = formatSampleRowsForPrompt(sampleRows)
 
       // 5. Build DB-aware, messy-data-hardened system prompt
-      const baseSystemPrompt = buildSystemPrompt(conn.dbType, schemaDescription, sampleRowsDescription)
+      const baseSystemPrompt = buildSystemPrompt(
+        conn.dbType,
+        schemaDescription,
+        sampleRowsDescription
+      )
       const hasContext = conversationContext && conversationContext.length > 0
       const systemPrompt = hasContext
-        ? baseSystemPrompt + '\n\nCONVERSATION MODE: The user is refining a previous query. If they say "filter", "sort", "add", "change", "now", "break down", etc., MODIFY the most recent SQL — do not start from scratch.\n'
+        ? baseSystemPrompt +
+          '\n\nCONVERSATION MODE: The user is refining a previous query. If they say "filter", "sort", "add", "change", "now", "break down", etc., MODIFY the most recent SQL â€” do not start from scratch.\n'
         : baseSystemPrompt
 
-      // 6. Get Groq client from key pool — mock mode if no keys configured
+      // 6. Get Groq client from key pool â€” mock mode if no keys configured
       const groqEntry = getGroqClient()
       if (!groqEntry) {
         await streamMockResponse(question, filteredSchema, userId, send)
@@ -380,7 +390,7 @@ export async function POST(request: NextRequest) {
             if (nextEntry && nextEntry.apiKey !== currentApiKey) {
               groq = nextEntry.client
               currentApiKey = nextEntry.apiKey
-              await send('thought', { token: '\n⏳ Switching AI provider key, retrying...\n' })
+              await send('thought', { token: '\nâ³ Switching AI provider key, retrying...\n' })
               continue
             }
           }
@@ -389,7 +399,9 @@ export async function POST(request: NextRequest) {
       }
 
       if (!streamSuccess) {
-        await send('error', { message: 'All AI keys are temporarily rate-limited. Please try again in a minute.' })
+        await send('error', {
+          message: 'All AI keys are temporarily rate-limited. Please try again in a minute.',
+        })
         return
       }
 
@@ -398,18 +410,22 @@ export async function POST(request: NextRequest) {
       // 9. Validate SQL safety (AST-based)
       const validation = validateSQLSafety(finalSQL)
       if (!validation.valid) {
-        await send('error', { message: validation.error ?? 'Generated SQL failed safety validation' })
+        await send('error', {
+          message: validation.error ?? 'Generated SQL failed safety validation',
+        })
         return
       }
 
-      // 10. Auto-retry: execute to validate — handles both SQL errors AND empty results
+      // 10. Auto-retry: execute to validate â€” handles both SQL errors AND empty results
       let correctedSQL = finalSQL
       let testResult: { rows: unknown[] } | null = null
       try {
         testResult = await driver.executeQuery(finalSQL, 5)
       } catch (execError: unknown) {
         const errMsg = execError instanceof Error ? execError.message : String(execError)
-        await send('thought', { token: `\n\n⚠️ SQL had an error: "${errMsg}" — fixing automatically...\n` })
+        await send('thought', {
+          token: `\n\nâš ï¸ SQL had an error: "${errMsg}" â€” fixing automatically...\n`,
+        })
 
         const fixMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
           { role: 'system', content: systemPrompt },
@@ -417,13 +433,13 @@ export async function POST(request: NextRequest) {
           { role: 'assistant', content: `<sql>\n${finalSQL}\n</sql>` },
           {
             role: 'user',
-            content: `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map(t => t.tableName).join(', ')}\n\nPlease fix the SQL. Common causes:\n- WRONG TABLE NAME: you referenced a table that does not exist. Only use table names from the list above. Find the correct table by looking at its columns and sample data.\n- Wrong column name (check the schema and sample data carefully)\n- Wrong data type cast\n- Syntax error for this database dialect\n- Missing table alias\n\nOutput only the corrected SQL in <sql></sql> tags.`,
+            content: `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}\n\nPlease fix the SQL. Common causes:\n- WRONG TABLE NAME: you referenced a table that does not exist. Only use table names from the list above. Find the correct table by looking at its columns and sample data.\n- Wrong column name (check the schema and sample data carefully)\n- Wrong data type cast\n- Syntax error for this database dialect\n- Missing table alias\n\nOutput only the corrected SQL in <sql></sql> tags.`,
           },
         ]
 
         try {
           const fix = await groq.chat.completions.create({
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama-3.1-8b-instant',
             stream: false,
             messages: fixMessages,
             max_tokens: 1024,
@@ -436,17 +452,19 @@ export async function POST(request: NextRequest) {
             const fixValidation = validateSQLSafety(fixedSQL)
             if (fixValidation.valid) {
               correctedSQL = fixedSQL
-              await send('thought', { token: '✅ SQL fixed successfully.\n' })
+              await send('thought', { token: 'âœ… SQL fixed successfully.\n' })
             }
           }
         } catch {
-          // Retry failed — emit original SQL, let user see the error
+          // Retry failed â€” emit original SQL, let user see the error
         }
       }
 
       // Zero-row retry: if query ran but returned nothing, ask AI to reconsider
       if (testResult && testResult.rows.length === 0) {
-        await send('thought', { token: `\n\n🔍 Query returned 0 rows — reconsidering JOIN strategy and filters...\n` })
+        await send('thought', {
+          token: `\n\nðŸ” Query returned 0 rows â€” reconsidering JOIN strategy and filters...\n`,
+        })
 
         const zeroRowMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
           { role: 'system', content: systemPrompt },
@@ -454,14 +472,14 @@ export async function POST(request: NextRequest) {
           { role: 'assistant', content: `<sql>\n${finalSQL}\n</sql>` },
           {
             role: 'user',
-            content: `The SQL above executed successfully but returned 0 rows. This is a query logic problem — the data exists in the database.
+            content: `The SQL above executed successfully but returned 0 rows. This is a query logic problem â€” the data exists in the database.
 
-Diagnose systematically — check EVERY one of these before rewriting:
+Diagnose systematically â€” check EVERY one of these before rewriting:
 
 1. STRING CASE MISMATCH (most common cause): Your WHERE clause may use the wrong case.
-   - PostgreSQL string comparisons are case-sensitive: 'Customer' ≠ 'CUSTOMER' ≠ 'customer'
+   - PostgreSQL string comparisons are case-sensitive: 'Customer' â‰  'CUSTOMER' â‰  'customer'
    - Fix: use LOWER(column) = LOWER('value') for EVERY string equality check in WHERE
-   - Check the SAMPLE DATA — it shows the exact case stored in the database
+   - Check the SAMPLE DATA â€” it shows the exact case stored in the database
    - Wrong: WHERE status = 'Active'  |  Right: WHERE LOWER(status) = 'active'
    - Wrong: WHERE party_type = 'Customer'  |  Right: WHERE LOWER(party_type) = 'customer'
 
@@ -473,7 +491,7 @@ Diagnose systematically — check EVERY one of these before rewriting:
 
 4. Wrong join column: Joining on a column that doesn't actually link the tables.
 
-Available tables: ${filteredSchema.tables.map(t => t.tableName).join(', ')}
+Available tables: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}
 
 Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
           },
@@ -481,7 +499,7 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
 
         try {
           const zeroFix = await groq.chat.completions.create({
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama-3.1-8b-instant',
             stream: false,
             messages: zeroRowMessages,
             max_tokens: 1024,
@@ -494,11 +512,11 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
             const fixValidation = validateSQLSafety(fixedSQL)
             if (fixValidation.valid) {
               correctedSQL = fixedSQL
-              await send('thought', { token: '✅ Query rebuilt with corrected JOIN strategy.\n' })
+              await send('thought', { token: 'âœ… Query rebuilt with corrected JOIN strategy.\n' })
             }
           }
         } catch {
-          // Zero-row retry failed — emit original
+          // Zero-row retry failed â€” emit original
         }
       }
 
@@ -534,9 +552,12 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
           } else if (inner) {
             friendly = inner
           }
-        } catch { /* keep raw */ }
+        } catch {
+          /* keep raw */
+        }
       } else if (raw.startsWith('429')) {
-        friendly = 'Groq API rate limit reached (external service). Please wait a moment and try again.'
+        friendly =
+          'Groq API rate limit reached (external service). Please wait a moment and try again.'
       } else if (raw.startsWith('503') || raw.startsWith('502')) {
         friendly = 'AI service temporarily unavailable. Please try again.'
       }

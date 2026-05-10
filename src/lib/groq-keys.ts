@@ -42,7 +42,21 @@ function loadKeys(): KeyState[] {
   return keys
 }
 
-const COOLDOWN_MS = 60_000 // 60s cooldown for exhausted keys
+const COOLDOWN_MS = 60_000 // 60s default cooldown for exhausted keys
+
+/**
+ * Parse the "try again in Xm Ys" delay from a Groq 429 error body.
+ * Returns milliseconds, or null if not parseable.
+ */
+function parseRetryDelayMs(error: unknown): number | null {
+  if (!(error instanceof Error)) return null
+  const m = error.message.match(/try again in (?:(\d+)m)?(?:([\d.]+)s)?/i)
+  if (!m || (!m[1] && !m[2])) return null
+  const minutes = m[1] ? parseInt(m[1]) : 0
+  const seconds = m[2] ? parseFloat(m[2]) : 0
+  const ms = Math.ceil((minutes * 60 + seconds) * 1000)
+  return ms > 0 ? ms + 2000 : null // +2s buffer
+}
 
 /**
  * Get the next available Groq API key (round-robin, skipping exhausted keys).
@@ -66,20 +80,18 @@ function getNextKey(): string | null {
   }
 
   // All keys exhausted — return the one that recovers soonest
-  const soonest = pool.reduce((a, b) =>
-    a.exhaustedUntil < b.exhaustedUntil ? a : b
-  )
+  const soonest = pool.reduce((a, b) => (a.exhaustedUntil < b.exhaustedUntil ? a : b))
   return soonest.key
 }
 
 /**
  * Mark a key as rate-limited so it's skipped for the cooldown period.
  */
-export function markKeyExhausted(apiKey: string): void {
+export function markKeyExhausted(apiKey: string, cooldownMs = COOLDOWN_MS): void {
   const pool = loadKeys()
   const entry = pool.find((k) => k.key === apiKey)
   if (entry) {
-    entry.exhaustedUntil = Date.now() + COOLDOWN_MS
+    entry.exhaustedUntil = Date.now() + cooldownMs
   }
 }
 
@@ -89,11 +101,7 @@ export function markKeyExhausted(apiKey: string): void {
 export function isRateLimitError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   const msg = error.message
-  return (
-    msg.includes('rate_limit_exceeded') ||
-    msg.includes('Rate limit') ||
-    msg.startsWith('429')
-  )
+  return msg.includes('rate_limit_exceeded') || msg.includes('Rate limit') || msg.startsWith('429')
 }
 
 /**
@@ -131,8 +139,7 @@ export async function withKeyRotation<T>(
     } catch (error) {
       lastError = error
       if (isRateLimitError(error)) {
-        markKeyExhausted(entry.apiKey)
-        // Try the next key
+        markKeyExhausted(entry.apiKey, parseRetryDelayMs(error) ?? COOLDOWN_MS)
         continue
       }
       // Non-rate-limit error — don't retry
