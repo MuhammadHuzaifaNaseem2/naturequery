@@ -130,29 +130,36 @@ export function formatCellValue(value: unknown, field?: string): string {
       const d = new Date(value)
       if (!isNaN(d.getTime())) return formatDateValue(d, value.includes('T'))
     }
-    return value
   }
 
-  if (typeof value === 'number') {
+  // Resolve to a JS number — pg returns NUMERIC/DECIMAL/BIGINT as strings
+  const numericValue: number | null =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim() !== '' && isFinite(Number(value))
+        ? Number(value)
+        : null
+
+  if (numericValue !== null) {
     const kind = field ? classifyColumn(field) : 'default'
     switch (kind) {
       case 'id':
         return String(value)
       case 'currency':
-        return USD.format(value)
+        return USD.format(numericValue)
       case 'count':
-        return INT.format(Math.round(value))
+        return INT.format(Math.round(numericValue))
       case 'percent': {
         // Treat values ≤ 1 as ratios (0.155 → 15.50%), values > 1 as already-percent (45 → 45.00%)
-        const pct = Math.abs(value) <= 1 ? value * 100 : value
+        const pct = Math.abs(numericValue) <= 1 ? numericValue * 100 : numericValue
         return `${DEC2.format(pct)}%`
       }
       case 'default':
-        if (Number.isInteger(value)) {
-          // Add thousands separator only for large integers
+        // Only skip decimal formatting for actual JS integer values (not numeric strings)
+        if (typeof value === 'number' && Number.isInteger(value)) {
           return Math.abs(value) >= 10000 ? INT.format(value) : String(value)
         }
-        return DEC2.format(value)
+        return DEC2.format(numericValue)
     }
   }
 
