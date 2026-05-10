@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Database,
   Loader2,
@@ -428,6 +428,17 @@ export default function SettingsForm({
 
   const [teams, setTeams] = useState<any[]>([])
   const [showPassword, setShowPassword] = useState(false)
+  const hidePasswordTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const revealPassword = () => {
+    if (hidePasswordTimer.current) clearTimeout(hidePasswordTimer.current)
+    setShowPassword(true)
+    hidePasswordTimer.current = setTimeout(() => setShowPassword(false), 10_000)
+  }
+  const hidePassword = () => {
+    if (hidePasswordTimer.current) clearTimeout(hidePasswordTimer.current)
+    setShowPassword(false)
+  }
   const [isTestingConnection, setIsTestingConnection] = useState(false)
   const [isFetchingSchema, setIsFetchingSchema] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -490,6 +501,7 @@ export default function SettingsForm({
         port: result.data.port ?? prev.port,
         database: result.data.database,
       }))
+      setShowPassword(false) // always hide password after paste — never expose it
       setConnectionStatus('idle')
       setStatusMessage('')
     } catch {
@@ -853,8 +865,9 @@ export default function SettingsForm({
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={() => (showPassword ? hidePassword() : revealPassword())}
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? (
                           <EyeOff className="w-4 h-4" />
