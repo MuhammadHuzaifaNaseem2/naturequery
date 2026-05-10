@@ -1,6 +1,6 @@
 'use client'
 
-import { type Ref, type RefObject, useState, lazy, Suspense } from 'react'
+import { type Ref, type RefObject, useState, useEffect, lazy, Suspense } from 'react'
 import {
   Play,
   Brain,
@@ -179,6 +179,11 @@ export function QueryPanel({
       return next
     })
   }
+
+  // Clear stale explanation whenever SQL changes (BUG-001)
+  useEffect(() => {
+    setExplanation(null)
+  }, [generatedSQL])
 
   const handleExplain = async () => {
     if (!generatedSQL || isExplaining) return
@@ -531,21 +536,37 @@ export function QueryPanel({
                     )}
                   </div>
                 </div>
-                {/* Never show AI Fix It for Groq rate limit errors — it would immediately fail again */}
-                {onFixQuery && !isGroqLimit && (
-                  <button
-                    onClick={onFixQuery}
-                    disabled={isFixing}
-                    className="btn-secondary whitespace-nowrap text-sm bg-background border-destructive/20 hover:bg-destructive/10 text-destructive flex items-center gap-2"
-                  >
-                    {isFixing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-4 h-4" />
-                    )}
-                    {t('dashboard.queryPanel.aiFixIt')}
-                  </button>
-                )}
+                {/* Never show AI Fix It for rate-limit or read-only security errors */}
+                {(() => {
+                  const isSecurityBlock =
+                    error.toLowerCase().includes('only select queries are allowed') ||
+                    error.toLowerCase().includes('read-only to protect')
+                  if (isSecurityBlock) {
+                    return (
+                      <p className="text-xs text-muted-foreground max-w-[200px] text-right">
+                        Rephrase as a question, e.g. &quot;Show me all customers&quot; instead of
+                        &quot;Delete customers&quot;.
+                      </p>
+                    )
+                  }
+                  return (
+                    onFixQuery &&
+                    !isGroqLimit && (
+                      <button
+                        onClick={onFixQuery}
+                        disabled={isFixing}
+                        className="btn-secondary whitespace-nowrap text-sm bg-background border-destructive/20 hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                      >
+                        {isFixing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                        {t('dashboard.queryPanel.aiFixIt')}
+                      </button>
+                    )
+                  )
+                })()}
               </div>
             )
           })()}

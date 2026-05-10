@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Database, Loader2, CheckCircle2, XCircle, Eye, EyeOff,
-  Building2, User, ChevronLeft, X
+  Database,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Eye,
+  EyeOff,
+  Building2,
+  User,
+  ChevronLeft,
+  X,
+  ClipboardPaste,
 } from 'lucide-react'
 import { testConnection, fetchSchema, DBCredentials, DatabaseSchema } from '@/actions/db'
 import { getUserTeams } from '@/actions/team'
@@ -27,24 +36,53 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
       <circle cx="13.5" cy="13" r="1.2" fill="#336791" />
       <circle cx="18.5" cy="13" r="1.2" fill="#336791" />
       {/* Tusks */}
-      <path d="M12 21 Q10 24 11 26" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      <path d="M20 21 Q22 24 21 26" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <path
+        d="M12 21 Q10 24 11 26"
+        stroke="white"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M20 21 Q22 24 21 26"
+        stroke="white"
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   mysql: (
     <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
       <rect width="32" height="32" rx="6" fill="#00758F" />
       {/* Dolphin simplified */}
-      <path d="M6 20 Q10 10 16 12 Q22 14 26 10 Q24 18 18 18 Q14 18 12 22 Q9 26 6 20z" fill="white" opacity="0.9" />
+      <path
+        d="M6 20 Q10 10 16 12 Q22 14 26 10 Q24 18 18 18 Q14 18 12 22 Q9 26 6 20z"
+        fill="white"
+        opacity="0.9"
+      />
       <circle cx="22" cy="11" r="1.5" fill="#F29111" />
-      <path d="M6 20 Q7 22 9 21" stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      <path
+        d="M6 20 Q7 22 9 21"
+        stroke="white"
+        strokeWidth="1.2"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   mariadb: (
     <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
       <rect width="32" height="32" rx="6" fill="#C0765A" />
       {/* Sea lion silhouette */}
-      <path d="M8 22 Q8 14 14 12 Q20 10 22 14 Q24 18 20 20 Q16 22 14 20 Q12 18 14 16" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M8 22 Q8 14 14 12 Q20 10 22 14 Q24 18 20 20 Q16 22 14 20 Q12 18 14 16"
+        stroke="white"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <circle cx="22" cy="13" r="1.5" fill="white" />
       <path d="M8 22 Q6 25 8 26 Q11 27 12 24" fill="white" opacity="0.7" />
     </svg>
@@ -53,7 +91,13 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
     <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
       <rect width="32" height="32" rx="6" fill="#CC2927" />
       {/* S shape */}
-      <path d="M11 11 Q11 9 16 9 Q21 9 21 12 Q21 15 16 15.5 Q11 16 11 19.5 Q11 23 16 23 Q21 23 21 21" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path
+        d="M11 11 Q11 9 16 9 Q21 9 21 12 Q21 15 16 15.5 Q11 16 11 19.5 Q11 23 16 23 Q21 23 21 21"
+        stroke="white"
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   sqlite: (
@@ -98,7 +142,15 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
       <path d="M16 3 L27 9.5 V22.5 L16 29 L5 22.5 V9.5Z" fill="#4285F4" />
       <circle cx="15" cy="15" r="5.5" fill="white" opacity="0.95" />
       <circle cx="15" cy="15" r="3.5" fill="#4285F4" />
-      <line x1="19" y1="19" x2="23" y2="23" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+      <line
+        x1="19"
+        y1="19"
+        x2="23"
+        y2="23"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   snowflake: (
@@ -107,8 +159,24 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
       {/* Snowflake — 6 arms */}
       <line x1="16" y1="4" x2="16" y2="28" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
       <line x1="4" y1="16" x2="28" y2="16" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="7.5" y1="7.5" x2="24.5" y2="24.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="24.5" y1="7.5" x2="7.5" y2="24.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+      <line
+        x1="7.5"
+        y1="7.5"
+        x2="24.5"
+        y2="24.5"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="24.5"
+        y1="7.5"
+        x2="7.5"
+        y2="24.5"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
       {/* Center dot */}
       <circle cx="16" cy="16" r="3" fill="white" />
       {/* Arm tips */}
@@ -127,8 +195,18 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
       <circle cx="13.5" cy="12" r="1.3" fill="#6933FF" />
       <circle cx="18.5" cy="12" r="1.3" fill="#6933FF" />
       {/* Legs */}
-      <path d="M10.5 14 L6 12M10.5 16 L6 16M10.5 18 L7 20" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M21.5 14 L26 12M21.5 16 L26 16M21.5 18 L25 20" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
+      <path
+        d="M10.5 14 L6 12M10.5 16 L6 16M10.5 18 L7 20"
+        stroke="white"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M21.5 14 L26 12M21.5 16 L26 16M21.5 18 L25 20"
+        stroke="white"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
       {/* Antennae */}
       <path d="M14 7 L11 4M18 7 L21 4" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
@@ -157,7 +235,14 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
     <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
       <rect width="32" height="32" rx="6" fill="#0C0C0C" />
       {/* Neon N shape with glow */}
-      <path d="M9 24 L9 8 L23 24 L23 8" stroke="#00E599" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M9 24 L9 8 L23 24 L23 8"
+        stroke="#00E599"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   planetscale: (
@@ -172,9 +257,30 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
     <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
       <rect width="32" height="32" rx="6" fill="#0D1117" />
       {/* Turso hexagon + T */}
-      <path d="M16 5 L26 10.5 V21.5 L16 27 L6 21.5 V10.5Z" fill="none" stroke="#4FF8D2" strokeWidth="2" />
-      <line x1="11" y1="13" x2="21" y2="13" stroke="#4FF8D2" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="16" y1="13" x2="16" y2="21" stroke="#4FF8D2" strokeWidth="2.5" strokeLinecap="round" />
+      <path
+        d="M16 5 L26 10.5 V21.5 L16 27 L6 21.5 V10.5Z"
+        fill="none"
+        stroke="#4FF8D2"
+        strokeWidth="2"
+      />
+      <line
+        x1="11"
+        y1="13"
+        x2="21"
+        y2="13"
+        stroke="#4FF8D2"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="16"
+        y1="13"
+        x2="16"
+        y2="21"
+        stroke="#4FF8D2"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   mongodb: (
@@ -210,13 +316,22 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
   firestore: (
     <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
       {/* Firebase/Firestore flame */}
-      <path d="M16 29 C8 29 5 22 8 16 C10 12 12 14 12 11 C12 8 14 5 16 3 C16 3 15 9 19 12 C21 13.5 23 12 23 12 C25 17 24 29 16 29Z" fill="#FFA000" />
-      <path d="M16 29 C11 29 9 24 11 19 C12.5 15 15 17 15 14 C17 17 19 15 20 18 C21.5 22 20 29 16 29Z" fill="#FFCA28" />
+      <path
+        d="M16 29 C8 29 5 22 8 16 C10 12 12 14 12 11 C12 8 14 5 16 3 C16 3 15 9 19 12 C21 13.5 23 12 23 12 C25 17 24 29 16 29Z"
+        fill="#FFA000"
+      />
+      <path
+        d="M16 29 C11 29 9 24 11 19 C12.5 15 15 17 15 14 C17 17 19 15 20 18 C21.5 22 20 29 16 29Z"
+        fill="#FFCA28"
+      />
     </svg>
   ),
 }
 
-const DB_OPTIONS: { group: string; items: { type: string; label: string; port: number; soon?: boolean }[] }[] = [
+const DB_OPTIONS: {
+  group: string
+  items: { type: string; label: string; port: number; soon?: boolean }[]
+}[] = [
   {
     group: 'SQL',
     items: [
@@ -259,11 +374,16 @@ const DB_OPTIONS: { group: string; items: { type: string; label: string; port: n
   },
 ]
 
-export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onClose }: SettingsFormProps) {
+export default function SettingsForm({
+  onSchemaFetched,
+  onConnectionSuccess,
+  onClose,
+}: SettingsFormProps) {
   const [step, setStep] = useState<1 | 2>(1)
   const [dbType, setDbType] = useState<DatabaseType | null>(null)
   const [credentials, setCredentials] = useState<DBCredentials>({
-    host: 'localhost',
+    name: '',
+    host: '',
     port: 5432,
     database: '',
     user: '',
@@ -271,6 +391,7 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
     dbType: 'postgresql',
     teamId: '',
   })
+  const [pasteError, setPasteError] = useState('')
 
   const [teams, setTeams] = useState<any[]>([])
   const [showPassword, setShowPassword] = useState(false)
@@ -302,15 +423,48 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
       ...prev,
       dbType: type,
       port: port || prev.port,
-      host: type === 'sqlite' ? '' : 'localhost',
+      host: '',
       database: '',
       user: '',
-      password: ''
+      password: '',
+      name: '',
     }))
+    setPasteError('')
     setConnectionStatus('idle')
     setStatusMessage('')
     setSchema(null)
     setStep(2)
+  }
+
+  const handlePasteConnectionString = async () => {
+    setPasteError('')
+    try {
+      const text = await navigator.clipboard.readText()
+      const trimmed = text.trim()
+      // Support postgresql:// or postgres:// URIs
+      const match = trimmed.match(
+        /^(?:postgresql|postgres):\/\/([^:@]+)(?::([^@]*))?@([^/:]+)(?::(\d+))?\/([^?]+)(?:\?.*)?$/
+      )
+      if (!match) {
+        setPasteError(
+          'Could not parse connection string. Expected format: postgresql://user:pass@host:port/database'
+        )
+        return
+      }
+      const [, user, password, host, port, database] = match
+      setCredentials((prev) => ({
+        ...prev,
+        user: decodeURIComponent(user || ''),
+        password: decodeURIComponent(password || ''),
+        host,
+        port: port ? parseInt(port) : prev.port,
+        database: database.split('?')[0],
+      }))
+      setConnectionStatus('idle')
+      setStatusMessage('')
+    } catch {
+      setPasteError('Could not read clipboard. Please paste manually.')
+    }
   }
 
   const handleTestConnection = async () => {
@@ -348,15 +502,22 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
     }
   }
 
-  const isFormValid = dbType === 'sqlite'
-    ? !!credentials.database
-    : !!(credentials.host && credentials.port && credentials.database && credentials.user && credentials.password)
+  const isFormValid =
+    dbType === 'sqlite'
+      ? !!credentials.database
+      : !!(
+          credentials.host &&
+          credentials.port &&
+          credentials.database &&
+          credentials.user &&
+          credentials.password
+        )
 
-  const selectedDbLabel = DB_OPTIONS.flatMap(g => g.items).find(i => i.type === dbType)?.label || 'Database'
+  const selectedDbLabel =
+    DB_OPTIONS.flatMap((g) => g.items).find((i) => i.type === dbType)?.label || 'Database'
 
   return (
     <div className="glass-card rounded-2xl p-0 shadow-2xl max-w-2xl w-full animate-scaleIn overflow-hidden border border-border/50 flex flex-col max-h-[85vh] bg-background">
-
       {/* Header */}
       <div className="px-6 py-5 border-b border-border/50 bg-secondary/30 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xl">
         <div className="flex items-center gap-4">
@@ -369,10 +530,11 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
             </button>
           )}
           <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shadow-lg border border-border/50 overflow-hidden">
-            {step === 2 && dbType && DB_LOGOS[dbType]
-              ? <div className="w-8 h-8 flex items-center justify-center">{DB_LOGOS[dbType]}</div>
-              : <Database className="w-5 h-5 text-primary" />
-            }
+            {step === 2 && dbType && DB_LOGOS[dbType] ? (
+              <div className="w-8 h-8 flex items-center justify-center">{DB_LOGOS[dbType]}</div>
+            ) : (
+              <Database className="w-5 h-5 text-primary" />
+            )}
           </div>
           <div>
             <h2 className="text-lg font-bold tracking-tight text-foreground">
@@ -416,9 +578,10 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
                       disabled={soon}
                       onClick={() => !soon && handleSelectDatabase(type as DatabaseType, port)}
                       className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-xl border group outline-none
-                        ${soon
-                          ? 'bg-secondary/20 border-border/20 opacity-50 cursor-not-allowed'
-                          : 'bg-secondary/40 border-border/50 hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary'
+                        ${
+                          soon
+                            ? 'bg-secondary/20 border-border/20 opacity-50 cursor-not-allowed'
+                            : 'bg-secondary/40 border-border/50 hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary'
                         }
                       `}
                     >
@@ -443,7 +606,9 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
           <div className="p-6 space-y-6">
             {/* Workspace Selector */}
             <div className="bg-secondary/20 p-5 rounded-xl border border-border/50">
-              <label className="block text-sm font-semibold mb-2 text-foreground/90">Connect into Workspace</label>
+              <label className="block text-sm font-semibold mb-2 text-foreground/90">
+                Connect into Workspace
+              </label>
               <div className="relative">
                 <select
                   value={credentials.teamId || ''}
@@ -458,15 +623,59 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
                   ))}
                 </select>
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                  {!credentials.teamId ? <User className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                  {!credentials.teamId ? (
+                    <User className="w-4 h-4" />
+                  ) : (
+                    <Building2 className="w-4 h-4" />
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
+              {/* Connection Name */}
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-foreground">
+                  Connection Name{' '}
+                  <span className="text-muted-foreground font-normal">
+                    (how it appears in your sidebar)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={credentials.name || ''}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder={`e.g. Production DB, Analytics, ${dbType === 'mysql' ? 'My MySQL' : 'Supabase Staging'}`}
+                  maxLength={60}
+                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
+                />
+              </div>
+
+              {/* Paste connection string — only for network databases */}
+              {dbType !== 'sqlite' && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={handlePasteConnectionString}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 border border-border hover:border-primary/30 rounded-xl transition-all"
+                  >
+                    <ClipboardPaste className="w-4 h-4" />
+                    Paste connection string (postgresql://...)
+                  </button>
+                  {pasteError && (
+                    <p className="text-xs text-destructive mt-1.5 flex items-center gap-1">
+                      <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {pasteError}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {dbType === 'sqlite' ? (
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 text-foreground">Database File Path</label>
+                  <label className="block text-sm font-medium mb-1.5 text-foreground">
+                    Database File Path
+                  </label>
                   <input
                     type="text"
                     value={credentials.database}
@@ -480,30 +689,45 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
                   <div className="grid grid-cols-[2fr_1fr] gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1.5 text-foreground">
-                        {dbType === 'bigquery' ? '(Not Needed)' : dbType === 'snowflake' ? 'Account Identifier' : dbType === 'mongodb' ? 'Host / Cluster' : 'Host'}
+                        {dbType === 'bigquery'
+                          ? '(Not Needed)'
+                          : dbType === 'snowflake'
+                            ? 'Account Identifier'
+                            : dbType === 'mongodb'
+                              ? 'Host / Cluster'
+                              : 'Host'}
                       </label>
                       <input
                         type="text"
                         value={credentials.host}
                         onChange={(e) => handleInputChange('host', e.target.value)}
                         placeholder={
-                          dbType === 'snowflake' ? 'xy12345.snowflakecomputing.com' :
-                            dbType === 'mongodb' ? 'cluster0.abc.mongodb.net' :
-                              dbType === 'neon' ? 'ep-xxx.us-east-1.aws.neon.tech' :
-                                dbType === 'planetscale' ? 'aws.connect.psdb.cloud' :
-                                  dbType === 'cockroachdb' ? 'free-tier.gcp-us-central1.cockroachlabs.cloud' :
-                                    'localhost'
+                          dbType === 'snowflake'
+                            ? 'xy12345.snowflakecomputing.com'
+                            : dbType === 'mongodb'
+                              ? 'cluster0.abc.mongodb.net'
+                              : dbType === 'neon'
+                                ? 'ep-xxx.us-east-1.aws.neon.tech'
+                                : dbType === 'planetscale'
+                                  ? 'aws.connect.psdb.cloud'
+                                  : dbType === 'cockroachdb'
+                                    ? 'free-tier.gcp-us-central1.cockroachlabs.cloud'
+                                    : 'localhost'
                         }
                         disabled={dbType === 'bigquery'}
                         className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 transition-all hover:border-primary/50 text-foreground"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5 text-foreground">Port</label>
+                      <label className="block text-sm font-medium mb-1.5 text-foreground">
+                        Port
+                      </label>
                       <input
                         type="number"
                         value={credentials.port}
-                        onChange={(e) => handleInputChange('port', parseInt(e.target.value) || 5432)}
+                        onChange={(e) =>
+                          handleInputChange('port', parseInt(e.target.value) || 5432)
+                        }
                         placeholder="5432"
                         disabled={dbType === 'bigquery' || dbType === 'snowflake'}
                         className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 transition-all hover:border-primary/50 text-foreground"
@@ -513,18 +737,26 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-foreground">
-                      {dbType === 'bigquery' ? 'Project ID' : dbType === 'snowflake' ? 'Database / Warehouse' : 'Database Name'}
+                      {dbType === 'bigquery'
+                        ? 'Project ID'
+                        : dbType === 'snowflake'
+                          ? 'Database / Warehouse'
+                          : 'Database Name'}
                     </label>
                     <input
                       type="text"
                       value={credentials.database}
                       onChange={(e) => handleInputChange('database', e.target.value)}
                       placeholder={
-                        dbType === 'bigquery' ? 'my-gcp-project-id' :
-                          dbType === 'snowflake' ? 'MY_DATABASE/COMPUTE_WH' :
-                            dbType === 'oracle' ? 'ORCL' :
-                              dbType === 'mongodb' ? 'myDatabase' :
-                                'my_database'
+                        dbType === 'bigquery'
+                          ? 'my-gcp-project-id'
+                          : dbType === 'snowflake'
+                            ? 'MY_DATABASE/COMPUTE_WH'
+                            : dbType === 'oracle'
+                              ? 'ORCL'
+                              : dbType === 'mongodb'
+                                ? 'myDatabase'
+                                : 'my_database'
                       }
                       className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
                     />
@@ -539,11 +771,15 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
                       value={credentials.user}
                       onChange={(e) => handleInputChange('user', e.target.value)}
                       placeholder={
-                        dbType === 'bigquery' ? 'service-account@project.iam.gserviceaccount.com' :
-                          dbType === 'mysql' || dbType === 'mariadb' || dbType === 'planetscale' ? 'root' :
-                            dbType === 'sqlserver' ? 'sa' :
-                              dbType === 'oracle' ? 'system' :
-                                'postgres'
+                        dbType === 'bigquery'
+                          ? 'service-account@project.iam.gserviceaccount.com'
+                          : dbType === 'mysql' || dbType === 'mariadb' || dbType === 'planetscale'
+                            ? 'root'
+                            : dbType === 'sqlserver'
+                              ? 'sa'
+                              : dbType === 'oracle'
+                                ? 'system'
+                                : 'postgres'
                       }
                       className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
                     />
@@ -551,14 +787,20 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-foreground">
-                      {dbType === 'bigquery' ? 'Private Key (paste full key including \\n)' : 'Password'}
+                      {dbType === 'bigquery'
+                        ? 'Private Key (paste full key including \\n)'
+                        : 'Password'}
                     </label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={credentials.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
-                        placeholder={dbType === 'bigquery' ? '-----BEGIN PRIVATE KEY-----...' : 'Enter password'}
+                        placeholder={
+                          dbType === 'bigquery'
+                            ? '-----BEGIN PRIVATE KEY-----...'
+                            : 'Enter password'
+                        }
                         className="w-full px-4 py-2.5 pr-10 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
                       />
                       <button
@@ -566,7 +808,11 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -575,10 +821,11 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
 
               {statusMessage && (
                 <div
-                  className={`flex items-center gap-2 p-3 mt-4 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 ${connectionStatus === 'success'
-                    ? 'bg-green-500/10 text-green-600 dark:text-green-500 border border-green-500/20'
-                    : 'bg-destructive/10 text-destructive border border-destructive/20'
-                    }`}
+                  className={`flex items-center gap-2 p-3 mt-4 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
+                    connectionStatus === 'success'
+                      ? 'bg-green-500/10 text-green-600 dark:text-green-500 border border-green-500/20'
+                      : 'bg-destructive/10 text-destructive border border-destructive/20'
+                  }`}
                 >
                   {connectionStatus === 'success' ? (
                     <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
@@ -618,26 +865,34 @@ export default function SettingsForm({ onSchemaFetched, onConnectionSuccess, onC
             {schema && schema.tables.length > 0 && (
               <div className="mt-6 pt-6 border-t border-border/50 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold tracking-tight text-foreground">Schema Preview</h3>
-                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md">{schema.tables.length} tables found</span>
+                  <h3 className="text-sm font-bold tracking-tight text-foreground">
+                    Schema Preview
+                  </h3>
+                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md">
+                    {schema.tables.length} tables found
+                  </span>
                 </div>
                 <div className="max-h-52 overflow-y-auto space-y-3 seamless-scrollbar pr-2">
                   {schema.tables.map((table) => (
-                    <div key={table.tableName} className="bg-secondary/30 rounded-xl p-4 border border-border/50">
+                    <div
+                      key={table.tableName}
+                      className="bg-secondary/30 rounded-xl p-4 border border-border/50"
+                    >
                       <h4 className="font-bold text-sm mb-3 flex items-center gap-2 text-foreground">
                         <Database className="w-3.5 h-3.5 text-muted-foreground" />
                         {table.tableName}
                       </h4>
                       <div className="space-y-1.5 ml-1">
                         {table.columns.map((col) => (
-                          <div
-                            key={col.name}
-                            className="flex items-center gap-2 text-xs"
-                          >
-                            <span className={`font-medium ${col.isPrimaryKey ? 'text-primary' : 'text-muted-foreground'}`}>
+                          <div key={col.name} className="flex items-center gap-2 text-xs">
+                            <span
+                              className={`font-medium ${col.isPrimaryKey ? 'text-primary' : 'text-muted-foreground'}`}
+                            >
                               {col.name}
                             </span>
-                            <span className="text-muted-foreground/50 text-[10px] uppercase font-mono tracking-wider">{col.type}</span>
+                            <span className="text-muted-foreground/50 text-[10px] uppercase font-mono tracking-wider">
+                              {col.type}
+                            </span>
                             {col.isPrimaryKey && (
                               <span className="px-1.5 py-0.5 bg-primary/20 text-primary rounded text-[9px] font-bold uppercase tracking-wider">
                                 PK

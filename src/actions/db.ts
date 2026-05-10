@@ -9,6 +9,7 @@ import { rateLimitAsync } from '@/lib/rate-limit'
 import { auditQueryExecuted } from '@/lib/audit-immutable'
 
 export interface DBCredentials {
+  name?: string
   host: string
   port: number
   database: string

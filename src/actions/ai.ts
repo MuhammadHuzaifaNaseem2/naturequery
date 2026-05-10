@@ -109,6 +109,17 @@ STRICT RULES:
 
 7. IF INVALID: Return SELECT 'Error: ...' AS error;
 
+8. VAGUE OR AMBIGUOUS QUERIES:
+   - If the request is too vague to safely generate a specific query (single words, nonsensical input, or no clear data intent), respond with:
+     SELECT 'I need more context: [ask one specific clarifying question]' AS message;
+   - NEVER invent WHERE conditions (e.g. WHERE id = 1, WHERE name = 'thing') to force a result from a vague input.
+   - NEVER hallucinate column values that do not appear in the schema.
+
+9. BUSINESS CONTEXT DEFAULTS:
+   - "revenue", "sales", "income", "earnings" → SUM of the amount/total column WHERE the status column (if it exists) = a completed/paid/success value. Check schema for exact status values (e.g. 'completed', 'paid', 'success', 'delivered'). If no status column exists, sum all rows but add a SQL comment noting the assumption.
+   - "active users/customers" → users/customers who have at least one associated order/transaction.
+   - When a business metric is ambiguous, add a SQL comment explaining the assumption made (e.g. -- assuming revenue = completed orders only).
+
 DATABASE SCHEMA:
 `
 

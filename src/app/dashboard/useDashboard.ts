@@ -487,7 +487,7 @@ export function useDashboard() {
     async (credentials: DBCredentials, schema: DatabaseSchema) => {
       // Save connection to server (password encrypted server-side)
       const result = await saveConnection({
-        name: `${credentials.database}@${credentials.host}`,
+        name: credentials.name?.trim() || `${credentials.database}@${credentials.host}`,
         host: credentials.host,
         port: credentials.port,
         database: credentials.database,
