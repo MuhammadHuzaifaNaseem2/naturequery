@@ -254,13 +254,24 @@ DATABASE SCHEMA:
     }
 
     if (sql.toLowerCase().includes("select 'error:")) {
-      return {
-        success: false,
-        error: sql
-          .replace(/select \'error: /i, '')
-          .replace(/\' as error;/i, '')
-          .trim(),
+      const extractedError = sql
+        .replace(/select \'error: /i, '')
+        .replace(/\' as error;?/i, '')
+        .trim()
+
+      // If the AI is refusing a write operation, normalise to our standard
+      // read-only message so the frontend can consistently suppress "AI Fix It".
+      const WRITE_REFUSAL =
+        /\b(delete|update|insert|drop|truncate|alter|create|exec(?:ute)?|write|prohibited|modify|destructive)\b/i
+      if (WRITE_REFUSAL.test(extractedError)) {
+        return {
+          success: false,
+          error:
+            'Only SELECT queries are allowed. This platform is read-only to protect your data.',
+        }
       }
+
+      return { success: false, error: extractedError }
     }
 
     return { success: true, sql }

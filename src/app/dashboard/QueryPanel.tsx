@@ -509,8 +509,15 @@ export function QueryPanel({
           (() => {
             const lc = error.toLowerCase()
             const isGroqLimit = lc.includes('groq api rate limit')
+            // Primary source: our sql-validator.ts and the normalised AI path.
+            // Safety net: catch any DML-related message that leaked through a
+            // different code path (database-level rejection, streaming route, etc.)
             const isSecurityBlock =
-              lc.includes('only select queries are allowed') || lc.includes('read-only to protect')
+              lc.includes('only select queries are allowed') ||
+              lc.includes('read-only to protect') ||
+              lc.includes('prohibited query') ||
+              /cannot execute (delete|update|insert|drop|truncate|alter)/i.test(error) ||
+              /only supports? select/i.test(error)
 
             if (isSecurityBlock) {
               return (
