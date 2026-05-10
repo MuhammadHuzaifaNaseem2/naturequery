@@ -746,6 +746,17 @@ export default function SettingsForm({
                 </div>
               ) : (
                 <>
+                  {/* Honeypot: absorbs browser autofill so real fields stay empty */}
+                  <div aria-hidden="true" style={{ display: 'none' }}>
+                    <input type="text" name="username" autoComplete="username" tabIndex={-1} />
+                    <input
+                      type="password"
+                      name="password"
+                      autoComplete="current-password"
+                      tabIndex={-1}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-[2fr_1fr] gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1.5 text-foreground">
@@ -761,6 +772,7 @@ export default function SettingsForm({
                         type="text"
                         value={credentials.host}
                         onChange={(e) => handleInputChange('host', e.target.value)}
+                        autoComplete="off"
                         placeholder={
                           dbType === 'snowflake'
                             ? 'xy12345.snowflakecomputing.com'
@@ -788,6 +800,7 @@ export default function SettingsForm({
                         onChange={(e) =>
                           handleInputChange('port', parseInt(e.target.value) || 5432)
                         }
+                        autoComplete="off"
                         placeholder="5432"
                         disabled={dbType === 'bigquery' || dbType === 'snowflake'}
                         className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 transition-all hover:border-primary/50 text-foreground"
@@ -807,6 +820,7 @@ export default function SettingsForm({
                       type="text"
                       value={credentials.database}
                       onChange={(e) => handleInputChange('database', e.target.value)}
+                      autoComplete="off"
                       placeholder={
                         dbType === 'bigquery'
                           ? 'my-gcp-project-id'
@@ -830,6 +844,7 @@ export default function SettingsForm({
                       type="text"
                       value={credentials.user}
                       onChange={(e) => handleInputChange('user', e.target.value)}
+                      autoComplete="off"
                       placeholder={
                         dbType === 'bigquery'
                           ? 'service-account@project.iam.gserviceaccount.com'
@@ -856,6 +871,7 @@ export default function SettingsForm({
                         type={showPassword ? 'text' : 'password'}
                         value={credentials.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
+                        autoComplete="new-password"
                         placeholder={
                           dbType === 'bigquery'
                             ? '-----BEGIN PRIVATE KEY-----...'
