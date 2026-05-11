@@ -54,3 +54,6 @@ nul
 email-validation-results.txt
 ts_check.txt
 *.output.txt
+
+# Sentry Config File
+.env.sentry-build-plugin
