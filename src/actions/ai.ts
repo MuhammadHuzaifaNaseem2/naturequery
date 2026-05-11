@@ -186,6 +186,33 @@ export async function generateSQLFromSchema(
     }
   }
 
+  // Intent short-circuit: handle common meta-queries deterministically, no AI needed
+  if (dbType !== 'mongodb') {
+    const isShowTables =
+      /\b(show|list|display|get|see|what|find)\b.{0,30}\btables?\b/i.test(question) ||
+      /\btables?\b.{0,20}\b(database|db|exist|available|have)\b/i.test(question)
+    const isRowCount =
+      /\b(how many|count|number of)\b.{0,30}\brows?\b.{0,30}\b(each|every|all|per)\b/i.test(
+        question
+      ) || /\brows?\b.{0,30}\b(in each|per|for each)\b.{0,30}\btables?\b/i.test(question)
+
+    if (isShowTables) {
+      return {
+        success: true,
+        sql: `SELECT table_name, table_type\nFROM information_schema.tables\nWHERE table_schema = 'public'\nORDER BY table_name`,
+      }
+    }
+
+    if (isRowCount && schema.tables.length > 0) {
+      const sql = schema.tables
+        .map(
+          (t) => `SELECT '${t.tableName}' AS table_name, COUNT(*) AS row_count FROM ${t.tableName}`
+        )
+        .join('\nUNION ALL\n')
+      return { success: true, sql }
+    }
+  }
+
   try {
     if (!getGroqEntry()) {
       console.log('Running in MOCK MODE - no API key configured')
