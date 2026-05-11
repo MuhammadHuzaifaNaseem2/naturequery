@@ -409,13 +409,63 @@ export async function POST(request: NextRequest) {
 
       let finalSQL = sqlContent || extractSQL(chainOfThought)
 
-      // 9. Validate SQL safety (AST-based)
-      const validation = validateSQLSafety(finalSQL)
+      // 9. Validate SQL safety — with smart retry for recoverable cases
+      let validation = validateSQLSafety(finalSQL)
       if (!validation.valid) {
-        await send('error', {
-          message: validation.error ?? 'Generated SQL failed safety validation',
-        })
-        return
+        const isMultiStatement =
+          !!validation.error?.includes('Multiple SQL statements') ||
+          !!validation.error?.includes('single SQL statement')
+        const isPsqlMetaOrMysql =
+          /^\s*\\/.test(finalSQL) ||
+          /^\s*(SHOW\s+TABLES|SHOW\s+DATABASES|DESCRIBE\s+\w)/i.test(finalSQL)
+
+        if (isMultiStatement || isPsqlMetaOrMysql) {
+          await send('thought', {
+            token: isMultiStatement
+              ? '\n\nMultiple statements detected — rewriting as a single UNION ALL query...\n'
+              : '\n\nDetected a meta-command or MySQL syntax — rewriting with information_schema...\n',
+          })
+
+          const fixInstruction = isMultiStatement
+            ? `Your previous SQL contained multiple statements separated by semicolons. You MUST return exactly ONE SQL query.\n\nFor row counts across multiple tables, use UNION ALL:\n\nSELECT 'customers' AS table_name, COUNT(*) AS row_count FROM customers\nUNION ALL\nSELECT 'orders', COUNT(*) FROM orders\n\nRewrite as a single query and output it in <sql></sql> tags.`
+            : `Your previous response used a psql meta-command (\\dt, \\l, \\d) or MySQL-style command (SHOW TABLES, DESCRIBE). These do not work in a SQL editor.\n\nFor PostgreSQL, use information_schema instead:\n- List all tables: SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'\n- List columns: SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'mytable' AND table_schema = 'public'\n\nRewrite using standard SQL and output it in <sql></sql> tags.`
+
+          const fixMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+            { role: 'system', content: systemPrompt },
+            ...messages.slice(1),
+            { role: 'assistant', content: `<sql>\n${finalSQL}\n</sql>` },
+            { role: 'user', content: fixInstruction },
+          ]
+
+          try {
+            const fix = await groq.chat.completions.create({
+              model: 'llama-3.1-8b-instant',
+              stream: false,
+              messages: fixMessages,
+              max_tokens: 1024,
+              temperature: 0.05,
+            })
+            const fixedText = fix.choices[0]?.message?.content ?? ''
+            const fixedSQL = extractSQL(fixedText)
+            if (fixedSQL && fixedSQL !== finalSQL) {
+              const fixValidation = validateSQLSafety(fixedSQL)
+              if (fixValidation.valid) {
+                finalSQL = fixedSQL
+                validation = { valid: true }
+                await send('thought', { token: '✅ SQL rewritten successfully.\n' })
+              }
+            }
+          } catch {
+            // retry failed — fall through to error below
+          }
+        }
+
+        if (!validation.valid) {
+          await send('error', {
+            message: validation.error ?? 'Generated SQL failed safety validation',
+          })
+          return
+        }
       }
 
       // 10. Auto-retry: execute to validate â€” handles both SQL errors AND empty results
