@@ -128,6 +128,25 @@ ${sampleRowsDesc}`
 }
 
 // ---------------------------------------------------------------------------
+// Psql meta-command normalizer — converts \dt, SHOW TABLES, etc. to valid SQL
+// ---------------------------------------------------------------------------
+
+function normalizePsqlMetaCommands(sql: string): string {
+  const t = sql.trim().replace(/;?\s*$/, '')
+  if (/^\\dt$/i.test(t) || /^SHOW\s+TABLES$/i.test(t) || /^SHOW\s+DATABASES$/i.test(t)) {
+    return "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name"
+  }
+  if (/^\\l$/i.test(t)) {
+    return 'SELECT datname AS database_name FROM pg_database ORDER BY datname'
+  }
+  const describeMatch = t.match(/^(?:\\d|DESCRIBE)\s+(\w+)$/i)
+  if (describeMatch) {
+    return `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name = '${describeMatch[1]}' AND table_schema = 'public' ORDER BY ordinal_position`
+  }
+  return sql
+}
+
+// ---------------------------------------------------------------------------
 // SSE helpers
 // ---------------------------------------------------------------------------
 
@@ -407,7 +426,7 @@ export async function POST(request: NextRequest) {
         return
       }
 
-      let finalSQL = sqlContent || extractSQL(chainOfThought)
+      let finalSQL = normalizePsqlMetaCommands(sqlContent || extractSQL(chainOfThought))
 
       // 9. Validate SQL safety — with smart retry for recoverable cases
       let validation = validateSQLSafety(finalSQL)
