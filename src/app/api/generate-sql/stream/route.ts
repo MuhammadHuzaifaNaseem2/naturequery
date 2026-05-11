@@ -479,14 +479,18 @@ export async function POST(request: NextRequest) {
           token: `\n\nâš ï¸ SQL had an error: "${errMsg}" â€” fixing automatically...\n`,
         })
 
+        const isPsqlOrMysqlError =
+          /\\dt|\\l\\b|\\c\b|\\d\b|use \\|psql meta|SHOW TABLES|information_schema/i.test(errMsg)
+
+        const fixContent = isPsqlOrMysqlError
+          ? `The SQL you generated uses a psql meta-command or MySQL-style command that does not work in a SQL editor. NEVER use \\dt, \\l, \\c, \\d, SHOW TABLES, or DESCRIBE.\n\nFor PostgreSQL, use information_schema instead:\n\nTo list all tables:\nSELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name\n\nTo describe a table's columns:\nSELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'your_table' AND table_schema = 'public'\n\nOutput only the corrected SQL in <sql></sql> tags.`
+          : `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}\n\nPlease fix the SQL. Common causes:\n- WRONG TABLE NAME: you referenced a table that does not exist. Only use table names from the list above. Find the correct table by looking at its columns and sample data.\n- Wrong column name (check the schema and sample data carefully)\n- Wrong data type cast\n- Syntax error for this database dialect\n- Missing table alias\n\nOutput only the corrected SQL in <sql></sql> tags.`
+
         const fixMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
           { role: 'system', content: systemPrompt },
           ...messages.slice(1),
           { role: 'assistant', content: `<sql>\n${finalSQL}\n</sql>` },
-          {
-            role: 'user',
-            content: `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}\n\nPlease fix the SQL. Common causes:\n- WRONG TABLE NAME: you referenced a table that does not exist. Only use table names from the list above. Find the correct table by looking at its columns and sample data.\n- Wrong column name (check the schema and sample data carefully)\n- Wrong data type cast\n- Syntax error for this database dialect\n- Missing table alias\n\nOutput only the corrected SQL in <sql></sql> tags.`,
-          },
+          { role: 'user', content: fixContent },
         ]
 
         try {
