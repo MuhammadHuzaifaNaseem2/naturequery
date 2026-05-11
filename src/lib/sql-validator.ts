@@ -7,7 +7,16 @@
 import { parse } from 'pgsql-ast-parser'
 import type { DatabaseType } from '@/lib/db-drivers'
 
-const ALLOWED_STATEMENT_TYPES = new Set(['select', 'union', 'with'])
+const ALLOWED_STATEMENT_TYPES = new Set([
+  'select',
+  'union',
+  'union all',
+  'with',
+  'intersect',
+  'intersect all',
+  'except',
+  'except all',
+])
 
 /**
  * Universal dangerous-keyword blocklist. Defense-in-depth layer that runs
@@ -53,9 +62,24 @@ export function validateSQLSafety(
     // For safety, if it matches at the start, reject immediately
     const firstWord = trimmed.split(/\s+/)[0]
     const blockedStarters = new Set([
-      'DROP', 'ALTER', 'TRUNCATE', 'DELETE', 'INSERT', 'UPDATE', 'CREATE',
-      'GRANT', 'REVOKE', 'EXEC', 'EXECUTE', 'LOAD', 'CALL', 'MERGE',
-      'REPLACE', 'RENAME', 'SHUTDOWN', 'KILL',
+      'DROP',
+      'ALTER',
+      'TRUNCATE',
+      'DELETE',
+      'INSERT',
+      'UPDATE',
+      'CREATE',
+      'GRANT',
+      'REVOKE',
+      'EXEC',
+      'EXECUTE',
+      'LOAD',
+      'CALL',
+      'MERGE',
+      'REPLACE',
+      'RENAME',
+      'SHUTDOWN',
+      'KILL',
     ])
     if (blockedStarters.has(firstWord)) {
       return {
@@ -112,11 +136,11 @@ function validateWithPgParser(sql: string): { valid: boolean; error?: string } {
  */
 function stripLiterals(sql: string): string {
   return sql
-    .replace(/'(?:''|[^'])*'/g, "''")      // Replace 'single' quotes
-    .replace(/"(?:""|[^"])*"/g, '""')      // Replace "double" quotes
-    .replace(/`(?:``|[^`])*`/g, '``')      // Replace `backticks`
-    .replace(/--.*$/gm, '')                // Remove -- comments
-    .replace(/\/\*[\s\S]*?\*\//g, '')      // Remove /* block comments */
+    .replace(/'(?:''|[^'])*'/g, "''") // Replace 'single' quotes
+    .replace(/"(?:""|[^"])*"/g, '""') // Replace "double" quotes
+    .replace(/`(?:``|[^`])*`/g, '``') // Replace `backticks`
+    .replace(/--.*$/gm, '') // Remove -- comments
+    .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* block comments */
 }
 
 /**
@@ -139,8 +163,16 @@ function validateWithRegex(sql: string): { valid: boolean; error?: string } {
 
   // 2. Must start with a safe keyword
   const safeStarters = [
-    'SELECT', 'WITH', 'EXPLAIN', 'SHOW', 'DESCRIBE', 'DESC', 
-    'PRAGMA', 'LIST', 'GET', 'CHECK'
+    'SELECT',
+    'WITH',
+    'EXPLAIN',
+    'SHOW',
+    'DESCRIBE',
+    'DESC',
+    'PRAGMA',
+    'LIST',
+    'GET',
+    'CHECK',
   ]
   const firstWord = upper.split(/[\s(]+/)[0]
 
@@ -161,7 +193,10 @@ function validateWithRegex(sql: string): { valid: boolean; error?: string } {
  * inspect the tail of the actual query body.
  */
 function stripTrailing(sql: string): string {
-  return sql.replace(/--[^\n]*$/gm, '').replace(/\s*;+\s*$/, '').trim()
+  return sql
+    .replace(/--[^\n]*$/gm, '')
+    .replace(/\s*;+\s*$/, '')
+    .trim()
 }
 
 /**
