@@ -371,6 +371,66 @@ export async function POST(request: NextRequest) {
           '\n\nCONVERSATION MODE: The user is refining a previous query. If they say "filter", "sort", "add", "change", "now", "break down", etc., MODIFY the most recent SQL â€” do not start from scratch.\n'
         : baseSystemPrompt
 
+      // 6a. Intent short-circuit: handle common meta-queries directly, no AI needed
+      const isShowTables =
+        /\b(show|list|display|get|see|what|find)\b.{0,30}\btables?\b/i.test(question) ||
+        /\btables?\b.{0,20}\b(database|db|exist|available|have)\b/i.test(question)
+      const isRowCount =
+        /\b(how many|count|number of)\b.{0,20}\brows?\b.{0,20}\b(each|every|all|per)\b/i.test(
+          question
+        ) || /\brows?\b.{0,20}\b(in each|per|for each)\b.{0,20}\btables?\b/i.test(question)
+
+      if (isShowTables) {
+        await send('thought', {
+          token: 'Detected table listing intent — querying information_schema directly.\n',
+        })
+        const sql = `SELECT table_name, table_type\nFROM information_schema.tables\nWHERE table_schema = 'public'\nORDER BY table_name`
+        const feedback = await prisma.queryFeedback
+          .create({
+            data: {
+              userId,
+              question,
+              generatedSql: sql,
+              chainOfThought: '',
+              connectionId,
+              rating: 0,
+            },
+            select: { id: true },
+          })
+          .catch(() => ({ id: 'intent' }))
+        await send('sql', { sql })
+        await send('done', { queryId: feedback.id })
+        return
+      }
+
+      if (isRowCount && filteredSchema.tables.length > 0) {
+        await send('thought', {
+          token: 'Detected row-count intent — building UNION ALL query from schema.\n',
+        })
+        const sql = filteredSchema.tables
+          .map(
+            (t) =>
+              `SELECT '${t.tableName}' AS table_name, COUNT(*) AS row_count FROM ${t.tableName}`
+          )
+          .join('\nUNION ALL\n')
+        const feedback = await prisma.queryFeedback
+          .create({
+            data: {
+              userId,
+              question,
+              generatedSql: sql,
+              chainOfThought: '',
+              connectionId,
+              rating: 0,
+            },
+            select: { id: true },
+          })
+          .catch(() => ({ id: 'intent' }))
+        await send('sql', { sql })
+        await send('done', { queryId: feedback.id })
+        return
+      }
+
       // 6. Get Groq client from key pool â€” mock mode if no keys configured
       const groqEntry = getGroqClient()
       if (!groqEntry) {
