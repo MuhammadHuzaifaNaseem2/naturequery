@@ -112,6 +112,8 @@ CRITICAL RULES:
 - NEVER invent or assume table names â€” ONLY use table names listed in DATABASE SCHEMA below.
 - ALWAYS USE LOWER(col) = LOWER('val') FOR EVERY STRING COMPARISON â€” NEVER USE = WITHOUT LOWER!
 - Interpret business terms robustly (e.g., "overdue" means date passed AND status not paid).
+- Always generate PostgreSQL-compatible SQL only. Never use MySQL syntax such as SHOW TABLES, SHOW DATABASES, or DESCRIBE table. Instead use information_schema equivalents, for example: SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
+- Never generate multiple SQL statements in a single response. Always return exactly one SQL query. If the user's question requires data from multiple tables, use UNION ALL, subqueries, or JOINs within a single statement.
 
 Output format:
 [Step-by-step reasoning â€” what the sample data reveals, which tables and columns to use, how to handle data quality issues]
