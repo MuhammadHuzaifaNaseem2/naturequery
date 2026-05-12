@@ -48,7 +48,7 @@ const COOLDOWN_MS = 60_000 // 60s default cooldown for exhausted keys
  * Parse the "try again in Xm Ys" delay from a Groq 429 error body.
  * Returns milliseconds, or null if not parseable.
  */
-function parseRetryDelayMs(error: unknown): number | null {
+export function parseRetryDelayMs(error: unknown): number | null {
   if (!(error instanceof Error)) return null
   const m = error.message.match(/try again in (?:(\d+)m)?(?:([\d.]+)s)?/i)
   if (!m || (!m[1] && !m[2])) return null

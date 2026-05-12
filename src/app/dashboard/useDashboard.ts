@@ -752,23 +752,55 @@ export function useDashboard() {
     const connId = activeConnection.id
     const history = conversationRef.current.get(connId) ?? []
 
-    const result = await generateSQL({
+    const sqlRequest = {
       question: nlQuery,
       schema: activeConnection.schema,
       conversationContext: history.length > 0 ? history : undefined,
       dbType: activeConnection.dbType,
-    })
+    }
 
-    setIsGenerating(false)
+    const result = await generateSQL(sqlRequest)
 
     if (result.success && result.sql) {
+      setIsGenerating(false)
       setGeneratedSQL(result.sql)
       // Onboarding: mark "asked first question"
       updateChecklistItem('askedFirstQuestion', true).catch(() => {})
       window.dispatchEvent(
         new CustomEvent('onboarding:complete', { detail: { item: 'askedFirstQuestion' } })
       )
+    } else if (result.retryAfter && result.retryAfter <= 30) {
+      // Rate limited — auto-retry with a live countdown (keep spinner running)
+      const waitSecs = result.retryAfter
+      const toastId = toast.loading(`AI is busy. Retrying in ${waitSecs}s...`)
+      let remaining = waitSecs
+      const ticker = setInterval(() => {
+        remaining -= 1
+        if (remaining > 0) {
+          toast.loading(`AI is busy. Retrying in ${remaining}s...`, { id: toastId })
+        }
+      }, 1000)
+      await new Promise<void>((resolve) => setTimeout(resolve, waitSecs * 1000))
+      clearInterval(ticker)
+      toast.dismiss(toastId)
+
+      const retryResult = await generateSQL(sqlRequest)
+      setIsGenerating(false)
+
+      if (retryResult.success && retryResult.sql) {
+        setGeneratedSQL(retryResult.sql)
+        updateChecklistItem('askedFirstQuestion', true).catch(() => {})
+        window.dispatchEvent(
+          new CustomEvent('onboarding:complete', { detail: { item: 'askedFirstQuestion' } })
+        )
+      } else {
+        setError(retryResult.error || 'AI service temporarily unavailable. Please try again.')
+        toast.error('AI temporarily unavailable', {
+          description: 'Please wait a moment and try again.',
+        })
+      }
     } else {
+      setIsGenerating(false)
       setError(result.error || 'Failed to generate SQL')
       toast.error('SQL generation failed', { description: result.error })
     }

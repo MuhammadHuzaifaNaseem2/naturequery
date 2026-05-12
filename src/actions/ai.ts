@@ -5,7 +5,12 @@ import { auth } from '@/lib/auth'
 import { filterSchemaForQuestion, formatSchemaForPrompt } from '@/lib/schema-utils'
 import { validateSQLSafety } from '@/lib/sql-validator'
 import type { DatabaseType } from '@/lib/db-drivers'
-import { getGroqClient as getGroqEntry, withKeyRotation } from '@/lib/groq-keys'
+import {
+  getGroqClient as getGroqEntry,
+  withKeyRotation,
+  isRateLimitError,
+  parseRetryDelayMs,
+} from '@/lib/groq-keys'
 
 /**
  * Converts a raw Groq SDK / API error into a user-friendly string.
@@ -34,7 +39,7 @@ function parseGroqError(error: unknown): string {
         const retryHint = retryMatch
           ? ` Try again in ${retryMatch[1]}.`
           : ' Please wait a moment and try again.'
-        return `Groq API rate limit reached (external service).${retryHint}`
+        return `AI service is temporarily busy.${retryHint}`
       }
       if (code === 'model_not_found' || inner?.includes('model not found')) {
         return 'AI model temporarily unavailable. Please try again.'
@@ -47,7 +52,7 @@ function parseGroqError(error: unknown): string {
 
   // Status-code prefixed messages like "429 ..." or "503 ..."
   if (msg.startsWith('429'))
-    return 'Groq API rate limit reached (external service). Please wait a moment and try again.'
+    return 'AI service is temporarily busy. Please wait a moment and try again.'
   if (msg.startsWith('503') || msg.startsWith('502'))
     return 'AI service temporarily unavailable. Please try again.'
   if (msg.startsWith('401')) return 'AI service authentication failed. Please contact support.'
@@ -72,6 +77,7 @@ export interface GenerateSQLResult {
   success: boolean
   sql?: string
   error?: string
+  retryAfter?: number // seconds to wait before retrying (rate limit only)
 }
 
 export interface FixSQLRequest {
@@ -304,6 +310,14 @@ DATABASE SCHEMA:
     return { success: true, sql }
   } catch (error) {
     console.error('Failed to generate SQL:', error)
+    if (isRateLimitError(error)) {
+      const delayMs = parseRetryDelayMs(error)
+      return {
+        success: false,
+        error: parseGroqError(error),
+        retryAfter: delayMs ? Math.ceil(delayMs / 1000) : 10,
+      }
+    }
     return {
       success: false,
       error: parseGroqError(error),
