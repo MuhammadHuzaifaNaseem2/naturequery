@@ -36,9 +36,6 @@ export const metadata: Metadata = {
   authors: [{ name: 'NatureQuery' }],
   creator: 'NatureQuery',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://naturequery.app'),
-  other: {
-    'probely-verification': '289dd30f-8c63-424f-928f-355d12366e2d',
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -98,6 +95,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <head>
+        <meta name="probely-verification" content="289dd30f-8c63-424f-928f-355d12366e2d" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');var d=document.documentElement;if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches)){d.classList.add('dark')}}catch(e){}})()`,
