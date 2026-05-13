@@ -12,19 +12,23 @@ const sections = [
     subsections: [
       {
         title: 'Account Information',
-        content: 'When you create an account, we collect your name, email address, and password (hashed with bcrypt). If you sign in via OAuth (Google, GitHub), we receive your profile information from the provider.',
+        content:
+          'When you create an account, we collect your name, email address, and password (hashed with bcrypt). If you sign in via OAuth (Google, GitHub), we receive your profile information from the provider.',
       },
       {
         title: 'Database Credentials',
-        content: 'When you add a database connection, we store the host, port, database name, username, and password. Passwords are encrypted using AES-256-GCM before storage and are never logged or exposed in plaintext.',
+        content:
+          'When you add a database connection, we store the host, port, database name, username, and password. Passwords are encrypted using AES-256-GCM before storage and are never logged or exposed in plaintext.',
       },
       {
         title: 'Usage Data',
-        content: 'We collect information about how you use the Service, including queries submitted, features used, error reports, and performance metrics. This data helps us improve the Service.',
+        content:
+          'We collect information about how you use the Service, including queries submitted, features used, error reports, and performance metrics. This data helps us improve the Service.',
       },
       {
         title: 'Technical Data',
-        content: 'We automatically collect IP addresses, browser type, device information, and access timestamps for security (audit logs) and analytics purposes.',
+        content:
+          'We automatically collect IP addresses, browser type, device information, and access timestamps for security (audit logs) and analytics purposes.',
       },
     ],
   },
@@ -42,17 +46,20 @@ const sections = [
   {
     number: '03',
     title: 'Data Storage & Security',
-    content: 'Your data is stored in PostgreSQL databases with encryption at rest. Database credentials are encrypted with AES-256-GCM. We use HTTPS for all data transmission. API keys are stored as SHA-256 hashes.',
+    content:
+      'Your data is stored in PostgreSQL databases with encryption at rest. Database credentials are encrypted with AES-256-GCM. We use HTTPS for all data transmission. API keys are stored as SHA-256 hashes.',
   },
   {
     number: '04',
     title: 'AI Processing',
-    content: 'Your natural language questions and database schema information are sent to our AI provider (Groq) to generate SQL queries. We do not send your actual data or query results to any AI provider. Schema information is cached locally and transmitted only as needed for query generation.',
+    content:
+      'Your natural language questions and database schema information are sent to our AI provider (Groq) to generate SQL queries. We do not send your actual data or query results to any AI provider. Schema information is cached locally and transmitted only as needed for query generation.',
   },
   {
     number: '05',
     title: 'Data Sharing',
-    content: 'We do not sell your personal information. We share data only with trusted parties for specific purposes:',
+    content:
+      'We do not sell your personal information. We share data only with trusted parties for specific purposes:',
     list: [
       { label: 'Stripe', detail: 'Payment processing (name, email, billing info)' },
       { label: 'AI providers', detail: 'Query generation (schema metadata only, no row data)' },
@@ -64,7 +71,10 @@ const sections = [
     title: 'Data Retention',
     list: [
       { label: 'Account data', detail: 'Retained while your account is active' },
-      { label: 'Query history', detail: 'Retained per your plan (30 days for Free, unlimited for paid)' },
+      {
+        label: 'Query history',
+        detail: 'Retained per your plan (30 days for Free, unlimited for paid)',
+      },
       { label: 'Audit logs', detail: 'Retained for 90 days' },
       { label: 'Deleted accounts', detail: 'Data purged within 30 days of deletion' },
     ],
@@ -84,17 +94,20 @@ const sections = [
   {
     number: '08',
     title: 'Cookies',
-    content: 'We use essential cookies for authentication (session tokens) and preference storage (theme). We do not use third-party tracking cookies or advertising pixels.',
+    content:
+      'We use essential cookies for authentication (session tokens) and preference storage (theme). We do not use third-party tracking cookies or advertising pixels.',
   },
   {
     number: '09',
     title: "Children's Privacy",
-    content: 'NatureQuery is not intended for users under 16 years of age. We do not knowingly collect data from children.',
+    content:
+      'NatureQuery is not intended for users under 16 years of age. We do not knowingly collect data from children.',
   },
   {
     number: '10',
     title: 'Changes to This Policy',
-    content: 'We may update this Privacy Policy periodically. We will notify you of material changes via email or in-app notification at least 30 days before they take effect.',
+    content:
+      'We may update this Privacy Policy periodically. We will notify you of material changes via email or in-app notification at least 30 days before they take effect.',
   },
 ]
 
@@ -128,7 +141,8 @@ export default function PrivacyPage() {
           </div>
           <h1 className="text-4xl font-bold tracking-tight mb-4">Privacy Policy</h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-            Your privacy matters to us. This policy explains what data we collect, how we use it, and the controls you have over your information.
+            Your privacy matters to us. This policy explains what data we collect, how we use it,
+            and the controls you have over your information.
           </p>
           <div className="flex items-center gap-2 mt-6 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
@@ -138,7 +152,10 @@ export default function PrivacyPage() {
           {/* Trust badges */}
           <div className="flex flex-wrap gap-3 mt-8">
             {['AES-256 Encryption', 'No data selling', 'HTTPS only', 'GDPR ready'].map((badge) => (
-              <span key={badge} className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/8 border border-primary/15 rounded-full px-3 py-1.5">
+              <span
+                key={badge}
+                className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/8 border border-primary/15 rounded-full px-3 py-1.5"
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 {badge}
               </span>
@@ -151,7 +168,9 @@ export default function PrivacyPage() {
           {/* Sticky TOC */}
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Contents</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+                Contents
+              </p>
               <nav className="space-y-1">
                 {sections.map((s) => (
                   <a
@@ -159,7 +178,9 @@ export default function PrivacyPage() {
                     href={`#section-${s.number}`}
                     className="flex items-center gap-2.5 py-1.5 px-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors group"
                   >
-                    <span className="text-xs font-mono text-primary/60 group-hover:text-primary transition-colors">{s.number}</span>
+                    <span className="text-xs font-mono text-primary/60 group-hover:text-primary transition-colors">
+                      {s.number}
+                    </span>
                     <span className="truncate">{s.title}</span>
                   </a>
                 ))}
@@ -190,25 +211,35 @@ export default function PrivacyPage() {
                         <div className="space-y-4">
                           {s.subsections.map((sub, j) => (
                             <div key={j}>
-                              <h3 className="text-sm font-semibold text-foreground/80 mb-1">{sub.title}</h3>
-                              <p className="text-sm text-muted-foreground leading-relaxed">{sub.content}</p>
+                              <h3 className="text-sm font-semibold text-foreground/80 mb-1">
+                                {sub.title}
+                              </h3>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {sub.content}
+                              </p>
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {/* Plain content */}
-                      {s.content && !s.subsections && (
+                      {/* Plain content — only when no list/bullets handle it */}
+                      {s.content && !s.subsections && !s.list && !s.bullets && (
                         <p className="text-sm text-muted-foreground leading-relaxed">{s.content}</p>
                       )}
 
                       {/* Labeled list */}
                       {s.list && (
                         <div className="mt-3 space-y-2">
-                          {s.content && <p className="text-sm text-muted-foreground leading-relaxed mb-3">{s.content}</p>}
+                          {s.content && (
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                              {s.content}
+                            </p>
+                          )}
                           {s.list.map((item, j) => (
                             <div key={j} className="flex items-start gap-3 text-sm">
-                              <span className="font-medium text-foreground/80 shrink-0">{item.label}:</span>
+                              <span className="font-medium text-foreground/80 shrink-0">
+                                {item.label}:
+                              </span>
                               <span className="text-muted-foreground">{item.detail}</span>
                             </div>
                           ))}
@@ -218,10 +249,17 @@ export default function PrivacyPage() {
                       {/* Bullet list */}
                       {s.bullets && (
                         <div className="mt-3">
-                          {s.content && <p className="text-sm text-muted-foreground leading-relaxed mb-3">{s.content}</p>}
+                          {s.content && (
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                              {s.content}
+                            </p>
+                          )}
                           <ul className="space-y-2">
                             {s.bullets.map((item, j) => (
-                              <li key={j} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                              <li
+                                key={j}
+                                className="flex items-start gap-2.5 text-sm text-muted-foreground"
+                              >
                                 <span className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-1.5 shrink-0" />
                                 {item}
                               </li>
@@ -242,15 +280,17 @@ export default function PrivacyPage() {
                   <Mail className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-foreground mb-1">Privacy questions or data requests?</h2>
+                  <h2 className="text-base font-semibold text-foreground mb-1">
+                    Privacy questions or data requests?
+                  </h2>
                   <p className="text-sm text-muted-foreground mb-3">
                     To exercise your data rights or ask about this policy, reach out directly.
                   </p>
                   <a
-                    href="mailto:support@naturequery.com"
+                    href="mailto:support@naturequery.app"
                     className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                   >
-                    support@naturequery.com
+                    support@naturequery.app
                   </a>
                 </div>
               </div>
@@ -264,8 +304,12 @@ export default function PrivacyPage() {
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">© 2026 NatureQuery. All rights reserved.</p>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-            <Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">
+              Terms of Service
+            </Link>
+            <Link href="/contact" className="hover:text-foreground transition-colors">
+              Contact
+            </Link>
           </div>
         </div>
       </footer>

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Changelog - What\'s New',
+  title: "Changelog - What's New",
   description: 'See the latest updates, improvements, and new features added to NatureQuery.',
 }
 
@@ -51,7 +51,10 @@ const RELEASES: Release[] = [
     description: 'New marketing pages, codebase cleanup, and UX refinements.',
     icon: Rocket,
     changes: [
-      { type: 'feature', text: 'Added Features, Pricing, About, Contact, Changelog, and FAQ pages' },
+      {
+        type: 'feature',
+        text: 'Added Features, Pricing, About, Contact, Changelog, and FAQ pages',
+      },
       { type: 'feature', text: 'Delete confirmation modal for database connections' },
       { type: 'improvement', text: 'Schema auto-fetches on page refresh (no more "0 tables")' },
       { type: 'improvement', text: 'Cleaned up 15+ unused files and debug artifacts' },
@@ -89,13 +92,17 @@ const RELEASES: Release[] = [
   },
   {
     version: '1.0.0',
-    date: 'Coming Soon',
+    date: 'May 2026',
     title: 'Public Launch',
-    description: 'NatureQuery launches with 30+ features, 6 database types, and a 7-day free trial. Stay tuned!',
+    description:
+      'NatureQuery launches with 30+ features, 6 database types, and a 7-day free trial.',
     icon: Rocket,
     changes: [
       { type: 'feature', text: 'Natural language to SQL generation powered by Groq Llama 3.3' },
-      { type: 'feature', text: 'Support for PostgreSQL, MySQL, SQLite, SQL Server, Oracle, and MariaDB' },
+      {
+        type: 'feature',
+        text: 'Support for PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift',
+      },
       { type: 'feature', text: 'Two-factor authentication with TOTP and backup codes' },
       { type: 'feature', text: 'Team collaboration with shared connections and queries' },
       { type: 'feature', text: 'Stripe billing with Free, Pro, and Enterprise plans' },
@@ -117,15 +124,41 @@ export default function ChangelogPage() {
             <AppLogo size="md" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
-            <Link href="/register" className="btn-primary text-sm py-2">Get Started Free</Link>
+            <Link
+              href="/features"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Features
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/login"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link href="/register" className="btn-primary text-sm py-2">
+              Get Started Free
+            </Link>
           </div>
           <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">Sign In</Link>
-            <Link href="/register" className="btn-primary text-sm py-2">Sign Up</Link>
+            <Link href="/login" className="btn-ghost text-sm py-2">
+              Sign In
+            </Link>
+            <Link href="/register" className="btn-primary text-sm py-2">
+              Sign Up
+            </Link>
           </div>
         </div>
       </nav>
@@ -162,11 +195,13 @@ export default function ChangelogPage() {
                   <div key={release.version} className="relative">
                     {/* Timeline dot */}
                     <div className="hidden sm:flex absolute left-0 top-0">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 ${
-                        i === 0
-                          ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                          : 'bg-card border-2 border-border'
-                      }`}>
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center z-10 ${
+                          i === 0
+                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                            : 'bg-card border-2 border-border'
+                        }`}
+                      >
                         <ReleaseIcon className="w-4 h-4" />
                       </div>
                     </div>
@@ -191,7 +226,9 @@ export default function ChangelogPage() {
                             const ChangeIcon = config.icon
                             return (
                               <div key={j} className="flex items-start gap-3">
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider flex-shrink-0 mt-0.5 ${config.color}`}>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider flex-shrink-0 mt-0.5 ${config.color}`}
+                                >
                                   <ChangeIcon className="w-3 h-3" />
                                   {config.label}
                                 </span>
@@ -217,7 +254,8 @@ export default function ChangelogPage() {
             <Wrench className="w-8 h-8 text-primary mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-3">Want to see what&apos;s next?</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              We&apos;re always building. Start your free trial and be the first to experience new features.
+              We&apos;re always building. Start your free trial and be the first to experience new
+              features.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/register" className="btn-primary text-sm py-2.5 px-6">
@@ -236,12 +274,20 @@ export default function ChangelogPage() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <AppLogo size="xs" showText={false} />
-            <span className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} NatureQuery. All rights reserved.</span>
+            <span className="text-sm text-muted-foreground">
+              &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
+            </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-            <Link href="/features" className="hover:text-foreground transition-colors">Features</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">
+              Privacy
+            </Link>
+            <Link href="/features" className="hover:text-foreground transition-colors">
+              Features
+            </Link>
           </div>
         </div>
       </footer>

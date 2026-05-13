@@ -35,7 +35,8 @@ import {
 
 export const metadata: Metadata = {
   title: 'Features - Everything NatureQuery Offers',
-  description: 'Explore all NatureQuery features: AI-powered SQL generation, conversational follow-ups, chain-of-thought reasoning, multi-database support, team collaboration, and enterprise security.',
+  description:
+    'Explore all NatureQuery features: AI-powered SQL generation, conversational follow-ups, chain-of-thought reasoning, multi-database support, team collaboration, and enterprise security.',
 }
 
 // ---------------------------------------------------------------------------
@@ -68,32 +69,38 @@ const SECTIONS: FeatureSection[] = [
       {
         icon: Sparkles,
         title: 'Natural Language to SQL',
-        description: 'Type "show me top customers by revenue" and get optimized, join-aware SQL instantly. No SQL knowledge needed.',
+        description:
+          'Type "show me top customers by revenue" and get optimized, join-aware SQL instantly. No SQL knowledge needed.',
       },
       {
         icon: MessageSquare,
         title: 'Conversational Follow-ups',
-        description: 'Refine results naturally. Say "filter to New York" or "break down by month" — the AI modifies your previous query contextually.',
+        description:
+          'Refine results naturally. Say "filter to New York" or "break down by month" — the AI modifies your previous query contextually.',
       },
       {
         icon: Brain,
         title: 'Chain-of-Thought Reasoning',
-        description: 'Watch the AI think step-by-step in real time. See which tables it picks, how it plans JOINs, and why it chose that approach.',
+        description:
+          'Watch the AI think step-by-step in real time. See which tables it picks, how it plans JOINs, and why it chose that approach.',
       },
       {
         icon: Lightbulb,
         title: 'AI Schema Discovery',
-        description: 'Connect a database and instantly get suggested questions. The AI analyzes your schema and proposes the most useful queries.',
+        description:
+          'Connect a database and instantly get suggested questions. The AI analyzes your schema and proposes the most useful queries.',
       },
       {
         icon: Wand2,
         title: 'AI Fix It',
-        description: 'Query failed? One click and the AI analyzes the error, fixes the SQL, and retries. Turns frustration into a solved problem.',
+        description:
+          'Query failed? One click and the AI analyzes the error, fixes the SQL, and retries. Turns frustration into a solved problem.',
       },
       {
         icon: Eye,
         title: 'SQL Explanation',
-        description: 'Click "Explain" on any generated SQL and get a plain-English breakdown. Understand exactly what the query does before running it.',
+        description:
+          'Click "Explain" on any generated SQL and get a plain-English breakdown. Understand exactly what the query does before running it.',
       },
     ],
   },
@@ -107,32 +114,38 @@ const SECTIONS: FeatureSection[] = [
       {
         icon: Filter,
         title: 'Column Filters & Search',
-        description: 'Global search across all results. Per-column filters with smart type detection — text search for strings, min/max ranges for numbers.',
+        description:
+          'Global search across all results. Per-column filters with smart type detection — text search for strings, min/max ranges for numbers.',
       },
       {
         icon: AlignLeft,
         title: 'SQL Auto-Formatter',
-        description: 'One-click SQL beautification. Messy AI output becomes perfectly indented, readable SQL with proper keyword casing.',
+        description:
+          'One-click SQL beautification. Messy AI output becomes perfectly indented, readable SQL with proper keyword casing.',
       },
       {
         icon: FileSpreadsheet,
         title: 'Export to Excel & CSV',
-        description: 'Download results as formatted Excel spreadsheets or CSV files. Headers, data types, and formatting preserved automatically.',
+        description:
+          'Download results as formatted Excel spreadsheets or CSV files. Headers, data types, and formatting preserved automatically.',
       },
       {
         icon: UploadCloud,
         title: 'Magic CSV Upload',
-        description: 'Drag and drop any CSV file. We auto-create a database table, infer column types, and you can query it immediately with AI.',
+        description:
+          'Drag and drop any CSV file. We auto-create a database table, infer column types, and you can query it immediately with AI.',
       },
       {
         icon: LayoutTemplate,
         title: 'Custom Query Templates',
-        description: 'Save your best queries as reusable templates. Organize by category — analytics, sales, inventory, or create your own.',
+        description:
+          'Save your best queries as reusable templates. Organize by category — analytics, sales, inventory, or create your own.',
       },
       {
         icon: BarChart3,
         title: 'Auto Visualizations',
-        description: 'Results automatically generate bar, line, and pie charts. The AI recommends the best chart type based on your data shape.',
+        description:
+          'Results automatically generate bar, line, and pie charts. The AI recommends the best chart type based on your data shape.',
       },
     ],
   },
@@ -141,27 +154,32 @@ const SECTIONS: FeatureSection[] = [
     badge: 'Dashboards & Automation',
     badgeIcon: Pin,
     title: 'From query to dashboard in one click',
-    subtitle: 'Pin results, schedule refreshes, and share insights with your team — no BI tool needed.',
+    subtitle:
+      'Pin results, schedule refreshes, and share insights with your team — no BI tool needed.',
     features: [
       {
         icon: Pin,
         title: 'Pin to Dashboard',
-        description: 'Turn any query result into a live dashboard widget. Drag to reorder, resize, and build your custom analytics view.',
+        description:
+          'Turn any query result into a live dashboard widget. Drag to reorder, resize, and build your custom analytics view.',
       },
       {
         icon: Clock,
         title: 'Scheduled Queries',
-        description: 'Run queries on autopilot — hourly, daily, weekly, or monthly. Get results delivered to your inbox automatically.',
+        description:
+          'Run queries on autopilot — hourly, daily, weekly, or monthly. Get results delivered to your inbox automatically.',
       },
       {
         icon: Share2,
         title: 'Shared Query Links',
-        description: 'Generate a secure link to share any query result with colleagues. They see the data without needing an account.',
+        description:
+          'Generate a secure link to share any query result with colleagues. They see the data without needing an account.',
       },
       {
         icon: RefreshCw,
         title: 'Live Refresh',
-        description: 'Dashboard widgets refresh on demand or on schedule. Always see the latest data without re-running queries manually.',
+        description:
+          'Dashboard widgets refresh on demand or on schedule. Always see the latest data without re-running queries manually.',
       },
     ],
   },
@@ -170,27 +188,32 @@ const SECTIONS: FeatureSection[] = [
     badge: 'Enterprise Ready',
     badgeIcon: Database,
     title: 'Built for teams that move fast',
-    subtitle: 'Multi-database, multi-team, multi-language — scale from solo analyst to entire organization.',
+    subtitle:
+      'Multi-database, multi-team, multi-language — scale from solo analyst to entire organization.',
     features: [
       {
         icon: Database,
         title: 'Multi-Database Support',
-        description: 'PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, Redshift — connect any database. Switch between them seamlessly.',
+        description:
+          'PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, Redshift — connect any database. Switch between them seamlessly.',
       },
       {
         icon: Users,
         title: 'Team Collaboration',
-        description: 'Create teams, invite members with role-based access (owner, admin, member). Share connections and saved queries.',
+        description:
+          'Create teams, invite members with role-based access (owner, admin, member). Share connections and saved queries.',
       },
       {
         icon: KeyRound,
         title: 'API Access',
-        description: 'Full REST API with key-based authentication. Integrate NatureQuery into your existing tools, scripts, and workflows.',
+        description:
+          'Full REST API with key-based authentication. Integrate NatureQuery into your existing tools, scripts, and workflows.',
       },
       {
         icon: Globe,
         title: 'Multi-Language UI',
-        description: 'Interface available in English, Spanish, French, German, and more. Each user picks their preferred language.',
+        description:
+          'Interface available in English, Spanish, French, German, and more. Each user picks their preferred language.',
       },
     ],
   },
@@ -204,32 +227,38 @@ const SECTIONS: FeatureSection[] = [
       {
         icon: Lock,
         title: 'AES-256-GCM Encryption',
-        description: 'All database credentials encrypted at rest with AES-256-GCM. Key rotation supported with zero downtime.',
+        description:
+          'All database credentials encrypted at rest with AES-256-GCM. Key rotation supported with zero downtime.',
       },
       {
         icon: ShieldCheck,
         title: 'Two-Factor Authentication',
-        description: 'TOTP-based 2FA with any authenticator app. Backup codes provided for account recovery. 60-second tolerance window.',
+        description:
+          'TOTP-based 2FA with any authenticator app. Backup codes provided for account recovery. 60-second tolerance window.',
       },
       {
         icon: ScrollText,
         title: 'Immutable Audit Logs',
-        description: 'Every login, query, and admin action recorded in a tamper-proof hash chain. Full compliance trail for SOC 2 and GDPR.',
+        description:
+          'Every login, query, and admin action recorded in a tamper-proof hash chain. Full compliance trail for SOC 2 and GDPR.',
       },
       {
         icon: Zap,
         title: 'SQL Injection Prevention',
-        description: 'AST-based SQL validation for PostgreSQL. Keyword blocklist defense for all dialects. Only SELECT queries ever reach your database.',
+        description:
+          'AST-based SQL validation for PostgreSQL. Keyword blocklist defense for all dialects. Only SELECT queries ever reach your database.',
       },
       {
         icon: Search,
         title: 'Rate Limiting',
-        description: 'Distributed rate limiting via Redis. Per-user, per-endpoint throttling prevents abuse and protects your databases.',
+        description:
+          'Distributed rate limiting via Redis. Per-user, per-endpoint throttling prevents abuse and protects your databases.',
       },
       {
         icon: KeyRound,
         title: 'Security Headers',
-        description: 'CSP, X-Frame-Options, HSTS, and Permissions-Policy headers on every response. A+ security rating out of the box.',
+        description:
+          'CSP, X-Frame-Options, HSTS, and Permissions-Policy headers on every response. A+ security rating out of the box.',
       },
     ],
   },
@@ -299,17 +328,38 @@ function Nav() {
           <AppLogo size="md" />
         </Link>
         <div className="hidden md:flex items-center gap-8">
-          <Link href="/features" className="text-sm text-foreground font-medium">Features</Link>
-          <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-          <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-          <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
+          <Link href="/features" className="text-sm text-foreground font-medium">
+            Features
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Pricing
+          </Link>
+          <Link
+            href="/about"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            About
+          </Link>
+          <Link
+            href="/login"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Sign In
+          </Link>
           <Link href="/register" className="btn-primary text-sm py-2">
             Get Started Free
           </Link>
         </div>
         <div className="md:hidden flex items-center gap-3">
-          <Link href="/login" className="btn-ghost text-sm py-2">Sign In</Link>
-          <Link href="/register" className="btn-primary text-sm py-2">Sign Up</Link>
+          <Link href="/login" className="btn-ghost text-sm py-2">
+            Sign In
+          </Link>
+          <Link href="/register" className="btn-primary text-sm py-2">
+            Sign Up
+          </Link>
         </div>
       </div>
     </nav>
@@ -343,7 +393,9 @@ function SectionBlock({ section, index }: { section: FeatureSection; index: numb
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">{section.title}</h2>
           <p className="text-muted-foreground text-lg">{section.subtitle}</p>
         </div>
-        <div className={`grid gap-5 ${isWide ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+        <div
+          className={`grid gap-5 ${isWide ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'}`}
+        >
           {section.features.map((feature) => (
             <FeatureCard key={feature.title} {...feature} />
           ))}
@@ -362,8 +414,12 @@ function PricingSection() {
             <Zap className="w-3.5 h-3.5" />
             Pricing
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Simple, transparent pricing</h2>
-          <p className="text-muted-foreground text-lg">Start free. Upgrade when you need more power.</p>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+            Simple, transparent pricing
+          </h2>
+          <p className="text-muted-foreground text-lg">
+            Start free. Upgrade when you need more power.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -399,9 +455,7 @@ function PricingSection() {
               <Link
                 href={plan.href}
                 className={`block w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  plan.highlighted
-                    ? 'btn-primary'
-                    : 'btn-secondary'
+                  plan.highlighted ? 'btn-primary' : 'btn-secondary'
                 }`}
               >
                 {plan.cta}
@@ -426,7 +480,8 @@ function CtaSection() {
               Ready to talk to your database?
             </h2>
             <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-              Start asking questions in plain English. No credit card required. Set up in under 2 minutes.
+              Start asking questions in plain English. No credit card required. Set up in under 2
+              minutes.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -456,12 +511,20 @@ function Footer() {
       <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <AppLogo size="xs" showText={false} />
-          <span className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} NatureQuery. All rights reserved.</span>
+          <span className="text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
+          </span>
         </div>
         <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-          <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-          <Link href="/docs" className="hover:text-foreground transition-colors">Docs</Link>
+          <Link href="/terms" className="hover:text-foreground transition-colors">
+            Terms
+          </Link>
+          <Link href="/privacy" className="hover:text-foreground transition-colors">
+            Privacy
+          </Link>
+          <Link href="/faq" className="hover:text-foreground transition-colors">
+            FAQ
+          </Link>
         </div>
       </div>
     </footer>
@@ -505,7 +568,8 @@ export default function FeaturesPage() {
               <span className="gradient-text block">talk to your database</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              From AI-powered SQL generation to enterprise security — NatureQuery gives your team the tools to explore data without writing a single line of SQL.
+              From AI-powered SQL generation to enterprise security — NatureQuery gives your team
+              the tools to explore data without writing a single line of SQL.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/register" className="btn-primary text-base px-8 py-3 shadow-lg">
@@ -526,7 +590,9 @@ export default function FeaturesPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {STATS.map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold gradient-text mb-1">{stat.value}</div>
+                <div className="text-2xl sm:text-3xl font-bold gradient-text mb-1">
+                  {stat.value}
+                </div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}

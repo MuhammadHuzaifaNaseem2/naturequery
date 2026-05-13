@@ -78,9 +78,9 @@ const PLANS = [
     period: '/month',
     description: 'For organizations with advanced needs',
     features: [
+      { text: 'Everything in Pro', included: true },
       { text: 'Unlimited queries', included: true },
       { text: 'Unlimited connections & members', included: true },
-      { text: 'Everything in Pro', included: true },
       { text: 'SSO / SAML', included: true },
       { text: 'Audit log & compliance', included: true },
       { text: 'Custom AI models', included: true },
