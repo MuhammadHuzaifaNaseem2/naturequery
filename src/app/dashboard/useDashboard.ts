@@ -404,23 +404,27 @@ export function useDashboard() {
       if (cancelled) return
 
       // Load from DB
-      const [historyResult, savedResult] = await Promise.all([
-        getQueryHistory({ pageSize: 50 }),
-        getSavedQueries({ pageSize: 100 }),
-      ])
+      try {
+        const [historyResult, savedResult] = await Promise.all([
+          getQueryHistory({ pageSize: 50 }),
+          getSavedQueries({ pageSize: 100 }),
+        ])
 
-      if (cancelled) return
+        if (cancelled) return
 
-      if (historyResult.success && historyResult.data) {
-        setQueryHistory(historyResult.data.items)
-        setQueryHistoryTotal(historyResult.data.total)
-      }
-      if (savedResult.success && savedResult.data) {
-        setSavedQueries(savedResult.data.items)
+        if (historyResult.success && historyResult.data) {
+          setQueryHistory(historyResult.data.items)
+          setQueryHistoryTotal(historyResult.data.total)
+        }
+        if (savedResult.success && savedResult.data) {
+          setSavedQueries(savedResult.data.items)
+        }
+      } catch {
+        // Network error — dashboard still usable, history just won't load
       }
     }
 
-    loadQueryData()
+    loadQueryData().catch(() => {})
 
     // Load scheduled queries from DB
     fetch('/api/scheduled-queries')
