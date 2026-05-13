@@ -72,13 +72,6 @@ const MILESTONES = [
   },
 ]
 
-const STATS = [
-  { value: '30+', label: 'Features' },
-  { value: '6', label: 'Database Types' },
-  { value: '<2s', label: 'Avg Response' },
-  { value: '24/7', label: 'Monitoring' },
-]
-
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
@@ -147,22 +140,6 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-
-      {/* Stats */}
-      <div className="border-y border-border/50 bg-card/50">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold gradient-text mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* The Problem */}
       <section className="py-20">
