@@ -58,6 +58,28 @@ export interface ConnectionInfo {
 
 // --- Helpers ---
 
+function friendlyConnectionError(error: unknown): string {
+  const msg = error instanceof Error ? error.message : String(error)
+  const lower = msg.toLowerCase()
+
+  if (lower.includes('password authentication failed') || lower.includes('access denied for user'))
+    return 'Incorrect username or password. Please check your database credentials.'
+  if (lower.includes('does not exist') && lower.includes('database'))
+    return `Database not found. Check the database name is correct.`
+  if (lower.includes('connection refused') || lower.includes('econnrefused'))
+    return 'Connection refused. Check the host and port — make sure the database server is reachable.'
+  if (lower.includes('timeout') || lower.includes('etimedout') || lower.includes('connect timed out'))
+    return 'Connection timed out. The host may be unreachable or blocked by a firewall.'
+  if (lower.includes('ssl') || lower.includes('tls'))
+    return 'SSL/TLS error. Try toggling the SSL setting for this connection.'
+  if (lower.includes('too many connections') || lower.includes('max_connections'))
+    return 'Database has too many open connections. Try again in a moment.'
+  if (lower.includes('unknown host') || lower.includes('getaddrinfo') || lower.includes('nodename nor servname'))
+    return 'Host not found. Check the hostname is correct and DNS is resolving.'
+
+  return msg || 'Connection failed. Please verify your credentials and try again.'
+}
+
 async function requireUser() {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Not authenticated')
@@ -137,6 +159,24 @@ export async function saveConnection(
     // If adding to a team, only OWNER/ADMIN may create team connections
     if (data.teamId) {
       await requireTeamPermission(data.teamId, 'connection:create')
+    }
+
+    // Check for duplicate connection (same host+port+db+user+type for this user)
+    const duplicate = await prisma.databaseConnection.findFirst({
+      where: {
+        ...(data.teamId ? { teamId: data.teamId } : { userId: user.id }),
+        host: data.host,
+        port: data.port,
+        database: data.database,
+        user: data.user,
+        dbType: data.dbType || 'postgresql',
+      },
+    })
+    if (duplicate) {
+      return {
+        success: false,
+        error: `A connection to ${data.host}/${data.database} already exists. Remove the existing one first or use a different name.`,
+      }
     }
 
     // Check plan limits
@@ -337,14 +377,7 @@ export async function fetchSchemaByConnection(connectionId: string): Promise<Fet
       `[fetchSchemaByConnection] ${credentials.dbType} ${credentials.host}:${credentials.port}/${credentials.database}:`,
       error
     )
-    const msg =
-      error instanceof Error
-        ? error.message || (error as any).code || error.toString()
-        : String(error)
-    return {
-      success: false,
-      error: msg || 'Failed to fetch schema (unknown driver error)',
-    }
+    return { success: false, error: friendlyConnectionError(error) }
   } finally {
     await driver.close().catch(() => {})
   }
@@ -413,10 +446,7 @@ export async function testConnectionById(connectionId: string): Promise<TestConn
     await driver.testConnection()
     return { success: true, message: 'Connection successful' }
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Connection failed',
-    }
+    return { success: false, error: friendlyConnectionError(error) }
   } finally {
     await driver.close().catch(() => {})
   }
@@ -524,10 +554,7 @@ export async function executeSQLByConnection(
       data: dataPayload,
     }
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Query execution failed',
-    }
+    return { success: false, error: friendlyConnectionError(error) }
   }
   // NOTE: No driver.close() — the pool manages the lifecycle
 }

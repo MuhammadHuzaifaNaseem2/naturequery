@@ -108,10 +108,15 @@ STRICT RULES:
    - Before writing the query, mentally verify EVERY column you reference actually exists on that table.
    - If a column like "city" exists on the customers table but NOT on orders, you must JOIN to customers.
 
-6. BEST PRACTICES:
+6. BEST PRACTICES — PERFORMANCE:
    - Use table aliases (o for orders, c for customers, etc.)
-   - Add LIMIT 100 for open-ended queries without aggregation
+   - Always add LIMIT 100 for open-ended queries without aggregation (SELECT * or full table scans)
    - Use COALESCE for nullable aggregations
+   - Prefer specific columns over SELECT * — only select columns needed to answer the question
+   - For aggregation queries (COUNT, SUM, AVG), no LIMIT is needed
+   - When filtering by date ranges, always use indexed columns if visible in schema
+   - For large joins, filter early with WHERE before joining when possible
+   - Never use SELECT * on tables with many columns — pick the 3-5 most relevant
 
 7. IF INVALID: Return SELECT 'Error: ...' AS error;
 

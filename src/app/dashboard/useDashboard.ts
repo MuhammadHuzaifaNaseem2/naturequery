@@ -989,6 +989,20 @@ export function useDashboard() {
     async (format: 'excel' | 'csv') => {
       if (!queryResults) return
 
+      const EXPORT_WARN_THRESHOLD = 5000
+      const EXPORT_MAX_ROWS = 10000
+
+      if (queryResults.rows.length > EXPORT_MAX_ROWS) {
+        toast.error(`Export limited to ${EXPORT_MAX_ROWS.toLocaleString()} rows`, {
+          description: `Your result has ${queryResults.rows.length.toLocaleString()} rows. Refine your query with a smaller date range or filter to export all data.`,
+        })
+        return
+      }
+
+      if (queryResults.rows.length > EXPORT_WARN_THRESHOLD) {
+        toast.warning(`Exporting ${queryResults.rows.length.toLocaleString()} rows — this may take a moment.`)
+      }
+
       setIsExporting(true)
       setShowExportMenu(false)
 
