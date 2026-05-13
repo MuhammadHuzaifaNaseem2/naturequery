@@ -106,7 +106,7 @@ const PLANS = [
 ]
 
 const STATS = [
-  { value: 'AI', label: 'Powered by Groq Llama 3.3' },
+  { value: 'AI', label: 'Natural Language to SQL' },
   { value: '6+', label: 'Database Types' },
   { value: 'Free', label: 'to Get Started' },
   { value: '<2s', label: 'Avg Response Time' },

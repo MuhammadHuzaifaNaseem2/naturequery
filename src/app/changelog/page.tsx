@@ -98,7 +98,7 @@ const RELEASES: Release[] = [
       'NatureQuery launches with 30+ features, 6 database types, and a 7-day free trial.',
     icon: Rocket,
     changes: [
-      { type: 'feature', text: 'Natural language to SQL generation powered by Groq Llama 3.3' },
+      { type: 'feature', text: 'Natural language to SQL generation with fast AI inference' },
       {
         type: 'feature',
         text: 'Support for PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift',
