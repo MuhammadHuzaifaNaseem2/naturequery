@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   authors: [{ name: 'NatureQuery' }],
   creator: 'NatureQuery',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://naturequery.app'),
-  verification: {
-    other: { 'probely-verification': '289dd30f-8c63-424f-928f-355d12366e2d' },
+  other: {
+    'probely-verification': '289dd30f-8c63-424f-928f-355d12366e2d',
   },
   openGraph: {
     type: 'website',
