@@ -630,7 +630,7 @@ export function QueryPanel({
                     )}
                   </div>
                 </div>
-                {onFixQuery && !isGroqLimit && (
+                {onFixQuery && !isGroqLimit && !!generatedSQL && (
                   <button
                     onClick={onFixQuery}
                     disabled={isFixing}
