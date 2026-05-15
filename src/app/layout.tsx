@@ -98,6 +98,70 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `(function(){try{var t=localStorage.getItem('theme');var d=document.documentElement;if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches)){d.classList.add('dark')}}catch(e){}})()`,
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: 'NatureQuery',
+              applicationCategory: 'BusinessApplication',
+              operatingSystem: 'Web',
+              url: 'https://naturequery.app',
+              description:
+                'AI-powered platform that converts natural language questions into SQL queries instantly. Connect PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift.',
+              offers: [
+                {
+                  '@type': 'Offer',
+                  name: 'Free Plan',
+                  price: '0',
+                  priceCurrency: 'USD',
+                  description: '50 queries/month, 1 database connection',
+                },
+                {
+                  '@type': 'Offer',
+                  name: 'Pro Plan',
+                  price: '19',
+                  priceCurrency: 'USD',
+                  description: 'Unlimited queries, 10 connections, CSV/Excel export',
+                },
+              ],
+              featureList: [
+                'Natural language to SQL conversion',
+                'PostgreSQL, MySQL, SQLite, SQL Server support',
+                'CSV and Excel export',
+                'Conversational follow-up queries',
+                'Magic CSV Upload',
+                'Chain-of-Thought SQL reasoning',
+                'Two-factor authentication',
+                'Team collaboration',
+              ],
+              screenshot: 'https://naturequery.app/og-image.png',
+              creator: {
+                '@type': 'Organization',
+                name: 'NatureQuery',
+                url: 'https://naturequery.app',
+              },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'NatureQuery',
+              url: 'https://naturequery.app',
+              description: 'Query your database in plain English with AI-powered SQL generation.',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://naturequery.app/faq?search={search_term_string}',
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className="font-sans antialiased bg-background text-foreground"
