@@ -12,23 +12,18 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
-/**
- * Read the initial theme so React's first render matches what
- * the blocking <script> in layout.tsx already applied.
- */
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'system'
-  return (localStorage.getItem('theme') as Theme) || 'system'
-}
-
-function getInitialResolved(): 'light' | 'dark' {
-  if (typeof window === 'undefined') return 'light'
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme)
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(getInitialResolved)
+  // Always start with server-safe defaults so server and client render identically.
+  // The blocking <script> in layout.tsx already applied the correct CSS class,
+  // so there is no visual flash of wrong theme.
+  const [theme, setTheme] = useState<Theme>('system')
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+
+  // After mount, read the stored preference from localStorage (client-only).
+  useEffect(() => {
+    const saved = (localStorage.getItem('theme') as Theme) || 'system'
+    setTheme(saved)
+  }, [])
 
   useEffect(() => {
     const root = window.document.documentElement
