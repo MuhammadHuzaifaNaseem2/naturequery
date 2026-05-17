@@ -32,6 +32,7 @@ import { ScheduledQuery } from '@/components/QueryScheduler'
 import { toast } from 'sonner'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useTheme } from '@/components/ThemeProvider'
+import { friendlySqlError } from '@/lib/friendly-sql-error'
 import { SavedConnection, QueryResults } from './types'
 import { DEMO_SCHEMA, DEMO_DATA } from './demo-data'
 import { useDashboardUI } from '@/hooks/dashboard/useDashboardUI'
@@ -735,8 +736,13 @@ export function useDashboard() {
           setPlanLimitReason('query')
           setShowPlanLimit(true)
         } else {
-          setError(errMsg)
-          toast.error('Query failed', { description: errMsg })
+          const friendly = friendlySqlError(errMsg)
+          setError(friendly.description + (friendly.hint ? ` — ${friendly.hint}` : ''))
+          toast.error(friendly.title, {
+            description: friendly.hint
+              ? `${friendly.description} ${friendly.hint}`
+              : friendly.description,
+          })
         }
       }
     },

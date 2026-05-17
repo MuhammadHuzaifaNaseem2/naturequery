@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import Papa from 'papaparse'
+import { normalizeRegionalDates } from '@/lib/normalize-dates'
 import { DashboardWidget } from '@/components/DashboardWidgets'
 import { ScheduledQuery } from '@/components/QueryScheduler'
 import { executeSQLByConnection } from '@/actions/connections'
@@ -117,33 +118,94 @@ export function useDashboardWidgets(
 
   const handleUploadCSV = useCallback(
     async (file: File) => {
-      if (!file.name.toLowerCase().endsWith('.csv')) {
-        toast.error('Invalid file type', { description: 'Only .csv files are supported.' })
+      const lower = file.name.toLowerCase()
+      const isCsv = lower.endsWith('.csv')
+      const isExcel = lower.endsWith('.xlsx') || lower.endsWith('.xls')
+
+      if (!isCsv && !isExcel) {
+        toast.error('Invalid file type', {
+          description: 'Only .csv, .xlsx, and .xls files are supported.',
+        })
         return
       }
 
-      const loadingToast = toast.loading('Reading CSV…')
+      const loadingToast = toast.loading(isExcel ? 'Reading Excel…' : 'Reading CSV…')
 
       try {
-        // Parse entirely in the browser — no file size limit
-        const text = await file.text()
-        const parsed = Papa.parse<Record<string, unknown>>(text, {
-          header: true,
-          skipEmptyLines: true,
-          transformHeader: (h) => h.trim(),
-        })
+        let rows: Record<string, unknown>[] = []
+        let headers: string[] = []
 
-        const rows = parsed.data
-        const headers = parsed.meta.fields ?? []
+        if (isExcel) {
+          // Dynamic import keeps ExcelJS out of the initial bundle
+          const ExcelJS = (await import('exceljs')).default
+          const wb = new ExcelJS.Workbook()
+          const buf = await file.arrayBuffer()
+          await wb.xlsx.load(buf)
+          const ws = wb.worksheets[0]
+          if (!ws) {
+            toast.error('Empty workbook', { description: 'No sheets found in the file.', id: loadingToast })
+            return
+          }
+          const headerRow = ws.getRow(1)
+          headers = (headerRow.values as unknown[])
+            .slice(1) // ExcelJS uses 1-based indexing; index 0 is null
+            .map((v) => (v == null ? '' : String(v).trim()))
+            .filter((h) => h !== '')
+
+          for (let r = 2; r <= ws.rowCount; r++) {
+            const row = ws.getRow(r)
+            const vals = (row.values as unknown[]).slice(1)
+            const obj: Record<string, unknown> = {}
+            let hasValue = false
+            headers.forEach((h, i) => {
+              const v = vals[i]
+              if (v != null && String(v).trim() !== '') hasValue = true
+              // ExcelJS returns Date objects for date cells — convert to ISO strings
+              obj[h] = v instanceof Date ? v.toISOString() : (v ?? null)
+            })
+            if (hasValue) rows.push(obj)
+          }
+        } else {
+          // Parse CSV entirely in the browser.
+          // Try UTF-8 first; fall back to Windows-1252 for Excel-exported CSVs that
+          // contain accented characters or smart quotes (very common pitfall).
+          const buf = await file.arrayBuffer()
+          let text: string
+          try {
+            text = new TextDecoder('utf-8', { fatal: true }).decode(buf)
+          } catch {
+            text = new TextDecoder('windows-1252').decode(buf)
+          }
+          // Strip UTF-8 BOM if present
+          if (text.charCodeAt(0) === 0xfeff) text = text.slice(1)
+          const parsed = Papa.parse<Record<string, unknown>>(text, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: (h) => h.trim().replace(/^﻿/, ''),
+          })
+          rows = parsed.data
+          headers = parsed.meta.fields ?? []
+        }
 
         if (rows.length === 0) {
-          toast.error('Empty file', { description: 'The CSV has no data rows.', id: loadingToast })
+          toast.error('Empty file', { description: 'The file has no data rows.', id: loadingToast })
+          return
+        }
+        if (headers.length === 0) {
+          toast.error('No headers found', {
+            description: 'The first row must contain column names.',
+            id: loadingToast,
+          })
           return
         }
         if (rows.length > 100_000) {
           toast.error('Too many rows', { description: 'Maximum 100,000 rows supported.', id: loadingToast })
           return
         }
+
+        // Convert regional dates (DD/MM/YYYY, MM/DD/YYYY) to ISO so the server
+        // can infer DATE/TIMESTAMP column types correctly.
+        normalizeRegionalDates(rows, headers)
 
         // Send in batches of 5000 rows (~1-2 MB JSON each, well under Vercel's 4.5 MB cap)
         const BATCH = 5000

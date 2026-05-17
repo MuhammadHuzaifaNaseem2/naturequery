@@ -124,13 +124,73 @@ export function sanitizeIdentifier(raw: string, fallback = 'col'): string {
 
 // ── Type inference ─────────────────────────────────────────────────────
 
-type InferredType = 'integer' | 'bigint' | 'numeric' | 'boolean' | 'timestamp' | 'date' | 'text'
+type InferredType =
+  | 'integer'
+  | 'bigint'
+  | 'numeric'
+  | 'boolean'
+  | 'timestamp'
+  | 'date'
+  | 'date_dmy'
+  | 'date_mdy'
+  | 'timestamp_dmy'
+  | 'timestamp_mdy'
+  | 'text'
 
 const INT_RE = /^-?\d+$/
 const NUM_RE = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/
 const BOOL_RE = /^(true|false|t|f|yes|no)$/i
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const TS_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/
+// Slashed / dashed regional date formats. We match the SHAPE here; the actual
+// DD-vs-MM disambiguation happens in inferDateLayout() over the whole column.
+const REGIONAL_DATE_RE = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/
+const REGIONAL_TS_RE = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})[T ]\d{1,2}:\d{2}(:\d{2})?(\s?[AP]M)?$/i
+
+/**
+ * Decide whether a column of regional dates uses DD/MM/YYYY or MM/DD/YYYY by
+ * looking at every value. If we see a "first part" > 12 it must be a day.
+ * If we see a "second part" > 12 it must be a day in MM/DD layout. If both,
+ * the data is inconsistent and we fall back to text.
+ */
+type RegionalLayout = 'dmy' | 'mdy' | 'ambiguous' | 'inconsistent'
+function inferDateLayout(values: string[]): RegionalLayout {
+  let firstBig = false
+  let secondBig = false
+  for (const v of values) {
+    const m = v.match(REGIONAL_DATE_RE) || v.match(REGIONAL_TS_RE)
+    if (!m) continue
+    const a = Number(m[1])
+    const b = Number(m[2])
+    if (a > 12) firstBig = true
+    if (b > 12) secondBig = true
+    if (firstBig && secondBig) return 'inconsistent'
+  }
+  if (firstBig) return 'dmy'
+  if (secondBig) return 'mdy'
+  return 'ambiguous' // default to DMY for ambiguous — more common globally
+}
+
+/** Convert a regional date string to ISO YYYY-MM-DD given the layout. */
+function regionalToIso(value: string, layout: 'dmy' | 'mdy'): string | null {
+  const m = value.match(REGIONAL_DATE_RE) || value.match(REGIONAL_TS_RE)
+  if (!m) return null
+  const part1 = Number(m[1])
+  const part2 = Number(m[2])
+  const day = layout === 'dmy' ? part1 : part2
+  const month = layout === 'dmy' ? part2 : part1
+  let year = Number(m[3])
+  if (year < 100) year += year >= 70 ? 1900 : 2000 // 2-digit year heuristic
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+  const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  // Preserve the time portion if it was a timestamp
+  const tsMatch = value.match(REGIONAL_TS_RE)
+  if (tsMatch) {
+    const timePart = value.slice(value.search(/[T ]\d/) + 1)
+    return `${iso} ${timePart}`
+  }
+  return iso
+}
 
 function inferType(values: unknown[]): InferredType {
   const nonEmpty = values.filter((v) => v != null && String(v).trim() !== '')
@@ -140,7 +200,9 @@ function inferType(values: unknown[]): InferredType {
     allInt = true,
     allNum = true,
     allDate = true,
-    allTs = true
+    allTs = true,
+    allRegionalDate = true,
+    allRegionalTs = true
   const INT32_MAX = BigInt(2147483647)
   const ZERO = BigInt(0)
   let maxInt = ZERO
@@ -161,7 +223,18 @@ function inferType(values: unknown[]): InferredType {
     if (allNum && !NUM_RE.test(s)) allNum = false
     if (allDate && !DATE_RE.test(s)) allDate = false
     if (allTs && !TS_RE.test(s)) allTs = false
-    if (!allBool && !allInt && !allNum && !allDate && !allTs) return 'text'
+    if (allRegionalDate && !REGIONAL_DATE_RE.test(s)) allRegionalDate = false
+    if (allRegionalTs && !REGIONAL_TS_RE.test(s)) allRegionalTs = false
+    if (
+      !allBool &&
+      !allInt &&
+      !allNum &&
+      !allDate &&
+      !allTs &&
+      !allRegionalDate &&
+      !allRegionalTs
+    )
+      return 'text'
   }
 
   if (allBool) return 'boolean'
@@ -169,6 +242,16 @@ function inferType(values: unknown[]): InferredType {
   if (allNum) return 'numeric'
   if (allDate) return 'date'
   if (allTs) return 'timestamp'
+  if (allRegionalTs) {
+    const layout = inferDateLayout(nonEmpty.map((v) => String(v).trim()))
+    if (layout === 'inconsistent') return 'text'
+    return layout === 'mdy' ? 'timestamp_mdy' : 'timestamp_dmy'
+  }
+  if (allRegionalDate) {
+    const layout = inferDateLayout(nonEmpty.map((v) => String(v).trim()))
+    if (layout === 'inconsistent') return 'text'
+    return layout === 'mdy' ? 'date_mdy' : 'date_dmy'
+  }
   return 'text'
 }
 
@@ -183,8 +266,12 @@ function pgTypeOf(t: InferredType): string {
     case 'boolean':
       return 'BOOLEAN'
     case 'date':
+    case 'date_dmy':
+    case 'date_mdy':
       return 'DATE'
     case 'timestamp':
+    case 'timestamp_dmy':
+    case 'timestamp_mdy':
       return 'TIMESTAMP'
     default:
       return 'TEXT'
@@ -214,6 +301,12 @@ function coerceValue(raw: unknown, type: InferredType): unknown {
     case 'date':
     case 'timestamp':
       return s
+    case 'date_dmy':
+    case 'timestamp_dmy':
+      return regionalToIso(s, 'dmy') ?? null
+    case 'date_mdy':
+    case 'timestamp_mdy':
+      return regionalToIso(s, 'mdy') ?? null
     default:
       return s
   }

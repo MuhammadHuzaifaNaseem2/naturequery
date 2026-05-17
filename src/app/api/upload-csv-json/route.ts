@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid request body.' })
     }
 
-    const tableName = body.tableName ?? sanitizeIdentifier(filename.replace(/\.csv$/i, ''), 't')
+    const tableName = body.tableName ?? sanitizeIdentifier(filename.replace(/\.(csv|xlsx|xls)$/i, ''), 't')
     const connectionName = `CSV: ${filename}`
 
     if (isFirst) {

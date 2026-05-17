@@ -456,7 +456,7 @@ export function ConnectionSidebar({
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) onUploadCSV?.(file)

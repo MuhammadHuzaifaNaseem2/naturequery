@@ -40,6 +40,8 @@ import {
   ChevronUp,
   Copy,
   Check,
+  HelpCircle,
+  Lightbulb,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -331,6 +333,7 @@ export function StreamingQueryPanel({
   const [queryId, setQueryId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [showThoughts, setShowThoughts] = useState(true)
+  const [showHelp, setShowHelp] = useState(false)
 
   // Abort controller ref — lets us cancel an in-flight stream
   const abortRef = useRef<AbortController | null>(null)
@@ -568,10 +571,59 @@ export function StreamingQueryPanel({
           </button>
         )}
 
+        <button
+          type="button"
+          onClick={() => setShowHelp((s) => !s)}
+          className="btn-secondary text-xs flex items-center gap-1.5"
+          title="See example questions and tips"
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          Stuck? See examples
+        </button>
+
         <span className="ml-auto text-xs text-muted-foreground hidden sm:block">
           Ctrl+Enter to generate
         </span>
       </div>
+
+      {showHelp && (
+        <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Lightbulb className="w-4 h-4 text-amber-500" />
+            Tips for better results
+          </div>
+          <ul className="text-xs text-muted-foreground space-y-1.5 pl-5 list-disc">
+            <li>Be specific: "Top 10 customers by revenue last quarter" beats "best customers"</li>
+            <li>Mention the column or table when you know it: "from orders where status = delivered"</li>
+            <li>Ask for a chart hint: "as a bar chart" or "trend over time"</li>
+            <li>If a query fails, click <strong>AI Fix It</strong> — it reads the error and corrects the SQL</li>
+            <li>Select any part of the generated SQL to get a plain-English explanation</li>
+          </ul>
+          <div className="text-xs font-semibold pt-2 border-t border-border/50">Try these:</div>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              'How many records are there in total?',
+              'Show me the top 10 rows',
+              'What columns does this table have?',
+              'Count records grouped by status',
+              'Show trend over the last 12 months',
+              'What are the top 5 categories by total?',
+            ].map((example) => (
+              <button
+                key={example}
+                type="button"
+                onClick={() => {
+                  setQuestion(example)
+                  setShowHelp(false)
+                }}
+                className="text-xs px-2.5 py-1 rounded-full bg-background hover:bg-primary/10 border border-border transition-colors"
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Chain-of-Thought terminal — visible during thinking + collapsible after */}
       {(phase === 'thinking' || (phase === 'sql_ready' && thoughtTokens)) && (
