@@ -1193,7 +1193,7 @@ export function useDashboard() {
     onExportCSV: () => handleExport('csv'),
     // General
     onToggleTheme: () =>
-      setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark'),
+      setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'warm' : theme === 'warm' ? 'system' : 'light'),
     onClearInput: () => setNlQuery(''),
     onToggleHelp: () => setShowShortcutsHelp((prev) => !prev),
   })

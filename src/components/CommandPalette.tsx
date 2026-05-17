@@ -8,7 +8,7 @@ import { useTheme } from '@/components/ThemeProvider'
 import { useTranslation } from '@/contexts/LocaleContext'
 import {
   LayoutDashboard, History, Settings, Shield, CreditCard, Database,
-  Moon, Sun, Monitor, Search, Play, Download, Trash2, Bookmark,
+  Moon, Sun, Monitor, Flame, Search, Play, Download, Trash2, Bookmark,
 } from 'lucide-react'
 
 interface CommandPaletteProps {
@@ -172,6 +172,9 @@ export function CommandPalette({
               </CmdItem>
               <CmdItem icon={Moon} onSelect={() => { setTheme('dark'); onOpenChange(false) }}>
                 {t('dashboard.commandPalette.darkMode')}
+              </CmdItem>
+              <CmdItem icon={Flame} onSelect={() => { setTheme('warm'); onOpenChange(false) }}>
+                Warm mode
               </CmdItem>
               <CmdItem icon={Monitor} onSelect={() => { setTheme('system'); onOpenChange(false) }}>
                 {t('dashboard.commandPalette.systemTheme')}
