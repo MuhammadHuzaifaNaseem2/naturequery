@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useMemo, useCallback } from 'react'
-import { EditorView, keymap, placeholder as cmPlaceholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, dropCursor, rectangularSelection, crosshairCursor } from '@codemirror/view'
+import { EditorView, keymap, placeholder as cmPlaceholder, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, dropCursor, rectangularSelection, crosshairCursor, tooltips } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
 import { sql, PostgreSQL, MySQL, SQLite, MSSQL, type SQLDialect } from '@codemirror/lang-sql'
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
@@ -290,6 +290,10 @@ export function SQLEditor({
         rectangularSelection(),
         crosshairCursor(),
         highlightSelectionMatches(),
+
+        // Render tooltips on document.body so they aren't clipped by
+        // any parent container's overflow:hidden / overflow:auto.
+        tooltips({ parent: document.body }),
 
         // Autocompletion
         autocompletion({

@@ -301,7 +301,7 @@ export function ConnectionSidebar({
         {/* New Chat Button */}
         <button
           onClick={() => onNewChat?.()}
-          className="w-full btn-gradient text-sm py-2.5 px-4 flex items-center justify-center gap-2"
+          className="w-full btn-gradient text-sm font-semibold py-3 px-4 flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" />
           {t('common.newChat')}
