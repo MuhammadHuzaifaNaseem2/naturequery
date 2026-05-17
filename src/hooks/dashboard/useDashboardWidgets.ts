@@ -4,7 +4,6 @@ import { DashboardWidget } from '@/components/DashboardWidgets'
 import { ScheduledQuery } from '@/components/QueryScheduler'
 import { executeSQLByConnection } from '@/actions/connections'
 import { updateChecklistItem } from '@/actions/onboarding-checklist'
-import { uploadDataset } from '@/actions/upload-dataset'
 import { SavedConnection } from '@/app/dashboard/types'
 import { getUserConnections } from '@/actions/connections'
 
@@ -117,14 +116,28 @@ export function useDashboardWidgets(
 
   const handleUploadCSV = useCallback(
     async (file: File) => {
+      // Client-side guard so we never hit the server with an oversized request
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File too large', { description: 'CSV files must be under 10 MB.' })
+        return
+      }
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        toast.error('Invalid file type', { description: 'Only .csv files are supported.' })
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', file)
 
-      const loadingToast = toast.loading(`Uploading magic dataset ${file.name}...`)
+      const loadingToast = toast.loading(`Uploading ${file.name}…`)
       try {
-        const result = await uploadDataset(formData)
+        // Use a regular API route instead of a server action to avoid Next.js
+        // server-action serialization issues with large multipart payloads.
+        const res = await fetch('/api/upload-csv', { method: 'POST', body: formData })
+        const result = await res.json() as { success: boolean; error?: string; limitReached?: boolean }
+
         if (result.success) {
-          toast.success('Magic Dataset created!', { id: loadingToast })
+          toast.success('Magic Dataset ready!', { id: loadingToast })
           const serverConns = await getUserConnections()
           setConnections((prev) => {
             const prevById = new Map(prev.map((c) => [c.id, c]))
@@ -146,20 +159,15 @@ export function useDashboardWidgets(
           })
           const newConn = serverConns.find((c) => c.name === `CSV: ${file.name}`)
           if (newConn) setActiveConnectionId(newConn.id)
+        } else if (result.limitReached) {
+          toast.dismiss(loadingToast)
+          setPlanLimitReason('connection')
+          setShowPlanLimit(true)
         } else {
-          const isLimitError =
-            result.error?.toLowerCase().includes('limit') ||
-            result.error?.toLowerCase().includes('upgrade')
-          if (isLimitError) {
-            toast.dismiss(loadingToast)
-            setPlanLimitReason('connection')
-            setShowPlanLimit(true)
-          } else {
-            toast.error('Upload Failed', { description: result.error, id: loadingToast })
-          }
+          toast.error('Upload Failed', { description: result.error, id: loadingToast })
         }
       } catch (err: any) {
-        toast.error('Upload Failed', { description: err.message, id: loadingToast })
+        toast.error('Upload Failed', { description: 'Network error — please try again.', id: loadingToast })
       }
     },
     [setConnections, setActiveConnectionId, setShowPlanLimit, setPlanLimitReason]
