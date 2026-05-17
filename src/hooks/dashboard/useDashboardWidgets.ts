@@ -116,9 +116,14 @@ export function useDashboardWidgets(
 
   const handleUploadCSV = useCallback(
     async (file: File) => {
-      // Client-side guard so we never hit the server with an oversized request
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('File too large', { description: 'CSV files must be under 10 MB.' })
+      // Vercel's infrastructure hard-caps request bodies at 4.5 MB.
+      // Reject above 4 MB client-side to stay safely under that limit.
+      const MAX_BYTES = 4 * 1024 * 1024
+      if (file.size > MAX_BYTES) {
+        const mb = (file.size / 1024 / 1024).toFixed(1)
+        toast.error('File too large', {
+          description: `${mb} MB — CSV files must be under 4 MB. Try removing unused columns or splitting the file.`,
+        })
         return
       }
       if (!file.name.toLowerCase().endsWith('.csv')) {
@@ -134,6 +139,14 @@ export function useDashboardWidgets(
         // Use a regular API route instead of a server action to avoid Next.js
         // server-action serialization issues with large multipart payloads.
         const res = await fetch('/api/upload-csv', { method: 'POST', body: formData })
+        if (!res.ok && res.status === 413) {
+          toast.error('File too large', { description: 'The file exceeds the server limit. Keep CSV files under 4 MB.', id: loadingToast })
+          return
+        }
+        if (!res.ok && res.status >= 500) {
+          toast.error('Upload Failed', { description: 'Server error — please try again.', id: loadingToast })
+          return
+        }
         const result = await res.json() as { success: boolean; error?: string; limitReached?: boolean }
 
         if (result.success) {
