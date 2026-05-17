@@ -79,15 +79,14 @@ export function ProductTour() {
             },
           },
         ],
-        onDestroyStarted: async () => {
-          try {
-            await completeOnboarding()
-            await update({ onboardingCompleted: true })
-            localStorage.setItem('naturequery-tour-completed', 'true')
-          } catch (err) {
-            console.error('Failed to update onboarding status:', err)
-          }
+        onDestroyStarted: () => {
+          // Close instantly — don't make the user wait for network calls.
+          localStorage.setItem('naturequery-tour-completed', 'true')
           driverObj.destroy()
+          // Persist in the background; failures are non-blocking.
+          completeOnboarding()
+            .then(() => update({ onboardingCompleted: true }))
+            .catch((err) => console.error('Failed to update onboarding status:', err))
         },
       })
 
