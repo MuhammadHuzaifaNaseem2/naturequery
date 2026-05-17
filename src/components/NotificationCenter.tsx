@@ -85,11 +85,16 @@ export function NotificationCenter() {
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true)
-    const result = await getNotifications(30)
-    setIsLoading(false)
-    if (result.success && result.data) {
-      setNotifications(result.data.items)
-      setUnreadCount(result.data.unreadCount)
+    try {
+      const result = await getNotifications(30)
+      if (result.success && result.data) {
+        setNotifications(result.data.items)
+        setUnreadCount(result.data.unreadCount)
+      }
+    } catch {
+      // Network error — silently ignore, notifications not critical
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 

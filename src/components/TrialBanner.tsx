@@ -27,7 +27,7 @@ export function TrialBanner() {
         const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
         setTrialInfo({ isTrialing: true, daysLeft })
       }
-    })
+    }).catch(() => {})
   }, [])
 
   if (!trialInfo?.isTrialing || dismissed) return null

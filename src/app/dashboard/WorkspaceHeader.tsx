@@ -61,7 +61,7 @@ export function WorkspaceHeader({
         if (res.success) {
           setShareStatus({ isPublic: res.isPublic, token: res.token })
         }
-      })
+      }).catch(() => {})
     }
   }, [session])
 
