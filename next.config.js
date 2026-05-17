@@ -12,7 +12,11 @@ const nextConfig = {
     'oracledb',
     'mysql2',
     'better-sqlite3',
+    'pg',
+    'pg-pool',
     'pg-native',
+    'papaparse',
+    'pgsql-ast-parser',
   ],
   experimental: {
     serverActions: {
