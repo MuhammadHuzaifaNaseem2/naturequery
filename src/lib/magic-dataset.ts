@@ -38,7 +38,7 @@ function ensureSslMode(url: string): string {
   }
 }
 
-function getPool(): Pool {
+export function getPool(): Pool {
   if (!pool) {
     const raw = process.env.MAGIC_DATABASE_URL || process.env.DATABASE_URL
     if (!raw) {
@@ -107,12 +107,11 @@ export function userSchemaName(userId: string): string {
   return `magic_u_${hash}`
 }
 
-function quoteIdent(ident: string): string {
-  // Double-quote any embedded double quotes; this is the standard PG escape
+export function quoteIdent(ident: string): string {
   return '"' + ident.replace(/"/g, '""') + '"'
 }
 
-function sanitizeIdentifier(raw: string, fallback = 'col'): string {
+export function sanitizeIdentifier(raw: string, fallback = 'col'): string {
   let s = String(raw ?? '')
     .trim()
     .toLowerCase()
@@ -460,6 +459,64 @@ export async function fetchMagicSchema(
       })
     }
     return Array.from(byTable.values())
+  } finally {
+    client.release()
+  }
+}
+
+// ── Batch-upload helpers (used by /api/upload-csv-json) ────────────────
+
+export async function createMagicTable(
+  userId: string,
+  tableName: string,
+  headers: string[]
+): Promise<void> {
+  const schema = userSchemaName(userId)
+  const safeTable = sanitizeIdentifier(tableName, 't')
+  const cols = headers.map((h) => `${quoteIdent(sanitizeIdentifier(h, 'col'))} TEXT`).join(', ')
+  const client = await getPool().connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(`CREATE SCHEMA IF NOT EXISTS ${quoteIdent(schema)}`)
+    await client.query(`DROP TABLE IF EXISTS ${quoteIdent(schema)}.${quoteIdent(safeTable)}`)
+    await client.query(`CREATE TABLE ${quoteIdent(schema)}.${quoteIdent(safeTable)} (${cols})`)
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
+export async function insertMagicRows(
+  userId: string,
+  tableName: string,
+  headers: string[],
+  rows: Record<string, unknown>[]
+): Promise<void> {
+  if (rows.length === 0) return
+  const schema = userSchemaName(userId)
+  const safeTable = sanitizeIdentifier(tableName, 't')
+  const safeCols = headers.map((h) => quoteIdent(sanitizeIdentifier(h, 'col')))
+  const prefix = `INSERT INTO ${quoteIdent(schema)}.${quoteIdent(safeTable)} (${safeCols.join(', ')}) VALUES `
+
+  const values: unknown[] = []
+  const placeholders: string[] = []
+  let n = 0
+  for (const row of rows) {
+    const slots: string[] = []
+    for (const h of headers) {
+      const v = row[h]
+      values.push(v == null || String(v).trim() === '' ? null : String(v))
+      slots.push(`$${++n}`)
+    }
+    placeholders.push(`(${slots.join(', ')})`)
+  }
+
+  const client = await getPool().connect()
+  try {
+    await client.query(prefix + placeholders.join(', '), values)
   } finally {
     client.release()
   }

@@ -459,13 +459,7 @@ export function ConnectionSidebar({
             accept=".csv"
             onChange={(e) => {
               const file = e.target.files?.[0]
-              if (file) {
-                if (file.size > 4 * 1024 * 1024) {
-                  alert('File is too large. Please upload a CSV under 4 MB.')
-                } else {
-                  onUploadCSV?.(file)
-                }
-              }
+              if (file) onUploadCSV?.(file)
               if (e.target) e.target.value = ''
             }}
           />

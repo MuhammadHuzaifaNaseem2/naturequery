@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
+import Papa from 'papaparse'
 import { DashboardWidget } from '@/components/DashboardWidgets'
 import { ScheduledQuery } from '@/components/QueryScheduler'
 import { executeSQLByConnection } from '@/actions/connections'
@@ -116,71 +117,114 @@ export function useDashboardWidgets(
 
   const handleUploadCSV = useCallback(
     async (file: File) => {
-      // Vercel's infrastructure hard-caps request bodies at 4.5 MB.
-      // Reject above 4 MB client-side to stay safely under that limit.
-      const MAX_BYTES = 4 * 1024 * 1024
-      if (file.size > MAX_BYTES) {
-        const mb = (file.size / 1024 / 1024).toFixed(1)
-        toast.error('File too large', {
-          description: `${mb} MB — CSV files must be under 4 MB. Try removing unused columns or splitting the file.`,
-        })
-        return
-      }
       if (!file.name.toLowerCase().endsWith('.csv')) {
         toast.error('Invalid file type', { description: 'Only .csv files are supported.' })
         return
       }
 
-      const formData = new FormData()
-      formData.append('file', file)
+      const loadingToast = toast.loading('Reading CSV…')
 
-      const loadingToast = toast.loading(`Uploading ${file.name}…`)
       try {
-        // Use a regular API route instead of a server action to avoid Next.js
-        // server-action serialization issues with large multipart payloads.
-        const res = await fetch('/api/upload-csv', { method: 'POST', body: formData })
-        if (!res.ok && res.status === 413) {
-          toast.error('File too large', { description: 'The file exceeds the server limit. Keep CSV files under 4 MB.', id: loadingToast })
-          return
-        }
-        if (!res.ok && res.status >= 500) {
-          toast.error('Upload Failed', { description: 'Server error — please try again.', id: loadingToast })
-          return
-        }
-        const result = await res.json() as { success: boolean; error?: string; limitReached?: boolean }
+        // Parse entirely in the browser — no file size limit
+        const text = await file.text()
+        const parsed = Papa.parse<Record<string, unknown>>(text, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (h) => h.trim(),
+        })
 
-        if (result.success) {
-          toast.success('Magic Dataset ready!', { id: loadingToast })
-          const serverConns = await getUserConnections()
-          setConnections((prev) => {
-            const prevById = new Map(prev.map((c) => [c.id, c]))
-            return serverConns.map((c) => {
-              const existing = prevById.get(c.id)
-              return {
-                id: c.id,
-                name: c.name,
-                host: c.host,
-                port: c.port,
-                database: c.database,
-                user: c.user,
-                dbType: c.dbType,
-                isActive: c.isActive,
-                status: 'active' as const,
-                schema: existing?.schema,
-              }
-            })
-          })
-          const newConn = serverConns.find((c) => c.name === `CSV: ${file.name}`)
-          if (newConn) setActiveConnectionId(newConn.id)
-        } else if (result.limitReached) {
-          toast.dismiss(loadingToast)
-          setPlanLimitReason('connection')
-          setShowPlanLimit(true)
-        } else {
-          toast.error('Upload Failed', { description: result.error, id: loadingToast })
+        const rows = parsed.data
+        const headers = parsed.meta.fields ?? []
+
+        if (rows.length === 0) {
+          toast.error('Empty file', { description: 'The CSV has no data rows.', id: loadingToast })
+          return
         }
-      } catch (err: any) {
-        toast.error('Upload Failed', { description: 'Network error — please try again.', id: loadingToast })
+        if (rows.length > 100_000) {
+          toast.error('Too many rows', { description: 'Maximum 100,000 rows supported.', id: loadingToast })
+          return
+        }
+
+        // Send in batches of 1000 rows so each request stays small
+        const BATCH = 1000
+        const batches: Record<string, unknown>[][] = []
+        for (let i = 0; i < rows.length; i += BATCH) batches.push(rows.slice(i, i + BATCH))
+
+        toast.loading(`Uploading ${rows.length.toLocaleString()} rows…`, { id: loadingToast })
+
+        let tableName: string | undefined
+
+        for (let i = 0; i < batches.length; i++) {
+          const isFirst = i === 0
+          const isLast = i === batches.length - 1
+
+          if (batches.length > 1) {
+            toast.loading(
+              `Uploading… ${Math.round(((i + 1) / batches.length) * 100)}%`,
+              { id: loadingToast }
+            )
+          }
+
+          const res = await fetch('/api/upload-csv-json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              ...(isFirst ? { headers } : { headers }),
+              rows: batches[i],
+              tableName,
+              isFirst,
+              isLast,
+            }),
+          })
+
+          const result = await res.json() as {
+            success: boolean
+            error?: string
+            tableName?: string
+            limitReached?: boolean
+          }
+
+          if (!result.success) {
+            if (result.limitReached) {
+              toast.dismiss(loadingToast)
+              setPlanLimitReason('connection')
+              setShowPlanLimit(true)
+            } else {
+              toast.error('Upload Failed', { description: result.error, id: loadingToast })
+            }
+            return
+          }
+
+          if (isFirst) tableName = result.tableName
+        }
+
+        toast.success(`Magic Dataset ready! (${rows.length.toLocaleString()} rows)`, { id: loadingToast })
+
+        const serverConns = await getUserConnections()
+        setConnections((prev) => {
+          const prevById = new Map(prev.map((c) => [c.id, c]))
+          return serverConns.map((c) => {
+            const existing = prevById.get(c.id)
+            return {
+              id: c.id,
+              name: c.name,
+              host: c.host,
+              port: c.port,
+              database: c.database,
+              user: c.user,
+              dbType: c.dbType,
+              isActive: c.isActive,
+              status: 'active' as const,
+              schema: existing?.schema,
+            }
+          })
+        })
+        const newConn = serverConns.find((c) => c.name === `CSV: ${file.name}`)
+        if (newConn) setActiveConnectionId(newConn.id)
+
+      } catch {
+        toast.error('Upload Failed', { description: 'Something went wrong. Please try again.', id: loadingToast })
       }
     },
     [setConnections, setActiveConnectionId, setShowPlanLimit, setPlanLimitReason]
