@@ -29,6 +29,33 @@
     --ring: 217 91% 60%;
   }
 
+  /* ── Warm parchment theme ─────────────────────────────────── */
+  .warm {
+    --background: 36 33% 95%;
+    --foreground: 25 35% 12%;
+    --card: 36 20% 97%;
+    --card-foreground: 25 35% 12%;
+    --popover: 36 20% 97%;
+    --popover-foreground: 25 35% 12%;
+    --primary: 27 65% 40%;
+    --primary-foreground: 36 80% 96%;
+    --secondary: 35 28% 90%;
+    --secondary-foreground: 25 30% 18%;
+    --muted: 35 22% 91%;
+    --muted-foreground: 28 18% 48%;
+    --accent: 16 65% 44%;
+    --accent-foreground: 36 80% 96%;
+    --destructive: 0 78% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 55% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 88% 45%;
+    --warning-foreground: 0 0% 100%;
+    --border: 35 22% 84%;
+    --input: 35 22% 84%;
+    --ring: 27 65% 40%;
+  }
+
   .dark {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;

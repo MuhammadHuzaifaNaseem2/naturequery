@@ -95,7 +95,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var d=document.documentElement;if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches)){d.classList.add('dark')}}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=document.documentElement;if(t==='warm'){d.classList.add('warm')}else if(t==='dark'||(t!=='light'&&t!=='warm'&&matchMedia('(prefers-color-scheme:dark)').matches)){d.classList.add('dark')}}catch(e){}})()`,
           }}
         />
         <script

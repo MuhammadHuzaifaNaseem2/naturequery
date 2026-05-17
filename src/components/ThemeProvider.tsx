@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 
-type Theme = 'light' | 'dark' | 'system'
+type Theme = 'light' | 'dark' | 'warm' | 'system'
 
 interface ThemeContextType {
   theme: Theme
@@ -28,25 +28,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = window.document.documentElement
 
-    const applyTheme = (isDark: boolean) => {
-      if (isDark) {
+    const applyTheme = (mode: 'dark' | 'light' | 'warm') => {
+      root.classList.remove('dark', 'warm')
+      if (mode === 'dark') {
         root.classList.add('dark')
         setResolvedTheme('dark')
+      } else if (mode === 'warm') {
+        root.classList.add('warm')
+        setResolvedTheme('light')
       } else {
-        root.classList.remove('dark')
         setResolvedTheme('light')
       }
     }
 
     if (theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      applyTheme(mediaQuery.matches)
+      applyTheme(mediaQuery.matches ? 'dark' : 'light')
 
-      const listener = (e: MediaQueryListEvent) => applyTheme(e.matches)
+      const listener = (e: MediaQueryListEvent) => applyTheme(e.matches ? 'dark' : 'light')
       mediaQuery.addEventListener('change', listener)
       return () => mediaQuery.removeEventListener('change', listener)
+    } else if (theme === 'warm') {
+      applyTheme('warm')
     } else {
-      applyTheme(theme === 'dark')
+      applyTheme(theme === 'dark' ? 'dark' : 'light')
     }
   }, [theme])
 
