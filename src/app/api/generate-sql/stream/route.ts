@@ -97,17 +97,28 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - ALWAYS use LEFT JOIN by default unless specifically filtering.
    - If a user asks for "overdue", "active", "pending", etc. â€” ALWAYS look for a status/flag column AND a date column. Do not just use dates, and do not just use statuses. Combine them (e.g. LOWER(status) != 'paid' AND due_dt < CURRENT_DATE).
 
-6. Ordering "last N" or "latest" records:
+6. Ordering “last N” or “latest” records:
    - NEVER ORDER BY a date column that is stored as VARCHAR/TEXT â€” it will sort alphabetically, not chronologically.
    - Instead, ORDER BY the table's integer primary key DESC (e.g. ORDER BY ord_id DESC, ORDER BY id DESC). Integer PKs are auto-increment and reliably reflect insertion order.
 
-7. Output your final SQL wrapped in <sql></sql> tags.
+7. AGGREGATION (CRITICAL) â€” when users ask for summary statistics, you MUST use the correct aggregate function:
+   - “average” / “mean” / “avg” â†' use AVG(...) in the SELECT. A single aggregate expression returns ONE row — do NOT add LIMIT.
+   - “total” / “sum” â†' use SUM(...)
+   - “count” / “how many” â†' use COUNT(*) or COUNT(col)
+   - “maximum” / “highest” / “most” â†' use MAX(...)
+   - “minimum” / “lowest” / “least” â†' use MIN(...)
+   - “per X” / “by X” / “breakdown by X” â†' use GROUP BY X with the aggregate
+   - NEVER alias a raw column as “average_X” or “total_X” without wrapping it in AVG() or SUM(). A column name is not an aggregate function.
+   - Aggregated queries (those with GROUP BY or a single aggregate) do NOT need LIMIT unless the user asks for “top N”.
+
+8. Output your final SQL wrapped in <sql></sql> tags.
 
 CRITICAL RULES:
 - Use ${dialect} syntax ONLY â€” not other SQL dialects
 - SELECT statements ONLY â€” no INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE
 - Use ${limitSyntax} for open-ended queries without aggregation
 - Use table aliases for readability
+- ALWAYS give every computed expression a meaningful AS alias (e.g. AS on_time_pct, AS avg_days). Never leave a computed column without an alias — PostgreSQL will show it as "?column?" which is confusing.
 - NEVER reference a column that does not exist in the schema
 - NEVER invent or assume table names â€” ONLY use table names listed in DATABASE SCHEMA below.
 - ALWAYS USE LOWER(col) = LOWER('val') FOR EVERY STRING COMPARISON â€” NEVER USE = WITHOUT LOWER!

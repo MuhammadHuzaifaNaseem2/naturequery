@@ -288,7 +288,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
                         onClick={() => handleSort(field)}
                         className="flex items-center gap-1 py-3 cursor-pointer hover:text-primary transition-colors flex-1"
                       >
-                        {field}
+                        {field.startsWith('?') ? 'result' : field}
                         {sortField === field && (
                           <span className="text-primary">
                             {sortDir === 'asc' ? '\u2191' : '\u2193'}
