@@ -145,8 +145,8 @@ export function useDashboardWidgets(
           return
         }
 
-        // Send in batches of 1000 rows so each request stays small
-        const BATCH = 1000
+        // Send in batches of 5000 rows (~1-2 MB JSON each, well under Vercel's 4.5 MB cap)
+        const BATCH = 5000
         const batches: Record<string, unknown>[][] = []
         for (let i = 0; i < rows.length; i += BATCH) batches.push(rows.slice(i, i + BATCH))
 
