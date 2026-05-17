@@ -469,11 +469,22 @@ export async function fetchMagicSchema(
 export async function createMagicTable(
   userId: string,
   tableName: string,
-  headers: string[]
+  headers: string[],
+  sampleRows?: Record<string, unknown>[]
 ): Promise<void> {
   const schema = userSchemaName(userId)
   const safeTable = sanitizeIdentifier(tableName, 't')
-  const cols = headers.map((h) => `${quoteIdent(sanitizeIdentifier(h, 'col'))} TEXT`).join(', ')
+
+  // Infer column types from sample rows so date/numeric columns get proper PG types.
+  // Falls back to TEXT when no sample is provided.
+  const cols = headers.map((h) => {
+    const type =
+      sampleRows && sampleRows.length > 0
+        ? inferType(sampleRows.map((r) => r[h]))
+        : 'text'
+    return `${quoteIdent(sanitizeIdentifier(h, 'col'))} ${pgTypeOf(type)}`
+  }).join(', ')
+
   const client = await getPool().connect()
   try {
     await client.query('BEGIN')

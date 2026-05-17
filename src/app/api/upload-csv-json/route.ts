@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         ).catch(() => {})
       }
 
-      await createMagicTable(userId, tableName, headers)
+      await createMagicTable(userId, tableName, headers, rows)
     }
 
     // Insert this batch
