@@ -155,9 +155,9 @@ export function formatCellValue(value: unknown, field?: string): string {
         return `${DEC2.format(pct)}%`
       }
       case 'default':
-        // Only skip decimal formatting for actual JS integer values (not numeric strings)
-        if (typeof value === 'number' && Number.isInteger(value)) {
-          return Math.abs(value) >= 10000 ? INT.format(value) : String(value)
+        // Show whole numbers without decimals regardless of whether value arrived as string or number
+        if (Number.isInteger(numericValue)) {
+          return Math.abs(numericValue) >= 10000 ? INT.format(numericValue) : String(numericValue)
         }
         return DEC2.format(numericValue)
     }
