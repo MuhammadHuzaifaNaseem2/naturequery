@@ -17,6 +17,7 @@ import {
   createBillingPortalSession,
   cancelSubscription,
   syncSubscriptionFromLS,
+  syncBySubscriptionId,
 } from '@/actions/billing'
 import { useTranslation } from '@/contexts/LocaleContext'
 
@@ -71,6 +72,8 @@ export function BillingSettings() {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showManualSync, setShowManualSync] = useState(false)
+  const [manualSubId, setManualSubId] = useState('')
 
   useEffect(() => {
     Promise.all([getUserSubscription(), fetch('/api/usage').then((r) => r.json())])
@@ -113,6 +116,21 @@ export function BillingSettings() {
         await syncSubscriptionFromLS()
         const updated = await getUserSubscription()
         setSub(updated)
+      } catch (e: any) {
+        setError(e.message)
+      }
+    })
+  }
+
+  function handleManualSync() {
+    startTransition(async () => {
+      try {
+        setError(null)
+        await syncBySubscriptionId(manualSubId)
+        const updated = await getUserSubscription()
+        setSub(updated)
+        setShowManualSync(false)
+        setManualSubId('')
       } catch (e: any) {
         setError(e.message)
       }
@@ -173,6 +191,50 @@ export function BillingSettings() {
         </div>
       )}
 
+      {/* Manual sync panel — shown when Refresh doesn't work */}
+      {showManualSync && (
+        <div className="card p-4 border-primary/20 bg-primary/5 space-y-3">
+          <p className="text-sm font-medium">
+            Enter your Lemon Squeezy subscription ID
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Go to{' '}
+            <a
+              href="https://app.lemonsqueezy.com/subscriptions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              app.lemonsqueezy.com/subscriptions
+            </a>{' '}
+            → click your subscription → copy the ID from the URL (e.g.{' '}
+            <span className="font-mono">123456</span>).
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={manualSubId}
+              onChange={(e) => setManualSubId(e.target.value)}
+              placeholder="Subscription ID (numbers only)"
+              className="input flex-1 text-sm font-mono"
+            />
+            <button
+              onClick={handleManualSync}
+              disabled={isPending || !manualSubId.trim()}
+              className="btn-primary text-sm px-4"
+            >
+              {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Sync'}
+            </button>
+            <button
+              onClick={() => setShowManualSync(false)}
+              className="btn-secondary text-sm px-3"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Current Plan */}
       <div className="card p-5">
         <div className="flex items-center justify-between">
@@ -221,6 +283,12 @@ export function BillingSettings() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
               )}
               Refresh
+            </button>
+            <button
+              onClick={() => setShowManualSync((v) => !v)}
+              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              Still showing wrong plan?
             </button>
             {isPaidPlan && sub.billingEnabled && (
               <button

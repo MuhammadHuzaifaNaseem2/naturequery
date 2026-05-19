@@ -229,20 +229,54 @@ export async function syncSubscriptionFromLS() {
     // Fall back: find subscription by user email in this store
     if (!dbUser?.email) return
     const storeId = process.env.LEMONSQUEEZY_STORE_ID ?? ''
-    const { data: list } = await listSubscriptions({
-      filter: { storeId, userEmail: dbUser.email },
-    })
 
-    const subs = (list?.data ?? []) as Array<{ id: string | number; attributes: Record<string, unknown> }>
-    if (!subs.length) return
+    // Try email + store filter first, then email only
+    for (const filter of [
+      { storeId, userEmail: dbUser.email },
+      { userEmail: dbUser.email },
+    ]) {
+      const { data: list, error: listError } = await listSubscriptions({ filter })
+      if (listError) {
+        console.error('[billing] listSubscriptions error:', listError)
+        continue
+      }
+      const subs = (list?.data ?? []) as Array<{ id: string | number; attributes: Record<string, unknown> }>
+      if (!subs.length) continue
 
-    // Prefer active/on_trial, then take the most recent
-    const active =
-      subs.find((s) => ['active', 'on_trial', 'past_due'].includes(String(s.attributes.status))) ??
-      subs[0]
-
-    await applyLSSubscription(user.id!, String(active.id), active.attributes)
+      const active =
+        subs.find((s) => ['active', 'on_trial', 'past_due'].includes(String(s.attributes.status))) ??
+        subs[0]
+      await applyLSSubscription(user.id!, String(active.id), active.attributes)
+      return
+    }
   } catch (err) {
     console.error('[billing] Failed to sync subscription from Lemon Squeezy:', err)
   }
+}
+
+/**
+ * Sync subscription from a specific LS subscription ID entered manually by the user.
+ * Used when webhook and auto-discovery both fail.
+ */
+export async function syncBySubscriptionId(subscriptionId: string) {
+  if (!isLemonSqueezyEnabled()) throw new Error('Billing not configured')
+  if (!subscriptionId.trim()) throw new Error('Subscription ID is required')
+
+  setupLemonSqueezy()
+
+  const user = await requireUser()
+  const { data, error } = await getSubscription(subscriptionId.trim())
+
+  if (error) throw new Error(`Lemon Squeezy error: ${error.message}`)
+  if (!data?.data) throw new Error('Subscription not found in Lemon Squeezy')
+
+  const attrs = data.data.attributes as Record<string, unknown>
+
+  // Verify this subscription belongs to the current user's store
+  const storeId = process.env.LEMONSQUEEZY_STORE_ID
+  if (storeId && String(attrs.store_id) !== String(storeId)) {
+    throw new Error('This subscription ID does not belong to your store')
+  }
+
+  await applyLSSubscription(user.id!, String(data.data.id), attrs)
 }
