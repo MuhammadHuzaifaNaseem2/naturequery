@@ -16,6 +16,7 @@ import {
   createCheckoutSession,
   createBillingPortalSession,
   cancelSubscription,
+  syncSubscriptionFromLS,
 } from '@/actions/billing'
 import { useTranslation } from '@/contexts/LocaleContext'
 
@@ -99,6 +100,19 @@ export function BillingSettings() {
         setError(null)
         const { url } = await createBillingPortalSession()
         if (url) window.location.href = url
+      } catch (e: any) {
+        setError(e.message)
+      }
+    })
+  }
+
+  function handleRefreshPlan() {
+    startTransition(async () => {
+      try {
+        setError(null)
+        await syncSubscriptionFromLS()
+        const updated = await getUserSubscription()
+        setSub(updated)
       } catch (e: any) {
         setError(e.message)
       }
@@ -194,20 +208,35 @@ export function BillingSettings() {
                     : t('settings.billing.activeSubscription')}
             </p>
           </div>
-          {isPaidPlan && sub.billingEnabled && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleManageBilling}
+              onClick={handleRefreshPlan}
               disabled={isPending}
+              title="Sync plan from Lemon Squeezy"
               className="btn-secondary text-sm flex items-center gap-1.5"
             >
               {isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <CreditCard className="w-3.5 h-3.5" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
               )}
-              {t('settings.billing.manageBilling')}
+              Refresh
             </button>
-          )}
+            {isPaidPlan && sub.billingEnabled && (
+              <button
+                onClick={handleManageBilling}
+                disabled={isPending}
+                className="btn-secondary text-sm flex items-center gap-1.5"
+              >
+                {isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CreditCard className="w-3.5 h-3.5" />
+                )}
+                {t('settings.billing.manageBilling')}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Plan usage & limits */}
@@ -314,7 +343,7 @@ export function BillingSettings() {
           const isCurrent = sub.plan === planKey
           const isPro = planKey === 'PRO'
           const isEnterprise = planKey === 'ENTERPRISE'
-          const prices = { FREE: '$0', PRO: '$29', ENTERPRISE: '$99' }
+          const prices = { FREE: '$0', PRO: '$9', ENTERPRISE: '$40' }
 
           return (
             <div

@@ -25,7 +25,7 @@ export const PLANS = {
   },
   PRO: {
     name: 'Pro',
-    price: 2900,
+    price: 900,
     lsVariantId: process.env.LEMONSQUEEZY_PRO_VARIANT_ID ?? null,
     limits: {
       queriesPerMonth: -1,
@@ -39,7 +39,7 @@ export const PLANS = {
   },
   ENTERPRISE: {
     name: 'Enterprise',
-    price: 9900,
+    price: 4000,
     lsVariantId: process.env.LEMONSQUEEZY_ENTERPRISE_VARIANT_ID ?? null,
     limits: {
       queriesPerMonth: -1,

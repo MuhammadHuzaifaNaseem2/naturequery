@@ -51,7 +51,7 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$29',
+    price: '$9',
     period: '/month',
     description: 'For professionals and growing teams',
     features: [
@@ -74,7 +74,7 @@ const PLANS = [
   },
   {
     name: 'Enterprise',
-    price: '$99',
+    price: '$40',
     period: '/month',
     description: 'For organizations with advanced needs',
     features: [
@@ -323,11 +323,11 @@ export default function PricingPage() {
               </div>
               <div className="p-4 text-center bg-primary/5 border-x border-primary/10">
                 <p className="font-semibold text-sm text-primary">Pro</p>
-                <p className="text-xs text-muted-foreground">$29/month</p>
+                <p className="text-xs text-muted-foreground">$9/month</p>
               </div>
               <div className="p-4 text-center">
                 <p className="font-semibold text-sm">Enterprise</p>
-                <p className="text-xs text-muted-foreground">$99/month</p>
+                <p className="text-xs text-muted-foreground">$40/month</p>
               </div>
             </div>
 

@@ -210,7 +210,7 @@
       },
       "pro": {
         "name": "プロ",
-        "price": "$29",
+        "price": "$9",
         "period": "月額",
         "description": "プロフェッショナルと小規模チーム向け",
         "feature1": "無制限クエリ",
@@ -224,7 +224,7 @@
       },
       "enterprise": {
         "name": "エンタープライズ",
-        "price": "$99",
+        "price": "$40",
         "period": "月額",
         "description": "高度なニーズを持つ組織向け",
         "feature1": "プロのすべての機能",

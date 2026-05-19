@@ -210,7 +210,7 @@
       },
       "pro": {
         "name": "Pro",
-        "price": "$29",
+        "price": "$9",
         "period": "per month",
         "description": "For professionals and small teams",
         "feature1": "Unlimited queries",
@@ -224,7 +224,7 @@
       },
       "enterprise": {
         "name": "Enterprise",
-        "price": "$99",
+        "price": "$40",
         "period": "per month",
         "description": "For organizations with advanced needs",
         "feature1": "Everything in Pro",

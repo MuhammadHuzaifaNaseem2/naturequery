@@ -282,7 +282,7 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$29',
+    price: '$9',
     period: '/ month',
     features: [
       'Unlimited queries',
@@ -299,7 +299,7 @@ const PLANS = [
   },
   {
     name: 'Enterprise',
-    price: '$99',
+    price: '$40',
     period: '/ month',
     features: [
       'Everything in Pro',
