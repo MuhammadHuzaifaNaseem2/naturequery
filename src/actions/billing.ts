@@ -2,9 +2,12 @@
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { stripe, isStripeEnabled, PLANS, type PlanKey } from '@/lib/stripe'
-
-// ---------- helpers ----------
+import { setupLemonSqueezy, isLemonSqueezyEnabled, PLANS, type PlanKey } from '@/lib/lemonsqueezy'
+import {
+  createCheckout,
+  getSubscription,
+  cancelSubscription as lsCancelSubscription,
+} from '@lemonsqueezy/lemonsqueezy.js'
 
 async function requireUser() {
   const session = await auth()
@@ -22,8 +25,6 @@ async function getOrCreateSubscription(userId: string) {
   return sub
 }
 
-// ---------- public actions ----------
-
 export async function getUserSubscription() {
   const user = await requireUser()
   const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } })
@@ -36,13 +37,12 @@ export async function getUserSubscription() {
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
       limits: PLANS['ENTERPRISE'].limits,
-      stripeEnabled: isStripeEnabled(),
+      billingEnabled: isLemonSqueezyEnabled(),
     }
   }
 
   const sub = await getOrCreateSubscription(user.id!)
 
-  // Check if trial expired and auto-downgrade
   let effectivePlan = sub.plan as PlanKey
   if (sub.status === 'TRIALING' && sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
     await prisma.subscription.update({
@@ -61,76 +61,77 @@ export async function getUserSubscription() {
     cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
     trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
     limits: plan.limits,
-    stripeEnabled: isStripeEnabled(),
+    billingEnabled: isLemonSqueezyEnabled(),
   }
 }
 
 export async function createCheckoutSession(planKey: 'PRO' | 'ENTERPRISE') {
-  if (!isStripeEnabled()) throw new Error('Billing is not configured')
+  if (!isLemonSqueezyEnabled()) throw new Error('Billing is not configured')
+
+  setupLemonSqueezy()
 
   const user = await requireUser()
-  const sub = await getOrCreateSubscription(user.id)
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { email: true, name: true },
+  })
   const plan = PLANS[planKey]
 
-  if (!plan.stripePriceId) {
-    throw new Error(`Stripe price ID not configured for ${planKey} plan`)
-  }
-
-  // Create or reuse Stripe customer
-  let customerId = sub.stripeCustomerId
-  if (!customerId) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
-    const customer = await stripe.customers.create({
-      email: dbUser?.email ?? undefined,
-      name: dbUser?.name ?? undefined,
-      metadata: { userId: user.id },
-    })
-    customerId = customer.id
-    await prisma.subscription.update({
-      where: { userId: user.id },
-      data: { stripeCustomerId: customerId },
-    })
+  if (!plan.lsVariantId) {
+    throw new Error(`Lemon Squeezy variant ID not configured for ${planKey} plan`)
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-    success_url: `${appUrl}/settings?tab=billing&status=success`,
-    cancel_url: `${appUrl}/settings?tab=billing&status=canceled`,
-    subscription_data: {
-      metadata: { userId: user.id, plan: planKey },
-    },
-  })
+  const { data, error } = await createCheckout(
+    process.env.LEMONSQUEEZY_STORE_ID!,
+    plan.lsVariantId,
+    {
+      checkoutData: {
+        email: dbUser?.email ?? undefined,
+        name: dbUser?.name ?? undefined,
+        custom: {
+          user_id: user.id,
+          plan: planKey,
+        },
+      },
+      productOptions: {
+        redirectUrl: `${appUrl}/settings?tab=billing&status=success`,
+      },
+    }
+  )
 
-  return { url: session.url }
+  if (error) throw new Error(error.message)
+
+  return { url: data?.data?.attributes?.url ?? null }
 }
 
 export async function createBillingPortalSession() {
-  if (!isStripeEnabled()) throw new Error('Billing is not configured')
+  if (!isLemonSqueezyEnabled()) throw new Error('Billing is not configured')
+
+  setupLemonSqueezy()
 
   const user = await requireUser()
   const sub = await getOrCreateSubscription(user.id)
 
-  if (!sub.stripeCustomerId) {
-    throw new Error('No billing account found. Subscribe to a plan first.')
+  // stripeSubscriptionId stores the Lemon Squeezy subscription ID
+  if (!sub.stripeSubscriptionId) {
+    throw new Error('No active subscription found. Subscribe to a plan first.')
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const { data, error } = await getSubscription(sub.stripeSubscriptionId)
+  if (error) throw new Error(error.message)
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: sub.stripeCustomerId,
-    return_url: `${appUrl}/settings?tab=billing`,
-  })
+  const portalUrl = data?.data?.attributes?.urls?.customer_portal
+  if (!portalUrl) throw new Error('Could not retrieve billing portal URL.')
 
-  return { url: session.url }
+  return { url: portalUrl }
 }
 
 export async function cancelSubscription() {
-  if (!isStripeEnabled()) throw new Error('Billing is not configured')
+  if (!isLemonSqueezyEnabled()) throw new Error('Billing is not configured')
+
+  setupLemonSqueezy()
 
   const user = await requireUser()
   const sub = await getOrCreateSubscription(user.id)
@@ -139,9 +140,8 @@ export async function cancelSubscription() {
     throw new Error('No active subscription to cancel')
   }
 
-  await stripe.subscriptions.update(sub.stripeSubscriptionId, {
-    cancel_at_period_end: true,
-  })
+  const { error } = await lsCancelSubscription(sub.stripeSubscriptionId)
+  if (error) throw new Error(error.message)
 
   await prisma.subscription.update({
     where: { userId: user.id },
@@ -152,78 +152,54 @@ export async function cancelSubscription() {
 }
 
 /**
- * Sync subscription state from Stripe. Called after checkout redirect
- * to ensure the user sees their paid plan immediately, even if the
- * webhook hasn't fired yet.
+ * Sync subscription state from Lemon Squeezy. Called after checkout redirect
+ * to ensure the user sees their paid plan immediately if the webhook already fired.
  */
-export async function syncSubscriptionFromStripe() {
-  if (!isStripeEnabled()) return
+export async function syncSubscriptionFromLS() {
+  if (!isLemonSqueezyEnabled()) return
+
+  setupLemonSqueezy()
 
   const user = await requireUser()
   const sub = await getOrCreateSubscription(user.id!)
 
-  if (!sub.stripeCustomerId) return
+  if (!sub.stripeSubscriptionId) return
 
   try {
-    // Fetch the latest subscription from Stripe
-    const subscriptions = await stripe.subscriptions.list({
-      customer: sub.stripeCustomerId,
-      status: 'all',
-      limit: 1,
-    })
+    const { data, error } = await getSubscription(sub.stripeSubscriptionId)
+    if (error || !data?.data) return
 
-    const stripeSub = subscriptions.data[0]
-    if (!stripeSub) return
+    const attrs = data.data.attributes
+    const variantId = String(attrs.variant_id)
+    const proId = process.env.LEMONSQUEEZY_PRO_VARIANT_ID
+    const entId = process.env.LEMONSQUEEZY_ENTERPRISE_VARIANT_ID
 
-    const firstItem = stripeSub.items.data[0]
-    const priceId = firstItem?.price?.id
-    const proId = process.env.STRIPE_PRO_PRICE_ID
-    const entId = process.env.STRIPE_ENTERPRISE_PRICE_ID
-    let plan: 'FREE' | 'PRO' | 'ENTERPRISE' | null
-    if (!priceId) {
-      plan = 'FREE'
-    } else if (entId && priceId === entId) {
-      plan = 'ENTERPRISE'
-    } else if (proId && priceId === proId) {
-      plan = 'PRO'
-    } else {
-      console.error(
-        `[CRITICAL] Stripe priceId "${priceId}" does not match STRIPE_PRO_PRICE_ID ` +
-          `or STRIPE_ENTERPRISE_PRICE_ID. Leaving plan unchanged.`
-      )
-      plan = null
-    }
+    let plan: 'FREE' | 'PRO' | 'ENTERPRISE' | null = null
+    if (entId && variantId === entId) plan = 'ENTERPRISE'
+    else if (proId && variantId === proId) plan = 'PRO'
 
-    const statusMap: Record<
-      string,
-      'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'INCOMPLETE'
-    > = {
-      active: 'ACTIVE',
-      past_due: 'PAST_DUE',
-      canceled: 'CANCELED',
-      trialing: 'TRIALING',
-      incomplete: 'INCOMPLETE',
-    }
-
-    // Stripe v20+: period fields are on item, not subscription root
-    const periodStart = firstItem?.current_period_start
-    const periodEnd = firstItem?.current_period_end
+    const statusMap: Record<string, 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'INCOMPLETE'> =
+      {
+        active: 'ACTIVE',
+        on_trial: 'TRIALING',
+        past_due: 'PAST_DUE',
+        unpaid: 'PAST_DUE',
+        cancelled: 'CANCELED',
+        expired: 'CANCELED',
+        paused: 'ACTIVE',
+      }
 
     await prisma.subscription.update({
       where: { userId: user.id! },
       data: {
-        // Only overwrite plan when we recognize the price — otherwise leave
-        // existing value to avoid downgrading a paying customer on misconfig.
         ...(plan ? { plan } : {}),
-        status: statusMap[stripeSub.status] ?? 'ACTIVE',
-        stripeSubscriptionId: stripeSub.id,
-        stripePriceId: priceId || null,
-        currentPeriodStart: periodStart ? new Date(periodStart * 1000) : undefined,
-        currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : undefined,
-        cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+        status: statusMap[attrs.status] ?? 'ACTIVE',
+        stripePriceId: variantId,
+        currentPeriodEnd: attrs.renews_at ? new Date(attrs.renews_at) : undefined,
+        cancelAtPeriodEnd: attrs.cancelled,
       },
     })
-  } catch (error) {
-    console.error('[billing] Failed to sync subscription from Stripe:', error)
+  } catch (err) {
+    console.error('[billing] Failed to sync subscription from Lemon Squeezy:', err)
   }
 }

@@ -557,7 +557,7 @@
       "downgrade": "Downgrade",
       "upgradeBtn": "Upgrade",
       "mostPopular": "Most Popular",
-      "stripeNotConfigured": "Stripe is not configured. Set STRIPE_SECRET_KEY and price IDs in your environment to enable billing.",
+      "stripeNotConfigured": "Billing is not configured. Set LEMONSQUEEZY_API_KEY and variant IDs in your environment to enable billing.",
       "perMonth": "/mo",
       "trialEndsToday": "Your PRO trial ends today.",
       "trialDaysRemaining": "PRO trial · {{days}} day remaining.",

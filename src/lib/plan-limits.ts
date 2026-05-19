@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { PLANS, type PlanKey } from '@/lib/stripe'
+import { PLANS, type PlanKey } from '@/lib/lemonsqueezy'
 
 export type LimitedAction =
   | 'QUERY'

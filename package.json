@@ -42,6 +42,7 @@
     "@codemirror/view": "^6.41.0",
     "@google-cloud/bigquery": "^8.1.1",
     "@hookform/resolvers": "^5.2.2",
+    "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@lezer/highlight": "^1.2.3",
     "@libsql/client": "^0.14.0",
     "@prisma/client": "^6.19.2",

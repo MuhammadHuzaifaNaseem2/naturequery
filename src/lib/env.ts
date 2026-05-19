@@ -94,12 +94,12 @@ export function validateEnv() {
     }
   }
 
-  // ── STRIPE_WEBHOOK_SECRET ───────────────────────────────────────────────────
-  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_WEBHOOK_SECRET) {
+  // ── LEMONSQUEEZY_WEBHOOK_SECRET ────────────────────────────────────────────
+  if (process.env.LEMONSQUEEZY_API_KEY && !process.env.LEMONSQUEEZY_WEBHOOK_SECRET) {
     const msg =
-      'STRIPE_WEBHOOK_SECRET is not set. Anyone can forge Stripe webhook events, ' +
+      'LEMONSQUEEZY_WEBHOOK_SECRET is not set. Anyone can forge Lemon Squeezy webhook events, ' +
       'potentially granting free Pro/Enterprise access. ' +
-      'Get it from: Stripe Dashboard → Webhooks → your endpoint → Signing secret'
+      'Get it from: Lemon Squeezy Dashboard → Settings → Webhooks → your endpoint → Signing secret'
     if (isProduction) throw new Error(`CRITICAL: ${msg}`)
     warnings.push(msg)
   }

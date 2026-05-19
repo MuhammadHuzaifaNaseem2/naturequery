@@ -194,7 +194,7 @@ export function BillingSettings() {
                     : t('settings.billing.activeSubscription')}
             </p>
           </div>
-          {isPaidPlan && sub.stripeEnabled && (
+          {isPaidPlan && sub.billingEnabled && (
             <button
               onClick={handleManageBilling}
               disabled={isPending}
@@ -299,7 +299,7 @@ export function BillingSettings() {
       </div>
 
       {/* Upgrade Cards */}
-      {!sub.stripeEnabled && (
+      {!sub.billingEnabled && (
         <div className="card p-4 bg-warning/5 border-warning/20">
           <p className="text-sm text-warning font-medium">
             {t('settings.billing.stripeNotConfigured')}
@@ -375,7 +375,7 @@ export function BillingSettings() {
                 isPaidPlan && !sub.cancelAtPeriodEnd ? (
                   <button
                     onClick={handleCancel}
-                    disabled={isPending || !sub.stripeEnabled}
+                    disabled={isPending || !sub.billingEnabled}
                     className="btn-secondary w-full text-sm text-destructive hover:bg-destructive/10"
                   >
                     {isPending ? (
@@ -388,7 +388,7 @@ export function BillingSettings() {
               ) : (
                 <button
                   onClick={() => handleUpgrade(planKey as 'PRO' | 'ENTERPRISE')}
-                  disabled={isPending || !sub.stripeEnabled}
+                  disabled={isPending || !sub.billingEnabled}
                   className={`w-full text-sm flex items-center justify-center gap-1.5 ${
                     isPro ? 'btn-gradient' : 'btn-primary'
                   }`}

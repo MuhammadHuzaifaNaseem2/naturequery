@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { syncSubscriptionFromStripe } from '@/actions/billing'
+import { syncSubscriptionFromLS } from '@/actions/billing'
 import { ArrowLeft, User, Users, Key, ScrollText, CreditCard, Shield, Globe } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTranslation } from '@/contexts/LocaleContext'
@@ -36,7 +36,7 @@ export default function SettingsClient({ initialTwoFactorEnabled }: SettingsClie
     if (tab === 'billing') {
       setActiveTab('billing')
       if (status === 'success') {
-        syncSubscriptionFromStripe()
+        syncSubscriptionFromLS()
       }
     }
   }, [searchParams])
