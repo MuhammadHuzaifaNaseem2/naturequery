@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { syncSubscriptionFromLS } from '@/actions/billing'
+import { syncSubscriptionFromLS, syncBySubscriptionId } from '@/actions/billing'
 import { ArrowLeft, User, Users, Key, ScrollText, CreditCard, Shield, Globe } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTranslation } from '@/contexts/LocaleContext'
@@ -28,15 +28,21 @@ export default function SettingsClient({ initialTwoFactorEnabled }: SettingsClie
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
 
-  // After Stripe checkout redirect, sync subscription state immediately
-  // so the user sees their new plan without waiting for the webhook.
+  // After Lemon Squeezy checkout, sync the subscription immediately.
+  // LS appends subscription_id to the redirect URL — use it directly if present,
+  // otherwise fall back to email-based discovery.
   useEffect(() => {
     const tab = searchParams.get('tab')
     const status = searchParams.get('status')
+    const subscriptionId = searchParams.get('subscription_id')
     if (tab === 'billing') {
       setActiveTab('billing')
       if (status === 'success') {
-        syncSubscriptionFromLS()
+        if (subscriptionId) {
+          syncBySubscriptionId(subscriptionId).catch(() => syncSubscriptionFromLS())
+        } else {
+          syncSubscriptionFromLS()
+        }
       }
     }
   }, [searchParams])
