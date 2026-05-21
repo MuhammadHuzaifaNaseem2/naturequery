@@ -43,7 +43,7 @@ const sections = [
   {
     number: '06',
     title: 'Subscriptions & Billing',
-    content: 'Paid plans are billed monthly via Stripe. You may cancel at any time; access continues until the end of the current billing period. Refunds are at our sole discretion. We may change pricing with 30 days\' notice.',
+    content: 'Paid plans are billed monthly via Lemon Squeezy, our payment processor and merchant of record. You may cancel at any time from your billing settings; access continues until the end of the current billing period. Refunds are handled by Lemon Squeezy in accordance with their refund policy and are at our sole discretion. We may change pricing with 30 days\' notice.',
   },
   {
     number: '07',

@@ -61,7 +61,7 @@ const sections = [
     content:
       'We do not sell your personal information. We share data only with trusted parties for specific purposes:',
     list: [
-      { label: 'Stripe', detail: 'Payment processing (name, email, billing info)' },
+      { label: 'Lemon Squeezy', detail: 'Payment processing and merchant of record (name, email, billing info, transaction data)' },
       { label: 'AI providers', detail: 'Query generation (schema metadata only, no row data)' },
       { label: 'Law enforcement', detail: 'When required by valid legal process' },
     ],
