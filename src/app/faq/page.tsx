@@ -98,9 +98,9 @@ const FAQ_ITEMS: FAQItem[] = [
   },
   {
     category: 'Billing',
-    question: 'How does the 7-day free trial work?',
+    question: 'Can I cancel my subscription anytime?',
     answer:
-      "When you sign up for a Pro plan, you get full access to all Pro features for 7 days at no cost. If you don't cancel before the trial ends, you'll be charged the monthly or annual rate. You can cancel anytime from your billing settings.",
+      'Yes. You can cancel your Pro or Enterprise subscription at any time from your billing settings. You keep access until the end of your current billing period.',
   },
   {
     category: 'Billing',

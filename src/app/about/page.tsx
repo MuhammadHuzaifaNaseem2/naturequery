@@ -68,7 +68,7 @@ const MILESTONES = [
   {
     date: 'May 2026',
     title: 'Public Launch',
-    description: 'Launching with 30+ features, 6 database types, and a 7-day free trial.',
+    description: 'Launching with 30+ features and 6 database types supported.',
   },
 ]
 

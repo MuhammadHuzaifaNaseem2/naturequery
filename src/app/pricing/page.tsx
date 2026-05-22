@@ -66,7 +66,7 @@ const PLANS = [
       { text: 'SSO / SAML', included: false },
       { text: 'Custom AI models', included: false },
     ],
-    cta: 'Start 7-Day Free Trial',
+    cta: 'Get Started',
     href: '/register?plan=pro',
     planKey: 'PRO' as 'PRO' | 'ENTERPRISE' | null,
     highlighted: true,
@@ -150,8 +150,8 @@ const COMPARISON = [
 
 const FAQS = [
   {
-    q: 'Can I try Pro before paying?',
-    a: 'Yes! Every new account gets a 7-day free trial of Pro with no credit card required. You can downgrade to Free anytime.',
+    q: 'Can I cancel anytime?',
+    a: 'Yes. You can cancel your subscription anytime from your billing settings. Access continues until the end of your billing period.',
   },
   {
     q: 'What databases do you support?',
@@ -170,8 +170,8 @@ const FAQS = [
     a: "Annual billing is coming soon with a 20% discount. Sign up for monthly now and we'll automatically apply the discount when it launches.",
   },
   {
-    q: 'What happens when my trial ends?',
-    a: "You'll be automatically moved to the Free plan. No charges, no data loss. You can upgrade to Pro whenever you're ready.",
+    q: 'What happens if I downgrade?',
+    a: "You'll be moved to the Free plan at the end of your billing period. No data loss — your saved queries and connections stay.",
   },
 ]
 
@@ -369,7 +369,7 @@ export default function PricingPage() {
               </div>
               <div className="p-4 text-center bg-primary/5 border-x border-primary/10">
                 <Link href="/register?plan=pro" className="btn-primary text-xs py-2 px-4">
-                  Start Trial
+                  Get Started
                 </Link>
               </div>
               <div className="p-4 text-center">

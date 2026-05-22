@@ -94,8 +94,7 @@ const RELEASES: Release[] = [
     version: '1.0.0',
     date: 'May 2026',
     title: 'Public Launch',
-    description:
-      'NatureQuery launches with 30+ features, 6 database types, and a 7-day free trial.',
+    description: 'NatureQuery launches with 30+ features and 6 database types supported.',
     icon: Rocket,
     changes: [
       { type: 'feature', text: 'Natural language to SQL generation with fast AI inference' },
@@ -254,12 +253,11 @@ export default function ChangelogPage() {
             <Wrench className="w-8 h-8 text-primary mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-3">Want to see what&apos;s next?</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              We&apos;re always building. Start your free trial and be the first to experience new
-              features.
+              We&apos;re always building. Sign up and be the first to experience new features.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/register" className="btn-primary text-sm py-2.5 px-6">
-                Start Free Trial <ArrowRight className="w-4 h-4" />
+                Get Started <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/contact" className="btn-secondary text-sm py-2.5 px-6">
                 Request a Feature

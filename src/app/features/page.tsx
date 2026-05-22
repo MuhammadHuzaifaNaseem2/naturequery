@@ -293,7 +293,7 @@ const PLANS = [
       'API access',
       'Priority support',
     ],
-    cta: 'Start 7-Day Free Trial',
+    cta: 'Get Started',
     href: '/register?plan=pro',
     highlighted: true,
   },
