@@ -18,10 +18,19 @@ import { NotificationCenter } from '@/components/NotificationCenter'
 import { OnboardingChecklist } from '@/components/OnboardingChecklist'
 import { PlanLimitModal } from '@/components/PlanLimitModal'
 import { useState, useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 
 export default function DashboardPage() {
   const dashboard = useDashboard()
   const [viewMode, setViewMode] = useState<'editor' | 'dashboard'>('editor')
+
+  if (!dashboard.connectionsLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="w-7 h-7 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   useEffect(() => {
     const handleSwitch = () => setViewMode('dashboard')
