@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Clock,
   ShieldCheck,
-  ExternalLink,
+  Download,
+  Receipt,
 } from 'lucide-react'
 import {
   getUserSubscription,
@@ -24,7 +25,8 @@ import {
   cancelSubscription,
   resumeSubscription,
   syncSubscriptionFromLS,
-  createBillingPortalSession,
+  getBillingDetails,
+  type BillingDetails,
 } from '@/actions/billing'
 import { useTranslation } from '@/contexts/LocaleContext'
 
@@ -112,16 +114,22 @@ export function BillingSettings() {
   const { t } = useTranslation()
   const [sub, setSub] = useState<SubInfo | null>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
+  const [billing, setBilling] = useState<BillingDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [showCancelModal, setShowCancelModal] = useState(false)
 
   useEffect(() => {
-    Promise.all([getUserSubscription(), fetch('/api/usage').then((r) => r.json())])
-      .then(([subData, usageData]) => {
+    Promise.all([
+      getUserSubscription(),
+      fetch('/api/usage').then((r) => r.json()),
+      getBillingDetails(),
+    ])
+      .then(([subData, usageData, billingData]) => {
         setSub(subData)
         if (usageData.usage) setUsage(usageData.usage)
+        setBilling(billingData)
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
@@ -150,18 +158,6 @@ export function BillingSettings() {
         await syncSubscriptionFromLS()
         const updated = await getUserSubscription()
         setSub(updated)
-      } catch (e: any) {
-        setError(e.message)
-      }
-    })
-  }
-
-  function handleManageSubscription() {
-    startTransition(async () => {
-      try {
-        setError(null)
-        const { url } = await createBillingPortalSession()
-        window.open(url, '_blank')
       } catch (e: any) {
         setError(e.message)
       }
@@ -354,34 +350,96 @@ export function BillingSettings() {
         </div>
       </div>
 
-      {/* ── Manage Subscription Portal ── */}
-      {isPaidPlan && sub.billingEnabled && sub.subscriptionId && (
+      {/* ── Payment Method ── */}
+      {isPaidPlan && billing?.paymentMethod && (
         <div className="card p-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
               <CreditCard className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-sm">Manage Subscription</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Update payment method, view invoices, and manage billing details.
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-0.5">
+                Payment Method
+              </p>
+              <p className="font-semibold text-sm capitalize">
+                {billing.paymentMethod.brand} ending in{' '}
+                <span className="font-mono">{billing.paymentMethod.lastFour}</span>
               </p>
             </div>
           </div>
-          <button
-            onClick={handleManageSubscription}
-            disabled={isPending}
-            className="btn-secondary text-sm flex items-center gap-2 flex-shrink-0"
-          >
-            {isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <ExternalLink className="w-4 h-4" />
-                Open Portal
-              </>
-            )}
-          </button>
+          {billing.updatePaymentUrl && (
+            <a
+              href={billing.updatePaymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary text-sm flex items-center gap-2 flex-shrink-0"
+            >
+              <CreditCard className="w-4 h-4" />
+              Update Card
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* ── Billing History ── */}
+      {isPaidPlan && billing && billing.invoices.length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+            <Receipt className="w-4 h-4 text-muted-foreground" />
+            <h3 className="font-semibold text-sm">Billing History</h3>
+          </div>
+          <div className="divide-y divide-border">
+            {billing.invoices.map((inv) => {
+              const date = inv.date
+                ? new Date(inv.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : '—'
+              const isPaid = inv.status === 'paid'
+              const isRefunded = inv.status === 'refunded'
+              return (
+                <div key={inv.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm">
+                      <p className="font-medium">{date}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{inv.amount}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        isPaid
+                          ? 'bg-green-50 text-green-600'
+                          : isRefunded
+                            ? 'bg-orange-50 text-orange-600'
+                            : 'bg-secondary text-muted-foreground'
+                      }`}
+                    >
+                      {isPaid ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <XCircle className="w-3 h-3" />
+                      )}
+                      {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
+                    </span>
+                    {inv.invoiceUrl && (
+                      <a
+                        href={inv.invoiceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Invoice
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

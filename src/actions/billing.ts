@@ -7,6 +7,7 @@ import {
   createCheckout,
   getSubscription,
   listSubscriptions,
+  listSubscriptionInvoices,
   cancelSubscription as lsCancelSubscription,
   updateSubscription,
 } from '@lemonsqueezy/lemonsqueezy.js'
@@ -305,4 +306,69 @@ export async function syncBySubscriptionId(subscriptionId: string) {
   }
 
   await applyLSSubscription(user.id!, String(data.data.id), attrs)
+}
+
+export interface InvoiceItem {
+  id: string
+  date: string
+  amount: string
+  status: string
+  invoiceUrl: string | null
+}
+
+export interface PaymentMethod {
+  brand: string
+  lastFour: string
+}
+
+export interface BillingDetails {
+  invoices: InvoiceItem[]
+  paymentMethod: PaymentMethod | null
+  updatePaymentUrl: string | null
+}
+
+/**
+ * Fetch invoices and payment method info from Lemon Squeezy for the current user.
+ */
+export async function getBillingDetails(): Promise<BillingDetails> {
+  const empty: BillingDetails = { invoices: [], paymentMethod: null, updatePaymentUrl: null }
+  if (!isLemonSqueezyEnabled()) return empty
+
+  setupLemonSqueezy()
+
+  const user = await requireUser()
+  const sub = await getOrCreateSubscription(user.id!)
+  if (!sub.stripeSubscriptionId) return empty
+
+  try {
+    const [subRes, invRes] = await Promise.all([
+      getSubscription(sub.stripeSubscriptionId),
+      listSubscriptionInvoices({ filter: { subscriptionId: sub.stripeSubscriptionId } }),
+    ])
+
+    const attrs = subRes.data?.data?.attributes as Record<string, unknown> | undefined
+    const paymentMethod = attrs?.card_last_four
+      ? { brand: String(attrs.card_brand ?? ''), lastFour: String(attrs.card_last_four) }
+      : null
+    const updatePaymentUrl =
+      (attrs?.urls as Record<string, string> | undefined)?.update_payment_method ?? null
+
+    const invoices: InvoiceItem[] = (
+      (invRes.data?.data ?? []) as Array<{
+        id: string | number
+        attributes: Record<string, unknown>
+      }>
+    ).map((inv) => ({
+      id: String(inv.id),
+      date: String(inv.attributes.created_at ?? ''),
+      amount: String(inv.attributes.total_formatted ?? ''),
+      status: String(inv.attributes.status ?? ''),
+      invoiceUrl:
+        (inv.attributes.urls as { invoice_url?: string } | undefined)?.invoice_url ?? null,
+    }))
+
+    return { invoices, paymentMethod, updatePaymentUrl }
+  } catch {
+    return empty
+  }
 }
