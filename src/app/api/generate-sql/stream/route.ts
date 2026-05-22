@@ -119,7 +119,7 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
 
 9. COLUMN-TABLE BINDING (CRITICAL) â€” the #1 cause of "column does not exist" errors:
    - Every column you reference MUST exist on the EXACT table alias you attach it to.
-   - Example: if the schema shows order_date only on the `orders` table, you may write `o.order_date` (where o = orders) but NEVER `oi.order_date` (where oi = order_items) even if it seems logical.
+   - Example: if the schema shows order_date only on the "orders" table, you may write o.order_date (where o = orders) but NEVER oi.order_date (where oi = order_items) even if it seems logical.
    - When in doubt, JOIN to the table that actually owns the column instead of guessing.
 
 10. Output your final SQL wrapped in <sql></sql> tags.
