@@ -21,6 +21,7 @@ import {
   getUserSubscription,
   createCheckoutSession,
   cancelSubscription,
+  resumeSubscription,
   syncSubscriptionFromLS,
 } from '@/actions/billing'
 import { useTranslation } from '@/contexts/LocaleContext'
@@ -145,6 +146,19 @@ export function BillingSettings() {
       try {
         setError(null)
         await syncSubscriptionFromLS()
+        const updated = await getUserSubscription()
+        setSub(updated)
+      } catch (e: any) {
+        setError(e.message)
+      }
+    })
+  }
+
+  function handleResume() {
+    startTransition(async () => {
+      try {
+        setError(null)
+        await resumeSubscription()
         const updated = await getUserSubscription()
         setSub(updated)
       } catch (e: any) {
@@ -298,6 +312,20 @@ export function BillingSettings() {
               )}
               Sync
             </button>
+            {isPaidPlan && sub.cancelAtPeriodEnd && sub.billingEnabled && (
+              <button
+                onClick={handleResume}
+                disabled={isPending}
+                className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3 text-green-600 hover:bg-green-50 border-green-200"
+              >
+                {isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                )}
+                Resume Subscription
+              </button>
+            )}
             {isPaidPlan && !sub.cancelAtPeriodEnd && sub.billingEnabled && (
               <button
                 onClick={() => setShowCancelModal(true)}

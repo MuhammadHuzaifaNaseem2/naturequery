@@ -8,6 +8,7 @@ import {
   getSubscription,
   listSubscriptions,
   cancelSubscription as lsCancelSubscription,
+  updateSubscription,
 } from '@lemonsqueezy/lemonsqueezy.js'
 
 async function requireUser() {
@@ -129,6 +130,29 @@ export async function createBillingPortalSession() {
   if (!portalUrl) throw new Error('Could not retrieve billing portal URL.')
 
   return { url: portalUrl }
+}
+
+export async function resumeSubscription() {
+  if (!isLemonSqueezyEnabled()) throw new Error('Billing is not configured')
+
+  setupLemonSqueezy()
+
+  const user = await requireUser()
+  const sub = await getOrCreateSubscription(user.id)
+
+  if (!sub.stripeSubscriptionId) {
+    throw new Error('No subscription to resume')
+  }
+
+  const { error } = await updateSubscription(sub.stripeSubscriptionId, { cancelled: false })
+  if (error) throw new Error(error.message)
+
+  await prisma.subscription.update({
+    where: { userId: user.id },
+    data: { cancelAtPeriodEnd: false },
+  })
+
+  return { success: true }
 }
 
 export async function cancelSubscription() {
