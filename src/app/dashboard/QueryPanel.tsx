@@ -56,7 +56,6 @@ import { useTheme } from '@/components/ThemeProvider'
 type ResultsView = 'table' | 'chart' | 'insights' | 'performance'
 
 interface QueryPanelProps {
-  isLoading?: boolean
   activeConnection: SavedConnection | undefined
   nlQuery: string
   onNlQueryChange: (query: string) => void
@@ -110,7 +109,6 @@ interface QueryPanelProps {
 }
 
 export function QueryPanel({
-  isLoading,
   activeConnection,
   nlQuery,
   onNlQueryChange,
@@ -224,16 +222,6 @@ export function QueryPanel({
     if (!rawSQL.trim() || !onSQLChange) return
     onSQLChange(rawSQL) // Sync UI state
     onExecuteSQL(rawSQL) // Execute immediately using the passed value
-  }
-
-  // Loading state — waiting for local storage/hydration
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-background via-background to-primary/5">
-        <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-        <p className="text-muted-foreground animate-pulse text-sm">Loading workspace...</p>
-      </div>
-    )
   }
 
   // Empty state — no connection selected

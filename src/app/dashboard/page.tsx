@@ -133,7 +133,6 @@ export default function DashboardPage() {
         <div className="flex-1 flex overflow-hidden bg-secondary/10">
           {viewMode === 'editor' ? (
             <QueryPanel
-              isLoading={!dashboard.connectionsLoaded}
               activeConnection={dashboard.activeConnection}
               nlQuery={dashboard.nlQuery}
               onNlQueryChange={(q) => {
