@@ -70,7 +70,7 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$9',
+    price: '$20',
     period: 'per month',
     description: 'For professionals and small teams',
     features: [
@@ -88,7 +88,7 @@ const PLANS = [
   },
   {
     name: 'Enterprise',
-    price: '$40',
+    price: '$79',
     period: 'per month',
     description: 'For organizations with advanced needs',
     features: [

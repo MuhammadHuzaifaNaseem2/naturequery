@@ -282,7 +282,7 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$9',
+    price: '$20',
     period: '/ month',
     features: [
       'Unlimited queries',
@@ -299,7 +299,7 @@ const PLANS = [
   },
   {
     name: 'Enterprise',
-    price: '$40',
+    price: '$79',
     period: '/ month',
     features: [
       'Everything in Pro',
@@ -572,8 +572,6 @@ export default function FeaturesPage() {
           </div>
         </div>
       </section>
-
-
 
       {/* Feature quick nav */}
       <div className="sticky top-16 z-40 bg-background/80 backdrop-blur-sm border-b border-border/50">

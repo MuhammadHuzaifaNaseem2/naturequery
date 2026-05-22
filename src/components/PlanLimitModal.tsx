@@ -77,7 +77,7 @@ export function PlanLimitModal({
                 <Zap className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold text-primary">Pro Plan</span>
                 <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
-                  $9/mo
+                  $20/mo
                 </span>
               </div>
               <span className="text-sm font-semibold text-primary">

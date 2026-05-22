@@ -210,7 +210,7 @@
       },
       "pro": {
         "name": "Pro",
-        "price": "$9",
+        "price": "$20",
         "period": "por mes",
         "description": "Para profesionales y equipos pequeños",
         "feature1": "Consultas ilimitadas",
@@ -224,7 +224,7 @@
       },
       "enterprise": {
         "name": "Empresarial",
-        "price": "$40",
+        "price": "$79",
         "period": "por mes",
         "description": "Para organizaciones con necesidades avanzadas",
         "feature1": "Todo lo de Pro",
