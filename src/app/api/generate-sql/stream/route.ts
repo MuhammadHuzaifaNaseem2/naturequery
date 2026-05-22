@@ -188,6 +188,22 @@ function extractSQL(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Parse alias → table name map from FROM/JOIN clauses
+// ---------------------------------------------------------------------------
+
+function parseAliasMap(sql: string): Map<string, string> {
+  const aliasMap = new Map<string, string>()
+  const skip = new Set(['where', 'on', 'set', 'inner', 'left', 'right', 'outer', 'cross', 'full'])
+  const re = /\b(?:FROM|JOIN)\s+(\w+)\s+(?:AS\s+)?(\w+)/gi
+  let m
+  while ((m = re.exec(sql)) !== null) {
+    const alias = m[2].toLowerCase()
+    if (!skip.has(alias)) aliasMap.set(alias, m[1].toLowerCase())
+  }
+  return aliasMap
+}
+
+// ---------------------------------------------------------------------------
 // Stream AI response and collect full text (for retry calls)
 // ---------------------------------------------------------------------------
 
@@ -510,6 +526,54 @@ export async function POST(request: NextRequest) {
 
       let finalSQL = normalizePsqlMetaCommands(sqlContent || extractSQL(chainOfThought))
 
+      // 9a. Self-subtraction detection: col - col always equals zero/null — fix before executing
+      const selfSubtractRe = /\b([\w.]+)\s*-\s*\1\b/i
+      const selfSubtractMatch = selfSubtractRe.exec(finalSQL)
+      if (selfSubtractMatch) {
+        await send('thought', {
+          token: `\n\n⚠️ Detected self-subtraction "${selfSubtractMatch[0]}" — this always equals zero. Fixing with smarter model...\n`,
+        })
+        const schemaLines = filteredSchema.tables
+          .map((t) => `${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`)
+          .join('\n')
+        const selfSubtractFix = `Your SQL contains "${selfSubtractMatch[0]}" — subtracting a column from itself always equals zero and is meaningless.
+
+RULE: To calculate a time difference you need TWO DIFFERENT date/timestamp columns.
+
+Schema columns available:
+${schemaLines}
+
+Instructions:
+1. Scan the schema for two DISTINCT date/timestamp columns that represent a start and end event (e.g. created_at and completed_at, ordered_at and delivered_at, placed_at and shipped_at).
+2. If you find two distinct date columns, compute the difference between them using AGE() or subtraction.
+3. If only ONE date column exists, do NOT fabricate a second one. Instead emit a simple query showing the available date column with a SQL comment explaining the limitation.
+
+Output only the corrected SQL in <sql></sql> tags.`
+
+        const selfSubMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+          { role: 'system', content: systemPrompt },
+          ...messages.slice(1),
+          { role: 'assistant', content: `<sql>\n${finalSQL}\n</sql>` },
+          { role: 'user', content: selfSubtractFix },
+        ]
+        try {
+          const selfFix = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            stream: false,
+            messages: selfSubMessages,
+            max_tokens: 1024,
+            temperature: 0.05,
+          })
+          const fixedSQL = extractSQL(selfFix.choices[0]?.message?.content ?? '')
+          if (fixedSQL && fixedSQL !== finalSQL && validateSQLSafety(fixedSQL).valid) {
+            finalSQL = fixedSQL
+            await send('thought', { token: '✅ Self-subtraction fixed.\n' })
+          }
+        } catch {
+          // keep original
+        }
+      }
+
       // 9. Validate SQL safety — with smart retry for recoverable cases
       let validation = validateSQLSafety(finalSQL)
       if (!validation.valid) {
@@ -540,7 +604,7 @@ export async function POST(request: NextRequest) {
 
           try {
             const fix = await groq.chat.completions.create({
-              model: 'llama-3.1-8b-instant',
+              model: 'llama-3.3-70b-versatile',
               stream: false,
               messages: fixMessages,
               max_tokens: 1024,
@@ -584,25 +648,66 @@ export async function POST(request: NextRequest) {
           /\\dt|\\l\\b|\\c\b|\\d\b|use \\|psql meta|SHOW TABLES|information_schema/i.test(errMsg)
 
         const columnNotExistMatch = errMsg.match(/column\s+["']?([\w.]+)["']?\s+does not exist/i)
-        const fixContent = isPsqlOrMysqlError
-          ? `The SQL you generated uses a psql meta-command or MySQL-style command that does not work in a SQL editor. NEVER use \\dt, \\l, \\c, \\d, SHOW TABLES, or DESCRIBE.\n\nFor PostgreSQL, use information_schema instead:\n\nTo list all tables:\nSELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name\n\nTo describe a table's columns:\nSELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'your_table' AND table_schema = 'public'\n\nOutput only the corrected SQL in <sql></sql> tags.`
-          : columnNotExistMatch
-            ? `The SQL failed with: ${errMsg}
 
-COLUMN-TABLE BINDING ERROR. The column "${columnNotExistMatch[1]}" does not exist on the table alias you used.
+        let fixContent: string
+        if (isPsqlOrMysqlError) {
+          fixContent = `The SQL you generated uses a psql meta-command or MySQL-style command that does not work in a SQL editor. NEVER use \\dt, \\l, \\c, \\d, SHOW TABLES, or DESCRIBE.\n\nFor PostgreSQL, use information_schema instead:\n\nTo list all tables:\nSELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name\n\nTo describe a table's columns:\nSELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'your_table' AND table_schema = 'public'\n\nOutput only the corrected SQL in <sql></sql> tags.`
+        } else if (columnNotExistMatch) {
+          const fullCol = columnNotExistMatch[1]
+          const dotIdx = fullCol.indexOf('.')
+          const wrongAlias = dotIdx !== -1 ? fullCol.slice(0, dotIdx) : null
+          const bareCol = dotIdx !== -1 ? fullCol.slice(dotIdx + 1) : fullCol
+          const aliasMap = parseAliasMap(finalSQL)
+          const wrongTableName = wrongAlias ? aliasMap.get(wrongAlias.toLowerCase()) : null
+          const wrongTableSchema = wrongTableName
+            ? filteredSchema.tables.find((t) => t.tableName.toLowerCase() === wrongTableName)
+            : null
+          const correctTable = filteredSchema.tables.find((t) =>
+            t.columns.some((c) => c.name.toLowerCase() === bareCol.toLowerCase())
+          )
+          const correctAlias = correctTable
+            ? [...aliasMap.entries()].find(
+                ([, tbl]) => tbl.toLowerCase() === correctTable.tableName.toLowerCase()
+              )?.[0]
+            : null
 
-STRICT RULES TO FIX THIS:
-1. Look at the DATABASE SCHEMA above. Find which table actually owns that column.
-2. Use that table's alias when referencing the column — NEVER guess.
-3. If "order_date" is on the "orders" table (alias o), write o.order_date — NEVER oi.order_date.
-4. If a column like "delivered_date" does not exist in the schema AT ALL, do NOT invent it. Instead show only the columns that DO exist.
-5. Every single column reference must match exactly the table alias shown in your FROM/JOIN clause.
-
-Full schema for reference:
-${filteredSchema.tables.map((t) => `${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`).join('\n')}
-
-Output only the corrected SQL in <sql></sql> tags.`
-            : `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}\n\nFull schema:\n${filteredSchema.tables.map((t) => `${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`).join('\n')}\n\nPlease fix the SQL. Common causes:\n- Wrong column name (check schema carefully — only use columns listed above)\n- Column referenced on wrong table alias\n- Wrong data type cast\n- Syntax error\n\nOutput only the corrected SQL in <sql></sql> tags.`
+          const lines: string[] = [
+            `The SQL failed with: ${errMsg}`,
+            '',
+            'COLUMN-TABLE BINDING ERROR. Exact diagnosis:',
+          ]
+          if (wrongAlias && wrongTableName) {
+            const cols = wrongTableSchema
+              ? ` — its columns are: ${wrongTableSchema.columns.map((c) => c.name).join(', ')}`
+              : ''
+            lines.push(`• Alias \`${wrongAlias}\` = table \`${wrongTableName}\`${cols}`)
+          }
+          if (correctTable) {
+            lines.push(
+              `• Column \`${bareCol}\` actually belongs to table \`${correctTable.tableName}\`${correctAlias ? ` (alias \`${correctAlias}\`)` : ''}`
+            )
+            if (wrongAlias && correctAlias) {
+              lines.push(
+                ``,
+                `➜ Change every \`${wrongAlias}.${bareCol}\` → \`${correctAlias}.${bareCol}\` in the query.`
+              )
+            }
+          } else {
+            lines.push(`• Column \`${bareCol}\` does NOT exist in any table. Do NOT invent it.`)
+            lines.push(`  Only use columns that actually exist:`)
+            filteredSchema.tables.forEach((t) => {
+              lines.push(`  ${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`)
+            })
+            lines.push(
+              ``,
+              `  If the requested calculation is impossible with available columns, approximate it using columns that DO exist.`
+            )
+          }
+          lines.push(``, `Output only the corrected SQL in <sql></sql> tags.`)
+          fixContent = lines.join('\n')
+        } else {
+          fixContent = `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}\n\nFull schema:\n${filteredSchema.tables.map((t) => `${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`).join('\n')}\n\nPlease fix the SQL. Common causes:\n- Wrong column name (check schema carefully — only use columns listed above)\n- Column referenced on wrong table alias\n- Wrong data type cast\n- Syntax error\n\nOutput only the corrected SQL in <sql></sql> tags.`
+        }
 
         const fixMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
           { role: 'system', content: systemPrompt },
@@ -613,7 +718,7 @@ Output only the corrected SQL in <sql></sql> tags.`
 
         try {
           const fix = await groq.chat.completions.create({
-            model: 'llama-3.1-8b-instant',
+            model: 'llama-3.3-70b-versatile',
             stream: false,
             messages: fixMessages,
             max_tokens: 1024,
@@ -673,7 +778,7 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
 
         try {
           const zeroFix = await groq.chat.completions.create({
-            model: 'llama-3.1-8b-instant',
+            model: 'llama-3.3-70b-versatile',
             stream: false,
             messages: zeroRowMessages,
             max_tokens: 1024,
