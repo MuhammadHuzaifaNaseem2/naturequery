@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Clock,
   ShieldCheck,
+  ExternalLink,
 } from 'lucide-react'
 import {
   getUserSubscription,
@@ -23,6 +24,7 @@ import {
   cancelSubscription,
   resumeSubscription,
   syncSubscriptionFromLS,
+  createBillingPortalSession,
 } from '@/actions/billing'
 import { useTranslation } from '@/contexts/LocaleContext'
 
@@ -148,6 +150,18 @@ export function BillingSettings() {
         await syncSubscriptionFromLS()
         const updated = await getUserSubscription()
         setSub(updated)
+      } catch (e: any) {
+        setError(e.message)
+      }
+    })
+  }
+
+  function handleManageSubscription() {
+    startTransition(async () => {
+      try {
+        setError(null)
+        const { url } = await createBillingPortalSession()
+        window.open(url, '_blank')
       } catch (e: any) {
         setError(e.message)
       }
@@ -339,6 +353,37 @@ export function BillingSettings() {
           </div>
         </div>
       </div>
+
+      {/* ── Manage Subscription Portal ── */}
+      {isPaidPlan && sub.billingEnabled && sub.subscriptionId && (
+        <div className="card p-5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Manage Subscription</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Update payment method, view invoices, and manage billing details.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleManageSubscription}
+            disabled={isPending}
+            className="btn-secondary text-sm flex items-center gap-2 flex-shrink-0"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <ExternalLink className="w-4 h-4" />
+                Open Portal
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* ── Usage Stats ── */}
       <div className="grid grid-cols-3 gap-3">
