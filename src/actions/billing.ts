@@ -58,11 +58,13 @@ export async function getUserSubscription() {
     plan: effectivePlan,
     planName: sub.status === 'TRIALING' ? `${plan.name} (Trial)` : plan.name,
     status: sub.status,
+    currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
     currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
     cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
     trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
     limits: plan.limits,
     billingEnabled: isLemonSqueezyEnabled(),
+    subscriptionId: sub.stripeSubscriptionId ?? null,
   }
 }
 
@@ -152,7 +154,10 @@ export async function cancelSubscription() {
   return { success: true }
 }
 
-const LS_STATUS_MAP: Record<string, 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'INCOMPLETE'> = {
+const LS_STATUS_MAP: Record<
+  string,
+  'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'INCOMPLETE'
+> = {
   active: 'ACTIVE',
   on_trial: 'TRIALING',
   past_due: 'PAST_DUE',
@@ -170,11 +175,7 @@ function resolvePlan(variantId: string): 'PRO' | 'ENTERPRISE' | null {
   return null
 }
 
-async function applyLSSubscription(
-  userId: string,
-  subId: string,
-  attrs: Record<string, unknown>
-) {
+async function applyLSSubscription(userId: string, subId: string, attrs: Record<string, unknown>) {
   const variantId = String(attrs.variant_id ?? '')
   const plan = resolvePlan(variantId)
   const status = LS_STATUS_MAP[String(attrs.status ?? 'active')] ?? 'ACTIVE'
@@ -231,21 +232,22 @@ export async function syncSubscriptionFromLS() {
     const storeId = process.env.LEMONSQUEEZY_STORE_ID ?? ''
 
     // Try email + store filter first, then email only
-    for (const filter of [
-      { storeId, userEmail: dbUser.email },
-      { userEmail: dbUser.email },
-    ]) {
+    for (const filter of [{ storeId, userEmail: dbUser.email }, { userEmail: dbUser.email }]) {
       const { data: list, error: listError } = await listSubscriptions({ filter })
       if (listError) {
         console.error('[billing] listSubscriptions error:', listError)
         continue
       }
-      const subs = (list?.data ?? []) as Array<{ id: string | number; attributes: Record<string, unknown> }>
+      const subs = (list?.data ?? []) as Array<{
+        id: string | number
+        attributes: Record<string, unknown>
+      }>
       if (!subs.length) continue
 
       const active =
-        subs.find((s) => ['active', 'on_trial', 'past_due'].includes(String(s.attributes.status))) ??
-        subs[0]
+        subs.find((s) =>
+          ['active', 'on_trial', 'past_due'].includes(String(s.attributes.status))
+        ) ?? subs[0]
       await applyLSSubscription(user.id!, String(active.id), active.attributes)
       return
     }

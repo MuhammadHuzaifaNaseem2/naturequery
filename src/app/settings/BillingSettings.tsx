@@ -10,11 +10,16 @@ import {
   Sparkles,
   Zap,
   Building2,
+  Calendar,
+  RefreshCw,
+  XCircle,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react'
 import {
   getUserSubscription,
   createCheckoutSession,
-  createBillingPortalSession,
   cancelSubscription,
   syncSubscriptionFromLS,
 } from '@/actions/billing'
@@ -57,10 +62,47 @@ const PLAN_FEATURES: Record<string, { icon: typeof Sparkles; features: string[] 
   },
 }
 
+const PLAN_PRICES: Record<string, string> = { FREE: '$0', PRO: '$20', ENTERPRISE: '$79' }
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
+  ACTIVE: {
+    label: 'Active',
+    color: 'text-green-600 bg-green-50 border-green-200',
+    icon: CheckCircle2,
+  },
+  TRIALING: { label: 'Trial', color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock },
+  PAST_DUE: {
+    label: 'Past Due',
+    color: 'text-orange-600 bg-orange-50 border-orange-200',
+    icon: AlertCircle,
+  },
+  CANCELLED: { label: 'Cancelled', color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle },
+  EXPIRED: {
+    label: 'Expired',
+    color: 'text-muted-foreground bg-secondary border-border',
+    icon: XCircle,
+  },
+}
+
 interface UsageData {
   queries: { current: number; limit: number }
   connections: { current: number; limit: number }
   teamMembers: { current: number; limit: number }
+}
+
+function fmt(dateStr: string | null) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+function daysRemaining(dateStr: string | null): number | null {
+  if (!dateStr) return null
+  const ms = new Date(dateStr).getTime() - Date.now()
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
 }
 
 export function BillingSettings() {
@@ -94,18 +136,6 @@ export function BillingSettings() {
     })
   }
 
-  function handleManageBilling() {
-    startTransition(async () => {
-      try {
-        setError(null)
-        const { url } = await createBillingPortalSession()
-        if (url) window.location.href = url
-      } catch (e: any) {
-        setError(e.message)
-      }
-    })
-  }
-
   function handleRefreshPlan() {
     startTransition(async () => {
       try {
@@ -117,10 +147,6 @@ export function BillingSettings() {
         setError(e.message)
       }
     })
-  }
-
-  function handleCancel() {
-    setShowCancelModal(true)
   }
 
   function confirmCancel() {
@@ -139,7 +165,7 @@ export function BillingSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-16">
         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
       </div>
     )
@@ -156,14 +182,17 @@ export function BillingSettings() {
 
   const isFreePlan = sub.plan === 'FREE'
   const isPaidPlan = sub.plan === 'PRO' || sub.plan === 'ENTERPRISE'
+  const statusCfg = STATUS_CONFIG[sub.status] ?? STATUS_CONFIG['ACTIVE']
+  const StatusIcon = statusCfg.icon
+  const days = daysRemaining(sub.currentPeriodEnd)
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">
-          {t('settings.billing.title')} &amp; {t('common.settings')}
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">{t('settings.billing.subtitle')}</p>
+        <h2 className="text-lg font-semibold">Billing &amp; Subscription</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Manage your plan, usage, and billing details.
+        </p>
       </div>
 
       {error && (
@@ -173,175 +202,160 @@ export function BillingSettings() {
         </div>
       )}
 
-      {/* Current Plan */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold">{t('settings.billing.currentPlan')}</h3>
-              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                {sub.planName}
-              </span>
-              {sub.cancelAtPeriodEnd && (
-                <span className="px-2 py-0.5 rounded-full bg-warning/10 text-warning text-xs font-semibold">
-                  {t('settings.billing.cancelsAtPeriodEnd')}
-                </span>
-              )}
+      {/* ── Subscription Overview Card ── */}
+      <div className="card overflow-hidden">
+        {/* Header bar */}
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ShieldCheck className="w-4.5 h-4.5 text-primary" />
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {sub.status === 'TRIALING' && sub.trialEndsAt
-                ? (() => {
-                    const daysLeft = Math.max(
-                      0,
-                      Math.ceil(
-                        (new Date(sub.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                      )
-                    )
-                    return `Your free trial ends in ${daysLeft} day${daysLeft !== 1 ? 's' : ''} (${new Date(sub.trialEndsAt).toLocaleDateString()}). Upgrade to keep PRO features.`
-                  })()
-                : isFreePlan
-                  ? t('settings.billing.freeForever')
-                  : sub.currentPeriodEnd
-                    ? t('settings.billing.renews', {
-                        date: new Date(sub.currentPeriodEnd).toLocaleDateString(),
-                      })
-                    : t('settings.billing.activeSubscription')}
+            <div>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Current Plan
+              </p>
+              <p className="font-bold text-base leading-tight">{sub.planName}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusCfg.color}`}
+            >
+              <StatusIcon className="w-3 h-3" />
+              {statusCfg.label}
+              {sub.cancelAtPeriodEnd && ' · Cancels at period end'}
+            </span>
+          </div>
+        </div>
+
+        {/* Details grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-border">
+          <div className="p-5">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              Started
+            </div>
+            <p className="text-sm font-semibold">{fmt(sub.currentPeriodStart ?? null)}</p>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              {sub.cancelAtPeriodEnd ? 'Access Until' : 'Renews On'}
+            </div>
+            <p className="text-sm font-semibold">{fmt(sub.currentPeriodEnd)}</p>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              Days Remaining
+            </div>
+            <p className="text-sm font-semibold">
+              {days !== null ? (
+                <span className={days <= 5 ? 'text-destructive' : undefined}>
+                  {days} day{days !== 1 ? 's' : ''}
+                </span>
+              ) : isFreePlan ? (
+                'Forever'
+              ) : (
+                '—'
+              )}
             </p>
           </div>
+          <div className="p-5">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
+              <CreditCard className="w-3.5 h-3.5" />
+              Price
+            </div>
+            <p className="text-sm font-semibold">
+              {isFreePlan ? 'Free forever' : `${PLAN_PRICES[sub.plan]}/month`}
+            </p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            {sub.cancelAtPeriodEnd
+              ? `Your subscription is cancelled. You have access until ${fmt(sub.currentPeriodEnd)}.`
+              : isFreePlan
+                ? 'You are on the free plan. Upgrade anytime to unlock more features.'
+                : `Your subscription renews automatically on ${fmt(sub.currentPeriodEnd)}.`}
+          </p>
           <div className="flex items-center gap-2">
             <button
               onClick={handleRefreshPlan}
               disabled={isPending}
-              title="Sync plan from Lemon Squeezy"
-              className="btn-secondary text-sm flex items-center gap-1.5"
+              className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
             >
               {isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                  <path d="M21 3v5h-5" />
-                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                  <path d="M8 16H3v5" />
-                </svg>
+                <RefreshCw className="w-3.5 h-3.5" />
               )}
-              Refresh
+              Sync
             </button>
-            {isPaidPlan && sub.billingEnabled && (
+            {isPaidPlan && !sub.cancelAtPeriodEnd && sub.billingEnabled && (
               <button
-                onClick={handleManageBilling}
+                onClick={() => setShowCancelModal(true)}
                 disabled={isPending}
-                className="btn-secondary text-sm flex items-center gap-1.5"
+                className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3 text-destructive hover:bg-destructive/10 border-destructive/30"
               >
-                {isPending ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <CreditCard className="w-3.5 h-3.5" />
-                )}
-                {t('settings.billing.manageBilling')}
+                <XCircle className="w-3.5 h-3.5" />
+                Cancel Subscription
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Plan usage & limits */}
-        <div className="mt-5 grid grid-cols-3 gap-3">
-          <div className="glass-card rounded-xl p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">
-              {t('settings.billing.queriesPerMonth')}
-            </p>
-            <p className="text-xl font-bold stat-number">
-              {sub.limits.queriesPerMonth === -1
-                ? '∞'
-                : usage
-                  ? `${usage.queries.current}/${sub.limits.queriesPerMonth}`
-                  : sub.limits.queriesPerMonth}
-            </p>
-            {usage && sub.limits.queriesPerMonth !== -1 && (
-              <div className="mt-2 h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    usage.queries.current / sub.limits.queriesPerMonth > 0.9
-                      ? 'bg-destructive'
-                      : usage.queries.current / sub.limits.queriesPerMonth > 0.7
-                        ? 'bg-warning'
-                        : 'bg-primary'
-                  }`}
-                  style={{
-                    width: `${Math.min(100, (usage.queries.current / sub.limits.queriesPerMonth) * 100)}%`,
-                  }}
-                />
-              </div>
-            )}
-            <p className="text-[10px] text-muted-foreground/60 mt-1.5">this calendar month</p>
-          </div>
-          <div className="glass-card rounded-xl p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">
-              {t('settings.billing.connections')}
-            </p>
-            <p className="text-xl font-bold stat-number">
-              {sub.limits.connections === -1
-                ? '∞'
-                : usage
-                  ? `${usage.connections.current}/${sub.limits.connections}`
-                  : sub.limits.connections}
-            </p>
-            {usage && sub.limits.connections !== -1 && (
-              <div className="mt-2 h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    usage.connections.current / sub.limits.connections >= 1
-                      ? 'bg-destructive'
-                      : 'bg-primary'
-                  }`}
-                  style={{
-                    width: `${Math.min(100, (usage.connections.current / sub.limits.connections) * 100)}%`,
-                  }}
-                />
-              </div>
-            )}
-          </div>
-          <div className="glass-card rounded-xl p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">
-              {t('settings.billing.teamMembers')}
-            </p>
-            <p className="text-xl font-bold stat-number">
-              {sub.limits.teamMembers === -1
-                ? '∞'
-                : sub.limits.teamMembers === 0
-                  ? '—'
-                  : usage
-                    ? `${usage.teamMembers.current}/${sub.limits.teamMembers}`
-                    : sub.limits.teamMembers}
-            </p>
-            {usage && sub.limits.teamMembers > 0 && (
-              <div className="mt-2 h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    usage.teamMembers.current / sub.limits.teamMembers >= 1
-                      ? 'bg-destructive'
-                      : 'bg-primary'
-                  }`}
-                  style={{
-                    width: `${Math.min(100, (usage.teamMembers.current / sub.limits.teamMembers) * 100)}%`,
-                  }}
-                />
-              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Upgrade Cards */}
+      {/* ── Usage Stats ── */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          {
+            label: 'Queries / month',
+            current: usage?.queries.current,
+            limit: sub.limits.queriesPerMonth,
+          },
+          {
+            label: 'Connections',
+            current: usage?.connections.current,
+            limit: sub.limits.connections,
+          },
+          {
+            label: 'Team Members',
+            current: usage?.teamMembers.current,
+            limit: sub.limits.teamMembers,
+          },
+        ].map(({ label, current, limit }) => {
+          const pct =
+            limit === -1 || limit === 0 ? 0 : Math.min(100, ((current ?? 0) / limit) * 100)
+          const barColor = pct >= 100 ? 'bg-destructive' : pct >= 80 ? 'bg-warning' : 'bg-primary'
+          return (
+            <div key={label} className="glass-card rounded-xl p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-1">{label}</p>
+              <p className="text-xl font-bold stat-number">
+                {limit === -1
+                  ? '∞'
+                  : limit === 0
+                    ? '—'
+                    : current !== undefined
+                      ? `${current}/${limit}`
+                      : limit}
+              </p>
+              {limit > 0 && current !== undefined && (
+                <div className="mt-2 h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${barColor}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Plan Cards ── */}
       {!sub.billingEnabled && (
         <div className="card p-4 bg-warning/5 border-warning/20">
           <p className="text-sm text-warning font-medium">
@@ -350,14 +364,13 @@ export function BillingSettings() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-4 stagger-children">
+      <div className="grid md:grid-cols-3 gap-4">
         {(['FREE', 'PRO', 'ENTERPRISE'] as const).map((planKey) => {
           const planInfo = PLAN_FEATURES[planKey]
           const Icon = planInfo.icon
           const isCurrent = sub.plan === planKey
           const isPro = planKey === 'PRO'
           const isEnterprise = planKey === 'ENTERPRISE'
-          const prices = { FREE: '$0', PRO: '$20', ENTERPRISE: '$79' }
 
           return (
             <div
@@ -370,12 +383,10 @@ export function BillingSettings() {
                     : 'card hover-scale'
               }`}
             >
-              {/* Popular badge for PRO */}
               {isPro && !isCurrent && (
                 <span className="badge-popular">{t('settings.billing.mostPopular')}</span>
               )}
 
-              {/* Plan header */}
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -393,13 +404,12 @@ export function BillingSettings() {
                 <div>
                   <h4 className="font-bold text-base">{planKey}</h4>
                   <div className="price-display">
-                    <span className="amount">{prices[planKey]}</span>
+                    <span className="amount">{PLAN_PRICES[planKey]}</span>
                     <span className="period">{t('settings.billing.perMonth')}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Features list */}
               <ul className="feature-list flex-1 mb-5">
                 {planInfo.features.map((f) => (
                   <li key={f} className="text-sm text-muted-foreground">
@@ -409,7 +419,6 @@ export function BillingSettings() {
                 ))}
               </ul>
 
-              {/* CTA Button */}
               {isCurrent ? (
                 <button className="btn-secondary w-full text-sm opacity-60 cursor-default" disabled>
                   {t('settings.billing.currentPlanBtn')}
@@ -417,24 +426,18 @@ export function BillingSettings() {
               ) : planKey === 'FREE' ? (
                 isPaidPlan && !sub.cancelAtPeriodEnd ? (
                   <button
-                    onClick={handleCancel}
+                    onClick={() => setShowCancelModal(true)}
                     disabled={isPending || !sub.billingEnabled}
                     className="btn-secondary w-full text-sm text-destructive hover:bg-destructive/10"
                   >
-                    {isPending ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" />
-                    ) : (
-                      t('settings.billing.downgrade')
-                    )}
+                    {t('settings.billing.downgrade')}
                   </button>
                 ) : null
               ) : (
                 <button
                   onClick={() => handleUpgrade(planKey as 'PRO' | 'ENTERPRISE')}
                   disabled={isPending || !sub.billingEnabled}
-                  className={`w-full text-sm flex items-center justify-center gap-1.5 ${
-                    isPro ? 'btn-gradient' : 'btn-primary'
-                  }`}
+                  className={`w-full text-sm flex items-center justify-center gap-1.5 ${isPro ? 'btn-gradient' : 'btn-primary'}`}
                 >
                   {isPending ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -450,27 +453,33 @@ export function BillingSettings() {
         })}
       </div>
 
-      {/* Cancel Confirm Modal */}
+      {/* ── Cancel Confirm Modal ── */}
       {showCancelModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fadeIn">
           <div className="relative bg-card border border-border shadow-2xl rounded-2xl p-6 w-full max-w-md animate-scaleIn">
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive">
-              <AlertCircle className="w-6 h-6" />
+              <XCircle className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-semibold">Cancel Subscription</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              Are you sure you want to cancel? You will retain access until the end of your billing
-              period.
+              Your subscription will be cancelled but you keep full access until{' '}
+              <span className="font-semibold text-foreground">{fmt(sub.currentPeriodEnd)}</span>. No
+              charges after that date.
             </p>
+            <div className="mt-4 p-3 rounded-lg bg-secondary/60 text-xs text-muted-foreground space-y-1">
+              <p>• Access continues until end of billing period</p>
+              <p>• No refund for the current period</p>
+              <p>• You can re-subscribe anytime</p>
+            </div>
             <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowCancelModal(false)} className="btn-secondary flex-1">
+                Keep Subscription
+              </button>
               <button
                 onClick={confirmCancel}
                 className="btn-primary flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent"
               >
                 Yes, Cancel
-              </button>
-              <button onClick={() => setShowCancelModal(false)} className="btn-secondary flex-1">
-                No, Go Back
               </button>
             </div>
           </div>
