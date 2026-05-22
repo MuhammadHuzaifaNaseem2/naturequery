@@ -111,7 +111,18 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - NEVER alias a raw column as “average_X” or “total_X” without wrapping it in AVG() or SUM(). A column name is not an aggregate function.
    - Aggregated queries (those with GROUP BY or a single aggregate) do NOT need LIMIT unless the user asks for “top N”.
 
-8. Output your final SQL wrapped in <sql></sql> tags.
+8. TIME-DIFFERENCE QUERIES (CRITICAL) â€” when the user asks for "time between X and Y", "duration", "delivery time", "how long does it take", etc:
+   - You need TWO DIFFERENT date/timestamp columns (e.g. ordered_at and delivered_at, or created_at and completed_at).
+   - NEVER subtract a column from itself (e.g. AVG(order_date - order_date)) â€” that always equals zero and is nonsensical.
+   - BEFORE generating SQL: scan the schema for two distinct datetime columns that represent the start and end of the period in question.
+   - If only ONE relevant date column exists in the schema, DO NOT fabricate the second one. Instead, return an explanation in your reasoning that the requested calculation is impossible with the available schema and emit a single-column query that approximates the request (e.g. just show order_date) rather than a meaningless subtraction.
+
+9. COLUMN-TABLE BINDING (CRITICAL) â€” the #1 cause of "column does not exist" errors:
+   - Every column you reference MUST exist on the EXACT table alias you attach it to.
+   - Example: if the schema shows order_date only on the `orders` table, you may write `o.order_date` (where o = orders) but NEVER `oi.order_date` (where oi = order_items) even if it seems logical.
+   - When in doubt, JOIN to the table that actually owns the column instead of guessing.
+
+10. Output your final SQL wrapped in <sql></sql> tags.
 
 CRITICAL RULES:
 - Use ${dialect} syntax ONLY â€” not other SQL dialects
