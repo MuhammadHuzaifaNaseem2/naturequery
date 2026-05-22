@@ -128,7 +128,11 @@ export function BillingSettings() {
     startTransition(async () => {
       try {
         setError(null)
-        const { url } = await createCheckoutSession(plan)
+        const { url, error: err } = await createCheckoutSession(plan)
+        if (err) {
+          setError(err)
+          return
+        }
         if (url) window.location.href = url
       } catch (e: any) {
         setError(e.message)

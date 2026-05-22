@@ -69,7 +69,7 @@ export async function getUserSubscription() {
 }
 
 export async function createCheckoutSession(planKey: 'PRO' | 'ENTERPRISE') {
-  if (!isLemonSqueezyEnabled()) throw new Error('Billing is not configured')
+  if (!isLemonSqueezyEnabled()) return { url: null, error: 'Billing is not configured' }
 
   setupLemonSqueezy()
 
@@ -81,7 +81,7 @@ export async function createCheckoutSession(planKey: 'PRO' | 'ENTERPRISE') {
   const plan = PLANS[planKey]
 
   if (!plan.lsVariantId) {
-    throw new Error(`Lemon Squeezy variant ID not configured for ${planKey} plan`)
+    return { url: null, error: `Variant ID not configured for ${planKey}. Contact support.` }
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -104,9 +104,9 @@ export async function createCheckoutSession(planKey: 'PRO' | 'ENTERPRISE') {
     }
   )
 
-  if (error) throw new Error(error.message)
+  if (error) return { url: null, error: error.message }
 
-  return { url: data?.data?.attributes?.url ?? null }
+  return { url: data?.data?.attributes?.url ?? null, error: null }
 }
 
 export async function createBillingPortalSession() {
