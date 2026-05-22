@@ -583,9 +583,26 @@ export async function POST(request: NextRequest) {
         const isPsqlOrMysqlError =
           /\\dt|\\l\\b|\\c\b|\\d\b|use \\|psql meta|SHOW TABLES|information_schema/i.test(errMsg)
 
+        const columnNotExistMatch = errMsg.match(/column\s+["']?([\w.]+)["']?\s+does not exist/i)
         const fixContent = isPsqlOrMysqlError
           ? `The SQL you generated uses a psql meta-command or MySQL-style command that does not work in a SQL editor. NEVER use \\dt, \\l, \\c, \\d, SHOW TABLES, or DESCRIBE.\n\nFor PostgreSQL, use information_schema instead:\n\nTo list all tables:\nSELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name\n\nTo describe a table's columns:\nSELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'your_table' AND table_schema = 'public'\n\nOutput only the corrected SQL in <sql></sql> tags.`
-          : `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}\n\nPlease fix the SQL. Common causes:\n- WRONG TABLE NAME: you referenced a table that does not exist. Only use table names from the list above. Find the correct table by looking at its columns and sample data.\n- Wrong column name (check the schema and sample data carefully)\n- Wrong data type cast\n- Syntax error for this database dialect\n- Missing table alias\n\nOutput only the corrected SQL in <sql></sql> tags.`
+          : columnNotExistMatch
+            ? `The SQL failed with: ${errMsg}
+
+COLUMN-TABLE BINDING ERROR. The column "${columnNotExistMatch[1]}" does not exist on the table alias you used.
+
+STRICT RULES TO FIX THIS:
+1. Look at the DATABASE SCHEMA above. Find which table actually owns that column.
+2. Use that table's alias when referencing the column — NEVER guess.
+3. If "order_date" is on the "orders" table (alias o), write o.order_date — NEVER oi.order_date.
+4. If a column like "delivered_date" does not exist in the schema AT ALL, do NOT invent it. Instead show only the columns that DO exist.
+5. Every single column reference must match exactly the table alias shown in your FROM/JOIN clause.
+
+Full schema for reference:
+${filteredSchema.tables.map((t) => `${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`).join('\n')}
+
+Output only the corrected SQL in <sql></sql> tags.`
+            : `The SQL above failed with this error:\n\n${errMsg}\n\nAvailable tables in this database: ${filteredSchema.tables.map((t) => t.tableName).join(', ')}\n\nFull schema:\n${filteredSchema.tables.map((t) => `${t.tableName}: ${t.columns.map((c) => c.name).join(', ')}`).join('\n')}\n\nPlease fix the SQL. Common causes:\n- Wrong column name (check schema carefully — only use columns listed above)\n- Column referenced on wrong table alias\n- Wrong data type cast\n- Syntax error\n\nOutput only the corrected SQL in <sql></sql> tags.`
 
         const fixMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
           { role: 'system', content: systemPrompt },
