@@ -24,6 +24,12 @@ export default function DashboardPage() {
   const dashboard = useDashboard()
   const [viewMode, setViewMode] = useState<'editor' | 'dashboard'>('editor')
 
+  useEffect(() => {
+    const handleSwitch = () => setViewMode('dashboard')
+    window.addEventListener('switchToDashboard', handleSwitch)
+    return () => window.removeEventListener('switchToDashboard', handleSwitch)
+  }, [])
+
   if (!dashboard.connectionsLoaded) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -31,12 +37,6 @@ export default function DashboardPage() {
       </div>
     )
   }
-
-  useEffect(() => {
-    const handleSwitch = () => setViewMode('dashboard')
-    window.addEventListener('switchToDashboard', handleSwitch)
-    return () => window.removeEventListener('switchToDashboard', handleSwitch)
-  }, [])
 
   const rightSidebarProps = {
     activeConnection: dashboard.activeConnection!,
