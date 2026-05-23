@@ -16,6 +16,10 @@ export function ProductTour() {
   useEffect(() => {
     // If session isn't loaded yet, or user has already completed the tour, do nothing
     if (!session?.user || session.user.onboardingCompleted) return
+    // Also check localStorage — JWT can be stale on hard refresh before DB sync runs
+    const userId = session.user.id
+    const tourKey = `naturequery-tour-completed-${userId}`
+    if (typeof window !== 'undefined' && localStorage.getItem(tourKey) === 'true') return
     // Tour already running — don't restart it on session re-renders
     if (tourStartedRef.current) return
 
@@ -84,7 +88,7 @@ export function ProductTour() {
         },
         onDestroyStarted: () => {
           // Close instantly — don't make the user wait for network calls.
-          localStorage.setItem('naturequery-tour-completed', 'true')
+          localStorage.setItem(tourKey, 'true')
           driverObj.destroy()
           // Persist in the background; failures are non-blocking.
           completeOnboarding()
