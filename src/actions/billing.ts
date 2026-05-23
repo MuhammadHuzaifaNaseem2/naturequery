@@ -312,6 +312,7 @@ export interface InvoiceItem {
   id: string
   date: string
   amount: string
+  total: number
   status: string
   invoiceUrl: string | null
 }
@@ -362,6 +363,7 @@ export async function getBillingDetails(): Promise<BillingDetails> {
       id: String(inv.id),
       date: String(inv.attributes.created_at ?? ''),
       amount: String(inv.attributes.total_formatted ?? ''),
+      total: Number(inv.attributes.total ?? 0),
       status: String(inv.attributes.status ?? ''),
       invoiceUrl:
         (inv.attributes.urls as { invoice_url?: string } | undefined)?.invoice_url ?? null,

@@ -79,6 +79,9 @@ export function ProductTour() {
             },
           },
         ],
+        onCloseClick: () => {
+          driverObj.destroy()
+        },
         onDestroyStarted: () => {
           // Close instantly — don't make the user wait for network calls.
           localStorage.setItem('naturequery-tour-completed', 'true')
@@ -167,6 +170,12 @@ export function ProductTour() {
             },
           },
         ],
+        onCloseClick: () => {
+          driverObj.destroy()
+        },
+        onDestroyStarted: () => {
+          driverObj.destroy()
+        },
       })
       tourStartedRef.current = true
       driverRef.current = driverObj

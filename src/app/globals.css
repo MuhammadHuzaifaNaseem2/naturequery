@@ -701,6 +701,8 @@
   font-size: 16px;
   line-height: 1;
   background: transparent;
+  pointer-events: auto;
+  z-index: 10;
 }
 .driver-popover.driverjs-theme .driver-popover-close-btn:hover {
   background: hsl(var(--secondary));

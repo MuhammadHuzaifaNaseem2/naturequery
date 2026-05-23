@@ -151,13 +151,18 @@ export function BillingSettings() {
     })
   }
 
+  async function refreshAll() {
+    await syncSubscriptionFromLS()
+    const [updated, billingData] = await Promise.all([getUserSubscription(), getBillingDetails()])
+    setSub(updated)
+    setBilling(billingData)
+  }
+
   function handleRefreshPlan() {
     startTransition(async () => {
       try {
         setError(null)
-        await syncSubscriptionFromLS()
-        const updated = await getUserSubscription()
-        setSub(updated)
+        await refreshAll()
       } catch (e: any) {
         setError(e.message)
       }
@@ -169,8 +174,7 @@ export function BillingSettings() {
       try {
         setError(null)
         await resumeSubscription()
-        const updated = await getUserSubscription()
-        setSub(updated)
+        await refreshAll()
       } catch (e: any) {
         setError(e.message)
       }
@@ -183,8 +187,7 @@ export function BillingSettings() {
       try {
         setError(null)
         await cancelSubscription()
-        const updated = await getUserSubscription()
-        setSub(updated)
+        await refreshAll()
       } catch (e: any) {
         setError(e.message)
       }
@@ -382,63 +385,65 @@ export function BillingSettings() {
       )}
 
       {/* ── Billing History ── */}
-      {isPaidPlan && billing && billing.invoices.length > 0 && (
+      {isPaidPlan && billing && billing.invoices.filter((inv) => inv.total > 0).length > 0 && (
         <div className="card overflow-hidden">
           <div className="px-6 py-4 border-b border-border flex items-center gap-3">
             <Receipt className="w-4 h-4 text-muted-foreground" />
             <h3 className="font-semibold text-sm">Billing History</h3>
           </div>
           <div className="divide-y divide-border">
-            {billing.invoices.map((inv) => {
-              const date = inv.date
-                ? new Date(inv.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })
-                : '—'
-              const isPaid = inv.status === 'paid'
-              const isRefunded = inv.status === 'refunded'
-              return (
-                <div key={inv.id} className="px-6 py-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm">
-                      <p className="font-medium">{date}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{inv.amount}</p>
+            {billing.invoices
+              .filter((inv) => inv.total > 0)
+              .map((inv) => {
+                const date = inv.date
+                  ? new Date(inv.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  : '—'
+                const isPaid = inv.status === 'paid'
+                const isRefunded = inv.status === 'refunded'
+                return (
+                  <div key={inv.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm">
+                        <p className="font-medium">{date}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{inv.amount}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                          isPaid
+                            ? 'bg-green-50 text-green-600'
+                            : isRefunded
+                              ? 'bg-orange-50 text-orange-600'
+                              : 'bg-secondary text-muted-foreground'
+                        }`}
+                      >
+                        {isPaid ? (
+                          <CheckCircle2 className="w-3 h-3" />
+                        ) : (
+                          <XCircle className="w-3 h-3" />
+                        )}
+                        {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
+                      </span>
+                      {inv.invoiceUrl && (
+                        <a
+                          href={inv.invoiceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Invoice
+                        </a>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        isPaid
-                          ? 'bg-green-50 text-green-600'
-                          : isRefunded
-                            ? 'bg-orange-50 text-orange-600'
-                            : 'bg-secondary text-muted-foreground'
-                      }`}
-                    >
-                      {isPaid ? (
-                        <CheckCircle2 className="w-3 h-3" />
-                      ) : (
-                        <XCircle className="w-3 h-3" />
-                      )}
-                      {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
-                    </span>
-                    {inv.invoiceUrl && (
-                      <a
-                        href={inv.invoiceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Invoice
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })}
           </div>
         </div>
       )}
