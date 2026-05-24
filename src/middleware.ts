@@ -41,7 +41,7 @@ function applySecurityHeaders(res: NextResponse): NextResponse {
       "img-src 'self' data: blob: https://*.gravatar.com https://i.pravatar.cc",
       "font-src 'self' data:",
       "connect-src 'self' https://api.groq.com wss: https://*.sentry.io https://*.ingest.sentry.io https://us.i.posthog.com https://us-assets.i.posthog.com https://api.lemonsqueezy.com",
-      'frame-src https://checkout.lemonsqueezy.com',
+      'frame-src https://checkout.lemonsqueezy.com https://www.youtube.com https://www.youtube-nocookie.com',
       "frame-ancestors 'none'",
       "object-src 'none'",
       "base-uri 'self'",

@@ -198,22 +198,83 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Demo Video */}
+          {/* Demo Preview */}
           <div className="mt-16 max-w-4xl mx-auto">
-            <div className="card p-1 shadow-2xl overflow-hidden">
-              <div
-                className="relative w-full rounded-lg overflow-hidden"
-                style={{ paddingTop: '56.25%' }}
-              >
-                <iframe
-                  className="absolute inset-0 w-full h-full"
-                  src="https://www.youtube.com/embed/0h5kmva3wq0?rel=0&modestbranding=1"
-                  title="NatureQuery Demo: Ask Your Database in Plain English"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
+            <div className="card p-1 shadow-2xl">
+              <div className="bg-secondary rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                  <div className="w-3 h-3 rounded-full bg-warning/60" />
+                  <div className="w-3 h-3 rounded-full bg-success/60" />
+                  <span className="ml-2 text-xs text-muted-foreground font-mono">
+                    NatureQuery Dashboard
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-background rounded-lg p-4 border border-border">
+                    <p className="text-sm text-muted-foreground mb-1">Your question:</p>
+                    <p className="font-medium">
+                      &quot;Show me the top 10 customers by total order value this year&quot;
+                    </p>
+                  </div>
+                  <div className="bg-background rounded-lg p-4 border border-border font-mono text-sm">
+                    <p className="text-muted-foreground mb-1">Generated SQL:</p>
+                    <p>
+                      <span className="text-primary font-semibold">SELECT</span> c.name,{' '}
+                      <span className="text-primary font-semibold">SUM</span>(o.amount){' '}
+                      <span className="text-primary font-semibold">AS</span> total
+                    </p>
+                    <p>
+                      <span className="text-primary font-semibold">FROM</span> customers c{' '}
+                      <span className="text-primary font-semibold">JOIN</span> orders o{' '}
+                      <span className="text-primary font-semibold">ON</span> c.id = o.customer_id
+                    </p>
+                    <p>
+                      <span className="text-primary font-semibold">WHERE</span> o.order_date &gt;={' '}
+                      <span className="text-green-500">&apos;2026-01-01&apos;</span>
+                    </p>
+                    <p>
+                      <span className="text-primary font-semibold">GROUP BY</span> c.name{' '}
+                      <span className="text-primary font-semibold">ORDER BY</span> total{' '}
+                      <span className="text-primary font-semibold">DESC LIMIT</span>{' '}
+                      <span className="text-orange-500">10</span>
+                    </p>
+                  </div>
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Demo Video Section */}
+      <section className="py-20 border-y border-border bg-card/30">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              See it in action
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+              Watch NatureQuery in action
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Connect a database, ask a question, get instant SQL and results. All in 90 seconds.
+            </p>
+          </div>
+          <div className="card p-1 shadow-2xl">
+            <div
+              className="relative w-full rounded-lg overflow-hidden bg-black"
+              style={{ paddingTop: '56.25%' }}
+            >
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/0h5kmva3wq0?rel=0&modestbranding=1"
+                title="NatureQuery Demo: Ask Your Database in Plain English"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
             </div>
           </div>
         </div>
