@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import SecurityClient from './SecurityClient'
 
-export const metadata = { title: 'Security Settings — NatureQuery' }
+export const metadata = { title: 'Security Settings | NatureQuery' }
 
 export default async function SecurityPage() {
   const session = await auth()

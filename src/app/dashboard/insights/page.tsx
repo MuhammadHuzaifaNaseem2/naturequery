@@ -10,7 +10,7 @@ import {
 } from '@/actions/audit'
 import { InsightsClient } from './InsightsClient'
 
-export const metadata = { title: 'AI Insights — NatureQuery' }
+export const metadata = { title: 'AI Insights | NatureQuery' }
 
 export default async function InsightsPage() {
   const session = await auth()

@@ -17,13 +17,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     select: { name: true, question: true },
   })
 
-  if (!query) return { title: 'Query Not Found — NatureQuery' }
+  if (!query) return { title: 'Query Not Found | NatureQuery' }
 
   return {
-    title: `${query.name} — Shared Query | NatureQuery`,
+    title: `${query.name} | Shared Query | NatureQuery`,
     description: query.question,
     openGraph: {
-      title: `${query.name} — Shared via NatureQuery`,
+      title: `${query.name} | Shared via NatureQuery`,
       description: query.question,
       type: 'article',
     },
@@ -64,9 +64,7 @@ export default async function SharedQueryPage({ params }: Props) {
         {/* Title */}
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">{query.name}</h1>
-          {query.description && (
-            <p className="text-muted-foreground">{query.description}</p>
-          )}
+          {query.description && <p className="text-muted-foreground">{query.description}</p>}
 
           {/* Meta info */}
           <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-muted-foreground">
@@ -82,7 +80,13 @@ export default async function SharedQueryPage({ params }: Props) {
             )}
             <div className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4" />
-              <span>{new Date(query.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+              <span>
+                {new Date(query.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
             </div>
             {query.connectionName && (
               <div className="flex items-center gap-1.5">
@@ -139,7 +143,8 @@ export default async function SharedQueryPage({ params }: Props) {
         <div className="mt-12 text-center p-8 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10 rounded-2xl">
           <h3 className="text-xl font-bold mb-2">Convert plain English to SQL instantly</h3>
           <p className="text-muted-foreground mb-6">
-            NatureQuery lets you query any database using natural language. No SQL knowledge required.
+            NatureQuery lets you query any database using natural language. No SQL knowledge
+            required.
           </p>
           <Link
             href="/register"

@@ -1,17 +1,31 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowLeft, Key, Zap, Shield, Code2, Database, Search, Play, History, BookmarkPlus, FileText } from 'lucide-react'
+import {
+  ArrowLeft,
+  Key,
+  Zap,
+  Shield,
+  Code2,
+  Database,
+  Search,
+  Play,
+  History,
+  BookmarkPlus,
+  FileText,
+} from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'API Documentation',
-  description: 'NatureQuery REST API v1 — authenticate with API keys, execute SQL queries, generate SQL from natural language, and manage saved queries programmatically.',
+  description:
+    'NatureQuery REST API v1: authenticate with API keys, execute SQL queries, generate SQL from natural language, and manage saved queries programmatically.',
   openGraph: {
     title: 'NatureQuery API Documentation',
-    description: 'REST API v1 for programmatic access to NatureQuery — execute queries, generate SQL, and manage saved queries.',
+    description:
+      'REST API v1 for programmatic access to NatureQuery: execute queries, generate SQL, and manage saved queries.',
   },
 }
 
-const BASE_URL = 'https://naturequery.com'
+const BASE_URL = 'https://naturequery.app'
 
 function CodeBlock({ children, title }: { children: string; title?: string }) {
   return (
@@ -42,12 +56,24 @@ function MethodBadge({ method }: { method: 'GET' | 'POST' }) {
   )
 }
 
-function Param({ name, type, required, children }: { name: string; type: string; required?: boolean; children: React.ReactNode }) {
+function Param({
+  name,
+  type,
+  required,
+  children,
+}: {
+  name: string
+  type: string
+  required?: boolean
+  children: React.ReactNode
+}) {
   return (
     <div className="flex gap-3 py-2 border-b border-border/50 last:border-0">
       <div className="shrink-0 w-40">
         <code className="text-sm font-mono text-primary">{name}</code>
-        {required && <span className="ml-1 text-[10px] text-destructive font-medium">required</span>}
+        {required && (
+          <span className="ml-1 text-[10px] text-destructive font-medium">required</span>
+        )}
         <div className="text-[11px] text-muted-foreground mt-0.5">{type}</div>
       </div>
       <div className="text-sm text-muted-foreground">{children}</div>
@@ -142,7 +168,9 @@ export default function ApiDocsPage() {
             </Link>
             <span className="text-border">/</span>
             <h1 className="text-lg font-semibold">API Documentation</h1>
-            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">v1</span>
+            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+              v1
+            </span>
           </div>
           <Link
             href="/settings"
@@ -159,8 +187,8 @@ export default function ApiDocsPage() {
         <div className="mb-12">
           <h2 className="text-3xl font-bold mb-3">NatureQuery REST API</h2>
           <p className="text-lg text-muted-foreground max-w-2xl">
-            Programmatic access to NatureQuery. Execute SQL queries, generate SQL from natural language,
-            and manage your saved queries and connections.
+            Programmatic access to NatureQuery. Execute SQL queries, generate SQL from natural
+            language, and manage your saved queries and connections.
           </p>
         </div>
 
@@ -197,15 +225,20 @@ export default function ApiDocsPage() {
               <h3 className="text-xl font-semibold">Authentication</h3>
             </div>
             <p className="text-muted-foreground mb-4">
-              All API requests require a Bearer token in the <code className="text-sm bg-muted px-1.5 py-0.5 rounded">Authorization</code> header.
+              All API requests require a Bearer token in the{' '}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">Authorization</code> header.
               Generate an API key from the{' '}
-              <Link href="/settings" className="text-primary hover:underline">Settings &rarr; API Keys</Link> tab.
+              <Link href="/settings" className="text-primary hover:underline">
+                Settings &rarr; API Keys
+              </Link>{' '}
+              tab.
             </p>
             <CodeBlock title="Authorization Header">{`Authorization: Bearer rp_your_api_key_here`}</CodeBlock>
             <div className="mt-4 p-4 rounded-lg border border-border bg-muted/30">
               <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Security:</strong> API keys are hashed with SHA-256 before storage.
-                The plaintext key is only shown once at creation. Treat it like a password.
+                <strong className="text-foreground">Security:</strong> API keys are hashed with
+                SHA-256 before storage. The plaintext key is only shown once at creation. Treat it
+                like a password.
               </p>
             </div>
           </section>
@@ -219,9 +252,12 @@ export default function ApiDocsPage() {
               <h3 className="text-xl font-semibold">Rate Limits</h3>
             </div>
             <p className="text-muted-foreground mb-4">
-              API requests are limited to <strong className="text-foreground">60 requests per minute</strong> per API key.
-              When exceeded, the API returns <code className="text-sm bg-muted px-1.5 py-0.5 rounded">429 Too Many Requests</code> with
-              a <code className="text-sm bg-muted px-1.5 py-0.5 rounded">Retry-After</code> header.
+              API requests are limited to{' '}
+              <strong className="text-foreground">60 requests per minute</strong> per API key. When
+              exceeded, the API returns{' '}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">429 Too Many Requests</code>{' '}
+              with a <code className="text-sm bg-muted px-1.5 py-0.5 rounded">Retry-After</code>{' '}
+              header.
             </p>
             <CodeBlock title="429 Response">{`{
   "success": false,
@@ -307,10 +343,18 @@ export default function ApiDocsPage() {
             icon={BookmarkPlus}
             queryParams={
               <>
-                <Param name="page" type="number">Page number (default: 1)</Param>
-                <Param name="pageSize" type="number">Items per page, max 100 (default: 50)</Param>
-                <Param name="search" type="string">Filter by name or question text</Param>
-                <Param name="connectionId" type="string">Filter by connection ID</Param>
+                <Param name="page" type="number">
+                  Page number (default: 1)
+                </Param>
+                <Param name="pageSize" type="number">
+                  Items per page, max 100 (default: 50)
+                </Param>
+                <Param name="search" type="string">
+                  Filter by name or question text
+                </Param>
+                <Param name="connectionId" type="string">
+                  Filter by connection ID
+                </Param>
               </>
             }
             curl={`curl "${BASE_URL}/api/v1/queries?page=1&pageSize=10" \\
@@ -352,14 +396,30 @@ export default function ApiDocsPage() {
             icon={BookmarkPlus}
             bodyParams={
               <>
-                <Param name="name" type="string" required>Display name for the query</Param>
-                <Param name="question" type="string" required>The natural language question</Param>
-                <Param name="sql" type="string" required>The SQL query</Param>
-                <Param name="description" type="string">Optional description</Param>
-                <Param name="connectionId" type="string">ID of the associated connection</Param>
-                <Param name="connectionName" type="string">Display name of the connection</Param>
-                <Param name="tags" type="string[]">Array of tag strings</Param>
-                <Param name="isPublic" type="boolean">Whether the query is publicly visible (default: false)</Param>
+                <Param name="name" type="string" required>
+                  Display name for the query
+                </Param>
+                <Param name="question" type="string" required>
+                  The natural language question
+                </Param>
+                <Param name="sql" type="string" required>
+                  The SQL query
+                </Param>
+                <Param name="description" type="string">
+                  Optional description
+                </Param>
+                <Param name="connectionId" type="string">
+                  ID of the associated connection
+                </Param>
+                <Param name="connectionName" type="string">
+                  Display name of the connection
+                </Param>
+                <Param name="tags" type="string[]">
+                  Array of tag strings
+                </Param>
+                <Param name="isPublic" type="boolean">
+                  Whether the query is publicly visible (default: false)
+                </Param>
               </>
             }
             curl={`curl -X POST ${BASE_URL}/api/v1/queries \\
@@ -399,7 +459,9 @@ export default function ApiDocsPage() {
             description="Fetch a single saved query. Must be owned by you or shared via a team."
             icon={Search}
             params={
-              <Param name="id" type="string" required>The query ID (path parameter)</Param>
+              <Param name="id" type="string" required>
+                The query ID (path parameter)
+              </Param>
             }
             curl={`curl ${BASE_URL}/api/v1/queries/cm_query_id \\
   -H "Authorization: Bearer rp_your_key"`}
@@ -432,8 +494,12 @@ export default function ApiDocsPage() {
             icon={Play}
             bodyParams={
               <>
-                <Param name="connectionId" type="string" required>ID of the connection to query</Param>
-                <Param name="sql" type="string" required>SQL statement to execute</Param>
+                <Param name="connectionId" type="string" required>
+                  ID of the connection to query
+                </Param>
+                <Param name="sql" type="string" required>
+                  SQL statement to execute
+                </Param>
               </>
             }
             curl={`curl -X POST ${BASE_URL}/api/v1/query/execute \\
@@ -471,8 +537,12 @@ export default function ApiDocsPage() {
             icon={Code2}
             bodyParams={
               <>
-                <Param name="question" type="string" required>Natural language question</Param>
-                <Param name="connectionId" type="string" required>ID of the connection (for schema context)</Param>
+                <Param name="question" type="string" required>
+                  Natural language question
+                </Param>
+                <Param name="connectionId" type="string" required>
+                  ID of the connection (for schema context)
+                </Param>
               </>
             }
             curl={`curl -X POST ${BASE_URL}/api/v1/query/generate \\
@@ -502,11 +572,21 @@ export default function ApiDocsPage() {
             icon={History}
             queryParams={
               <>
-                <Param name="page" type="number">Page number (default: 1)</Param>
-                <Param name="pageSize" type="number">Items per page, max 100 (default: 50)</Param>
-                <Param name="connectionId" type="string">Filter by connection ID</Param>
-                <Param name="status" type="string">Filter by status: success, error</Param>
-                <Param name="search" type="string">Search in question or SQL text</Param>
+                <Param name="page" type="number">
+                  Page number (default: 1)
+                </Param>
+                <Param name="pageSize" type="number">
+                  Items per page, max 100 (default: 50)
+                </Param>
+                <Param name="connectionId" type="string">
+                  Filter by connection ID
+                </Param>
+                <Param name="status" type="string">
+                  Filter by status: success, error
+                </Param>
+                <Param name="search" type="string">
+                  Search in question or SQL text
+                </Param>
               </>
             }
             curl={`curl "${BASE_URL}/api/v1/history?page=1&pageSize=10&status=success" \\
@@ -550,12 +630,52 @@ export default function ApiDocsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  <tr><td className="px-4 py-2"><code>400</code></td><td className="px-4 py-2 text-muted-foreground">Bad request — invalid JSON or failed validation</td></tr>
-                  <tr><td className="px-4 py-2"><code>401</code></td><td className="px-4 py-2 text-muted-foreground">Unauthorized — missing, invalid, or expired API key</td></tr>
-                  <tr><td className="px-4 py-2"><code>403</code></td><td className="px-4 py-2 text-muted-foreground">Forbidden — plan limit reached (upgrade to continue)</td></tr>
-                  <tr><td className="px-4 py-2"><code>404</code></td><td className="px-4 py-2 text-muted-foreground">Not found — resource doesn&apos;t exist or you don&apos;t have access</td></tr>
-                  <tr><td className="px-4 py-2"><code>429</code></td><td className="px-4 py-2 text-muted-foreground">Too many requests — rate limit exceeded, check Retry-After header</td></tr>
-                  <tr><td className="px-4 py-2"><code>500</code></td><td className="px-4 py-2 text-muted-foreground">Internal server error</td></tr>
+                  <tr>
+                    <td className="px-4 py-2">
+                      <code>400</code>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      Bad request — invalid JSON or failed validation
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2">
+                      <code>401</code>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      Unauthorized — missing, invalid, or expired API key
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2">
+                      <code>403</code>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      Forbidden — plan limit reached (upgrade to continue)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2">
+                      <code>404</code>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      Not found — resource doesn&apos;t exist or you don&apos;t have access
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2">
+                      <code>429</code>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      Too many requests — rate limit exceeded, check Retry-After header
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2">
+                      <code>500</code>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">Internal server error</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
