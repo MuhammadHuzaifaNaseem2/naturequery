@@ -135,7 +135,7 @@
     "hero": {
       "title": "Ask your database",
       "titleHighlight": "in plain English",
-      "subtitle": "NatureQuery converts natural language questions into SQL queries, executes them on your database, and exports the results — no SQL knowledge required.",
+      "subtitle": "NatureQuery converts natural language questions into SQL queries, executes them on your database, and exports the results. No SQL knowledge required.",
       "cta": "Get Started Free",
       "watchDemo": "Watch Demo",
       "poweredByAi": "Powered by AI",
@@ -549,7 +549,7 @@
       "queriesPerMonth": "Queries/month",
       "connections": "Connections",
       "teamMembers": "Team Members",
-      "freeForever": "Free forever — no credit card required",
+      "freeForever": "Free forever. No credit card required",
       "cancelsAtPeriodEnd": "Cancels at period end",
       "activeSubscription": "Active subscription",
       "renews": "Renews {{date}}",
@@ -687,7 +687,7 @@
       "dismiss": "Dismiss checklist",
       "steps": {
         "connectedDb": "Connect your first database",
-        "connectedDbDesc": "Link a PostgreSQL, MySQL, or SQLite database — or try the sandbox.",
+        "connectedDbDesc": "Link a PostgreSQL, MySQL, or SQLite database, or try the sandbox.",
         "askedFirstQuestion": "Ask your first question",
         "askedFirstQuestionDesc": "Type a question in plain English and let AI generate the SQL.",
         "pinnedChart": "Pin a chart to your dashboard",
