@@ -569,11 +569,35 @@ export function useDashboard() {
   }, [])
 
   // Cache for schema discovery suggestions (per connection ID)
+  // Backed by localStorage so insights appear instantly on page refresh.
   const discoveryCache = useRef(new Map<string, { summary: string; suggestions: string[] }>())
+  const DISCOVERY_CACHE_KEY = 'naturequery-discovery-cache'
+  const DISCOVERY_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+  // Hydrate in-memory cache from localStorage once on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const raw = localStorage.getItem(DISCOVERY_CACHE_KEY)
+      if (!raw) return
+      const stored = JSON.parse(raw) as Record<
+        string,
+        { data: { summary: string; suggestions: string[] }; savedAt: number }
+      >
+      const now = Date.now()
+      for (const [connId, entry] of Object.entries(stored)) {
+        if (now - entry.savedAt < DISCOVERY_CACHE_TTL_MS) {
+          discoveryCache.current.set(connId, entry.data)
+        }
+      }
+    } catch {
+      // Ignore corrupt cache
+    }
+  }, [DISCOVERY_CACHE_TTL_MS])
 
   // Trigger AI schema discovery for a connection's schema
   const runDiscovery = useCallback(async (connId: string, schema: DatabaseSchema) => {
-    // Check discovery cache
+    // Check in-memory cache (hydrated from localStorage)
     const cached = discoveryCache.current.get(connId)
     if (cached) {
       setSchemaSuggestions(cached)
@@ -586,6 +610,17 @@ export function useDashboard() {
     if (result.success && result.data) {
       discoveryCache.current.set(connId, result.data)
       setSchemaSuggestions(result.data)
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem(DISCOVERY_CACHE_KEY)
+          const stored = raw ? JSON.parse(raw) : {}
+          stored[connId] = { data: result.data, savedAt: Date.now() }
+          localStorage.setItem(DISCOVERY_CACHE_KEY, JSON.stringify(stored))
+        } catch {
+          // Storage full / blocked — degrade gracefully
+        }
+      }
     }
   }, [])
 
@@ -1010,7 +1045,9 @@ export function useDashboard() {
       }
 
       if (queryResults.rows.length > EXPORT_WARN_THRESHOLD) {
-        toast.warning(`Exporting ${queryResults.rows.length.toLocaleString()} rows — this may take a moment.`)
+        toast.warning(
+          `Exporting ${queryResults.rows.length.toLocaleString()} rows — this may take a moment.`
+        )
       }
 
       setIsExporting(true)
@@ -1199,7 +1236,15 @@ export function useDashboard() {
     onExportCSV: () => handleExport('csv'),
     // General
     onToggleTheme: () =>
-      setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'warm' : theme === 'warm' ? 'system' : 'light'),
+      setTheme(
+        theme === 'light'
+          ? 'dark'
+          : theme === 'dark'
+            ? 'warm'
+            : theme === 'warm'
+              ? 'system'
+              : 'light'
+      ),
     onClearInput: () => setNlQuery(''),
     onToggleHelp: () => setShowShortcutsHelp((prev) => !prev),
   })
