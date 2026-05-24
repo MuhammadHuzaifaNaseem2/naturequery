@@ -53,8 +53,15 @@ export async function checkPlanLimits(
       effectivePlan = 'FREE'
     }
   } else if (sub.status !== 'ACTIVE') {
-    // PAST_DUE, CANCELED, INCOMPLETE → enforce FREE limits
-    effectivePlan = 'FREE'
+    // Cancelled subscriptions retain plan benefits until paid period ends.
+    // PAST_DUE / INCOMPLETE / expired-CANCELED → enforce FREE limits.
+    const stillInPaidPeriod =
+      sub.status === 'CANCELED' &&
+      sub.currentPeriodEnd &&
+      new Date(sub.currentPeriodEnd) > new Date()
+    if (!stillInPaidPeriod) {
+      effectivePlan = 'FREE'
+    }
   }
 
   const plan = PLANS[effectivePlan]
@@ -99,14 +106,15 @@ export async function checkPlanLimits(
       })
       const teamIds = ownedTeams.map((t) => t.teamId)
 
-      const memberCount = teamIds.length > 0
-        ? await prisma.teamMember.count({
-            where: {
-              teamId: { in: teamIds },
-              userId: { not: userId },
-            },
-          })
-        : 0
+      const memberCount =
+        teamIds.length > 0
+          ? await prisma.teamMember.count({
+              where: {
+                teamId: { in: teamIds },
+                userId: { not: userId },
+              },
+            })
+          : 0
 
       return { allowed: memberCount < limit, current: memberCount, limit, planName: plan.name }
     }
@@ -192,7 +200,10 @@ export async function checkAndRecordQuery(userId: string): Promise<LimitCheckRes
 
   let effectivePlan: PlanKey = sub.plan as PlanKey
   if (sub.status === 'TRIALING' && sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
-    await prisma.subscription.update({ where: { userId }, data: { plan: 'FREE', status: 'ACTIVE', trialEndsAt: null } })
+    await prisma.subscription.update({
+      where: { userId },
+      data: { plan: 'FREE', status: 'ACTIVE', trialEndsAt: null },
+    })
     effectivePlan = 'FREE'
   } else if (sub.status !== 'ACTIVE' && sub.status !== 'TRIALING') {
     effectivePlan = 'FREE'
@@ -247,7 +258,11 @@ export async function maybeNotifyQueryThreshold(userId: string): Promise<void> {
     const dedupKey = `query_threshold_${threshold}_${monthKey}`
 
     const existing = await prisma.notification.findFirst({
-      where: { userId, type: 'threshold_alert', metadata: { path: ['dedupKey'], equals: dedupKey } },
+      where: {
+        userId,
+        type: 'threshold_alert',
+        metadata: { path: ['dedupKey'], equals: dedupKey },
+      },
     })
     if (existing) return // already notified this month
 
@@ -258,14 +273,14 @@ export async function maybeNotifyQueryThreshold(userId: string): Promise<void> {
             message: `You've used all ${check.limit} queries on the Free plan this month. Upgrade to Pro for unlimited queries.`,
           }
         : threshold === 80
-        ? {
-            title: `${pct}% of monthly queries used`,
-            message: `You've run ${check.current} of ${check.limit} queries this month. You're close to the limit — upgrade before you run out.`,
-          }
-        : {
-            title: 'Halfway through your monthly queries',
-            message: `You've used ${check.current} of ${check.limit} queries this month. Upgrade to Pro for unlimited queries.`,
-          }
+          ? {
+              title: `${pct}% of monthly queries used`,
+              message: `You've run ${check.current} of ${check.limit} queries this month. You're close to the limit — upgrade before you run out.`,
+            }
+          : {
+              title: 'Halfway through your monthly queries',
+              message: `You've used ${check.current} of ${check.limit} queries this month. Upgrade to Pro for unlimited queries.`,
+            }
 
     await prisma.notification.create({
       data: {

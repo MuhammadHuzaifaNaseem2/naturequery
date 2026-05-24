@@ -81,7 +81,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
     color: 'text-orange-600 bg-orange-50 border-orange-200',
     icon: AlertCircle,
   },
-  CANCELLED: { label: 'Cancelled', color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle },
+  CANCELED: { label: 'Cancelled', color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle },
   EXPIRED: {
     label: 'Expired',
     color: 'text-muted-foreground bg-secondary border-border',

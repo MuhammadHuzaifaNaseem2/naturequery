@@ -66,8 +66,8 @@ export function useDashboardWidgets(
         window.dispatchEvent(
           new CustomEvent('onboarding:complete', { detail: { item: 'pinnedChart' } })
         )
-      } catch {
-        toast.error('Failed to pin query')
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to pin query')
       }
     },
     [activeConnectionId, activeConnection]
@@ -143,7 +143,10 @@ export function useDashboardWidgets(
           await wb.xlsx.load(buf)
           const ws = wb.worksheets[0]
           if (!ws) {
-            toast.error('Empty workbook', { description: 'No sheets found in the file.', id: loadingToast })
+            toast.error('Empty workbook', {
+              description: 'No sheets found in the file.',
+              id: loadingToast,
+            })
             return
           }
           const headerRow = ws.getRow(1)
@@ -199,7 +202,10 @@ export function useDashboardWidgets(
           return
         }
         if (rows.length > 100_000) {
-          toast.error('Too many rows', { description: 'Maximum 100,000 rows supported.', id: loadingToast })
+          toast.error('Too many rows', {
+            description: 'Maximum 100,000 rows supported.',
+            id: loadingToast,
+          })
           return
         }
 
@@ -221,10 +227,9 @@ export function useDashboardWidgets(
           const isLast = i === batches.length - 1
 
           if (batches.length > 1) {
-            toast.loading(
-              `Uploading… ${Math.round(((i + 1) / batches.length) * 100)}%`,
-              { id: loadingToast }
-            )
+            toast.loading(`Uploading… ${Math.round(((i + 1) / batches.length) * 100)}%`, {
+              id: loadingToast,
+            })
           }
 
           const res = await fetch('/api/upload-csv-json', {
@@ -240,7 +245,7 @@ export function useDashboardWidgets(
             }),
           })
 
-          const result = await res.json() as {
+          const result = (await res.json()) as {
             success: boolean
             error?: string
             tableName?: string
@@ -261,7 +266,9 @@ export function useDashboardWidgets(
           if (isFirst) tableName = result.tableName
         }
 
-        toast.success(`Magic Dataset ready! (${rows.length.toLocaleString()} rows)`, { id: loadingToast })
+        toast.success(`Magic Dataset ready! (${rows.length.toLocaleString()} rows)`, {
+          id: loadingToast,
+        })
 
         const serverConns = await getUserConnections()
         setConnections((prev) => {
@@ -284,9 +291,11 @@ export function useDashboardWidgets(
         })
         const newConn = serverConns.find((c) => c.name === `CSV: ${file.name}`)
         if (newConn) setActiveConnectionId(newConn.id)
-
       } catch {
-        toast.error('Upload Failed', { description: 'Something went wrong. Please try again.', id: loadingToast })
+        toast.error('Upload Failed', {
+          description: 'Something went wrong. Please try again.',
+          id: loadingToast,
+        })
       }
     },
     [setConnections, setActiveConnectionId, setShowPlanLimit, setPlanLimitReason]
