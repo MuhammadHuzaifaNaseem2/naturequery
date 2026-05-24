@@ -30,7 +30,7 @@ const VALUES = [
     icon: Shield,
     title: 'Security by Default',
     description:
-      "Your data is sacred. AES-256 encryption, 2FA, and audit logs aren't add-ons — they're built into every layer.",
+      "Your data is sacred. AES-256 encryption, 2FA, and audit logs aren't add-ons; they're built into every layer.",
   },
   {
     icon: Heart,
@@ -133,7 +133,7 @@ export default function AboutPage() {
               <span className="gradient-text block">to everyone</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-              We believe every team member — not just the SQL experts — should be able to ask
+              We believe every team member, not just the SQL experts, should be able to ask
               questions and get answers from their company&apos;s data. NatureQuery bridges the gap
               between natural language and databases.
             </p>
@@ -153,8 +153,8 @@ export default function AboutPage() {
                 <p>
                   In most organizations, data lives in databases that only engineers can access.
                   Product managers, analysts, and executives depend on engineering tickets to get
-                  simple answers — &quot;How many users signed up last week?&quot; becomes a 3-day
-                  turnaround.
+                  simple answers. A question like &quot;How many users signed up last week?&quot;
+                  becomes a 3-day turnaround.
                 </p>
                 <p>
                   Existing BI tools like Metabase or Retool require setup time, SQL knowledge, and
@@ -297,7 +297,7 @@ export default function AboutPage() {
                 Join us on this journey
               </h2>
               <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                Try NatureQuery free — the new way to talk to your database.
+                Try NatureQuery free. The new way to talk to your database.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
