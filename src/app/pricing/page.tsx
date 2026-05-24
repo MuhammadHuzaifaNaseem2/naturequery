@@ -171,7 +171,7 @@ const FAQS = [
   },
   {
     q: 'What happens if I downgrade?',
-    a: "You'll be moved to the Free plan at the end of your billing period. No data loss — your saved queries and connections stay.",
+    a: "You'll be moved to the Free plan at the end of your billing period. No data loss; your saved queries and connections stay.",
   },
 ]
 

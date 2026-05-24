@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Sparkles, ArrowLeft, Shield, Calendar, Mail } from 'lucide-react'
 
 export const metadata = {
-  title: 'Privacy Policy — NatureQuery',
+  title: 'Privacy Policy | NatureQuery',
 }
 
 const sections = [

@@ -76,7 +76,7 @@ const SECTIONS: FeatureSection[] = [
         icon: MessageSquare,
         title: 'Conversational Follow-ups',
         description:
-          'Refine results naturally. Say "filter to New York" or "break down by month" — the AI modifies your previous query contextually.',
+          'Refine results naturally. Say "filter to New York" or "break down by month", and the AI modifies your previous query contextually.',
       },
       {
         icon: Brain,
@@ -115,7 +115,7 @@ const SECTIONS: FeatureSection[] = [
         icon: Filter,
         title: 'Column Filters & Search',
         description:
-          'Global search across all results. Per-column filters with smart type detection — text search for strings, min/max ranges for numbers.',
+          'Global search across all results. Per-column filters with smart type detection: text search for strings, min/max ranges for numbers.',
       },
       {
         icon: AlignLeft,
@@ -139,7 +139,7 @@ const SECTIONS: FeatureSection[] = [
         icon: LayoutTemplate,
         title: 'Custom Query Templates',
         description:
-          'Save your best queries as reusable templates. Organize by category — analytics, sales, inventory, or create your own.',
+          'Save your best queries as reusable templates. Organize by category like analytics, sales, inventory, or create your own.',
       },
       {
         icon: BarChart3,
@@ -155,7 +155,7 @@ const SECTIONS: FeatureSection[] = [
     badgeIcon: Pin,
     title: 'From query to dashboard in one click',
     subtitle:
-      'Pin results, schedule refreshes, and share insights with your team — no BI tool needed.',
+      'Pin results, schedule refreshes, and share insights with your team. No BI tool needed.',
     features: [
       {
         icon: Pin,
@@ -167,7 +167,7 @@ const SECTIONS: FeatureSection[] = [
         icon: Clock,
         title: 'Scheduled Queries',
         description:
-          'Run queries on autopilot — hourly, daily, weekly, or monthly. Get results delivered to your inbox automatically.',
+          'Run queries on autopilot: hourly, daily, weekly, or monthly. Get results delivered to your inbox automatically.',
       },
       {
         icon: Share2,
@@ -189,13 +189,13 @@ const SECTIONS: FeatureSection[] = [
     badgeIcon: Database,
     title: 'Built for teams that move fast',
     subtitle:
-      'Multi-database, multi-team, multi-language — scale from solo analyst to entire organization.',
+      'Multi-database, multi-team, multi-language. Scale from solo analyst to entire organization.',
     features: [
       {
         icon: Database,
         title: 'Multi-Database Support',
         description:
-          'PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, Redshift — connect any database. Switch between them seamlessly.',
+          'PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, Redshift, and more. Connect any database and switch between them seamlessly.',
       },
       {
         icon: Users,
@@ -557,8 +557,8 @@ export default function FeaturesPage() {
               <span className="gradient-text block">talk to your database</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              From AI-powered SQL generation to enterprise security — NatureQuery gives your team
-              the tools to explore data without writing a single line of SQL.
+              From AI-powered SQL generation to enterprise security, NatureQuery gives your team the
+              tools to explore data without writing a single line of SQL.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/register" className="btn-primary text-base px-8 py-3 shadow-lg">
