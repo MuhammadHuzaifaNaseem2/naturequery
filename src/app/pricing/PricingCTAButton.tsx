@@ -22,7 +22,7 @@ export function PricingCTAButton({ planKey, fallbackHref, label, highlighted }: 
     setIsLoading(true)
     try {
       const { url } = await createCheckoutSession(planKey)
-      if (url) window.location.href = url
+      if (url) window.open(url, '_blank', 'noopener,noreferrer')
     } catch {
       // Not logged in or Stripe not configured — send to register
       window.location.href = fallbackHref

@@ -144,7 +144,7 @@ export function BillingSettings() {
           setError(err)
           return
         }
-        if (url) window.location.href = url
+        if (url) window.open(url, '_blank', 'noopener,noreferrer')
       } catch (e: any) {
         setError(e.message)
       }
