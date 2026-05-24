@@ -115,7 +115,7 @@ const STATS = [
 export const metadata: Metadata = {
   title: 'NatureQuery - Natural Language to SQL',
   description:
-    'Ask questions in plain English and get instant SQL queries with AI-powered insights. Connect to PostgreSQL, MySQL, or SQLite.',
+    'Ask questions in plain English and get instant SQL queries with AI-powered insights. Connects to 14+ databases including PostgreSQL, MySQL, MongoDB, Snowflake, BigQuery, and more.',
 }
 
 export default function LandingPage() {

@@ -11,7 +11,7 @@ interface AuthLayoutProps {
 
 const features = [
   { icon: Sparkles, label: 'AI-Powered SQL', description: 'Natural language to SQL' },
-  { icon: Database, label: 'Multi-Database', description: '5+ database types' },
+  { icon: Database, label: 'Multi-Database', description: '14+ database types' },
   { icon: BarChart3, label: 'Smart Insights', description: 'Automatic analysis' },
   { icon: Zap, label: 'Instant Results', description: 'Sub-second queries' },
 ]
