@@ -65,7 +65,7 @@ const RELEASES: Release[] = [
     version: '1.2.0',
     date: 'Mar 25, 2026',
     title: 'Conversational Follow-ups',
-    description: 'Ask follow-up questions — NatureQuery remembers context from previous queries.',
+    description: 'Ask follow-up questions. NatureQuery remembers context from previous queries.',
     icon: Sparkles,
     changes: [
       { type: 'feature', text: 'Multi-turn conversation context (up to 5 previous queries)' },

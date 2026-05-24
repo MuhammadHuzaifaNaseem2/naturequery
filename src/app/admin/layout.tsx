@@ -7,7 +7,7 @@ import AdminThemeProvider from './AdminThemeProvider'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Admin Console — NatureQuery',
+  title: 'Admin Console | NatureQuery',
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -26,11 +26,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-neutral-500">You do not have permission to view this page.</p>
         </div>
         <div className="p-4 bg-neutral-900 rounded-xl border border-neutral-800 font-mono text-sm text-neutral-500 flex flex-col gap-1.5">
-          <div>User: <span className="text-neutral-300">{session.user.email}</span></div>
-          <div>Role: <span className="text-neutral-300">{session.user.role || 'None'}</span></div>
+          <div>
+            User: <span className="text-neutral-300">{session.user.email}</span>
+          </div>
+          <div>
+            Role: <span className="text-neutral-300">{session.user.role || 'None'}</span>
+          </div>
         </div>
         <div className="flex gap-3">
-          <Link href="/" className="px-5 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors text-sm">
+          <Link
+            href="/"
+            className="px-5 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors text-sm"
+          >
             Return to App
           </Link>
           <SignOutButton />
@@ -40,11 +47,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <AdminThemeProvider user={{
-      name: session.user.name,
-      email: session.user.email,
-      role: session.user.role,
-    }}>
+    <AdminThemeProvider
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+      }}
+    >
       {children}
     </AdminThemeProvider>
   )
