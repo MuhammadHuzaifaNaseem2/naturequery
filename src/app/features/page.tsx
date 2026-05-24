@@ -240,7 +240,7 @@ const SECTIONS: FeatureSection[] = [
         icon: ScrollText,
         title: 'Immutable Audit Logs',
         description:
-          'Every login, query, and admin action recorded in a tamper-proof hash chain. Full compliance trail for SOC 2 and GDPR.',
+          'Every login, query, and admin action recorded in a tamper-proof hash chain. Full audit trail for security reviews and GDPR requirements.',
       },
       {
         icon: Zap,

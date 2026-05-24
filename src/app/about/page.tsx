@@ -297,7 +297,7 @@ export default function AboutPage() {
                 Join us on this journey
               </h2>
               <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                Try NatureQuery free and see why teams are switching from traditional BI tools.
+                Try NatureQuery free — the new way to talk to your database.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link

@@ -107,7 +107,7 @@ const PLANS = [
 
 const STATS = [
   { value: 'AI', label: 'Natural Language to SQL' },
-  { value: '6+', label: 'Database Types' },
+  { value: '14+', label: 'Database Types' },
   { value: 'Free', label: 'to Get Started' },
   { value: '<2s', label: 'Avg Response Time' },
 ]
@@ -384,7 +384,8 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to talk to your database?</h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Join thousands of teams using NatureQuery to get insights from their data in seconds.
+            Connect your database and start asking questions in plain English — no setup, no SQL
+            knowledge required.
           </p>
           <Link href="/register" className="btn-primary text-base px-8 py-3 shadow-lg glow-primary">
             Get Started Free
