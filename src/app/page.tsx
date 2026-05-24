@@ -182,7 +182,7 @@ export default function LandingPage() {
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               NatureQuery converts natural language questions into SQL queries, executes them on
-              your database, and exports the results — no SQL knowledge required.
+              your database, and exports the results. No SQL knowledge required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
