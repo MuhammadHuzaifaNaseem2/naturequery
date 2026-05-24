@@ -206,7 +206,14 @@ export async function checkAndRecordQuery(userId: string): Promise<LimitCheckRes
     })
     effectivePlan = 'FREE'
   } else if (sub.status !== 'ACTIVE' && sub.status !== 'TRIALING') {
-    effectivePlan = 'FREE'
+    // Cancelled subscriptions retain plan benefits until paid period ends.
+    const stillInPaidPeriod =
+      sub.status === 'CANCELED' &&
+      sub.currentPeriodEnd &&
+      new Date(sub.currentPeriodEnd) > new Date()
+    if (!stillInPaidPeriod) {
+      effectivePlan = 'FREE'
+    }
   }
 
   const plan = PLANS[effectivePlan]
