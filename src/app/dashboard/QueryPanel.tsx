@@ -162,9 +162,9 @@ export function QueryPanel({
   const [templateState, setTemplateState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null)
 
-  // Parse Groq retry delay from error message and start countdown
+  // Parse AI rate limit retry delay from error message and start countdown
   useEffect(() => {
-    if (!error || !error.toLowerCase().includes('groq api rate limit')) {
+    if (!error || !error.toLowerCase().includes('ai service rate limit')) {
       setRetryCountdown(null)
       return
     }
@@ -519,7 +519,7 @@ export function QueryPanel({
         {error &&
           (() => {
             const lc = error.toLowerCase()
-            const isGroqLimit = lc.includes('groq api rate limit')
+            const isAIRateLimit = lc.includes('ai service rate limit')
             // Primary source: our sql-validator.ts and the normalised AI path.
             // Safety net: catch any DML-related message that leaked through a
             // different code path (database-level rejection, streaming route, etc.)
@@ -571,29 +571,29 @@ export function QueryPanel({
 
             return (
               <div
-                className={`border rounded-xl p-4 flex items-start justify-between gap-3 animate-slideUp ${isGroqLimit ? 'bg-amber-500/10 border-amber-500/30' : 'bg-destructive/10 border-destructive/30'}`}
+                className={`border rounded-xl p-4 flex items-start justify-between gap-3 animate-slideUp ${isAIRateLimit ? 'bg-amber-500/10 border-amber-500/30' : 'bg-destructive/10 border-destructive/30'}`}
               >
                 <div className="flex items-start gap-3">
-                  {isGroqLimit ? (
+                  {isAIRateLimit ? (
                     <Clock className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                   ) : (
                     <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                   )}
                   <div>
                     <h4
-                      className={`font-medium ${isGroqLimit ? 'text-amber-600 dark:text-amber-400' : 'text-destructive'}`}
+                      className={`font-medium ${isAIRateLimit ? 'text-amber-600 dark:text-amber-400' : 'text-destructive'}`}
                     >
-                      {isGroqLimit ? 'Groq API Limit (External Service)' : t('common.error')}
+                      {isAIRateLimit ? 'AI Service Rate Limit' : t('common.error')}
                     </h4>
                     <p
-                      className={`text-sm mt-1 ${isGroqLimit ? 'text-amber-600/80 dark:text-amber-400/80' : 'text-destructive/80'}`}
+                      className={`text-sm mt-1 ${isAIRateLimit ? 'text-amber-600/80 dark:text-amber-400/80' : 'text-destructive/80'}`}
                     >
                       {error}
                     </p>
-                    {isGroqLimit && (
+                    {isAIRateLimit && (
                       <>
                         <p className="text-xs text-muted-foreground mt-1.5">
-                          This is Groq&apos;s server-side limit, not ours. Use the{' '}
+                          Our AI service is temporarily rate-limited. Use the{' '}
                           <strong>SQL Editor</strong> tab to run queries directly while waiting.
                         </p>
                         {retryCountdown !== null && (
@@ -618,7 +618,7 @@ export function QueryPanel({
                     )}
                   </div>
                 </div>
-                {onFixQuery && !isGroqLimit && !!generatedSQL && (
+                {onFixQuery && !isAIRateLimit && !!generatedSQL && (
                   <button
                     onClick={onFixQuery}
                     disabled={isFixing}

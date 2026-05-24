@@ -44,7 +44,7 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Features',
     question: 'How accurate is the SQL generation?',
     answer:
-      "NatureQuery uses Groq's Llama 3.3 70B model, which is highly accurate for most common queries. It reads your actual database schema to generate precise queries. For complex joins or edge cases, you can always review and edit the generated SQL before executing.",
+      'NatureQuery uses state-of-the-art large language models combined with deep schema understanding to generate highly accurate SQL for most common queries. It reads your actual database schema to produce precise queries. For complex joins or edge cases, you can always review and edit the generated SQL before executing.',
   },
   {
     category: 'Features',
@@ -87,7 +87,7 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Security',
     question: 'Where is my data processed?',
     answer:
-      "Your natural language queries are processed through Groq's AI API to generate SQL. The generated SQL is then executed directly against your database. We don't store your data or query results — only metadata like query count for billing.",
+      "Your natural language queries are processed by our AI engine to generate SQL. The generated SQL is then executed directly against your database. We don't store your data or query results — only metadata like query count for billing.",
   },
   // Billing
   {

@@ -817,7 +817,7 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
     } catch (error) {
       console.error('[SSE stream] generation error:', error)
       const raw = error instanceof Error ? error.message : 'SQL generation failed'
-      // Parse Groq rate-limit / API errors into friendly messages
+      // Parse AI rate-limit / API errors into friendly messages
       let friendly = raw
       const jsonMatch = raw.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
@@ -827,7 +827,7 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
           const inner = body?.error?.message as string | undefined
           if (code === 'rate_limit_exceeded' || inner?.includes('Rate limit')) {
             const retryMatch = inner?.match(/try again in ([\d.]+[a-z]+)/)
-            friendly = `Groq API rate limit reached (external service).${retryMatch ? ` Try again in ${retryMatch[1]}.` : ' Please wait a moment and try again.'}`
+            friendly = `AI service rate limit reached.${retryMatch ? ` Try again in ${retryMatch[1]}.` : ' Please wait a moment and try again.'}`
           } else if (inner) {
             friendly = inner
           }
@@ -835,8 +835,7 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
           /* keep raw */
         }
       } else if (raw.startsWith('429')) {
-        friendly =
-          'Groq API rate limit reached (external service). Please wait a moment and try again.'
+        friendly = 'AI service rate limit reached. Please wait a moment and try again.'
       } else if (raw.startsWith('503') || raw.startsWith('502')) {
         friendly = 'AI service temporarily unavailable. Please try again.'
       }

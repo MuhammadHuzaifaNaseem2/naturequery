@@ -53,7 +53,7 @@ const sections = [
     number: '04',
     title: 'AI Processing',
     content:
-      'Your natural language questions and database schema information are sent to our AI provider (Groq) to generate SQL queries. We do not send your actual data or query results to any AI provider. Schema information is cached locally and transmitted only as needed for query generation.',
+      'Your natural language questions and database schema information are sent to our third-party AI inference providers to generate SQL queries. We do not send your actual data or query results to any AI provider. Schema information is cached locally and transmitted only as needed for query generation. We may update our AI providers over time to ensure the best quality and performance.',
   },
   {
     number: '05',
@@ -61,7 +61,11 @@ const sections = [
     content:
       'We do not sell your personal information. We share data only with trusted parties for specific purposes:',
     list: [
-      { label: 'Lemon Squeezy', detail: 'Payment processing and merchant of record (name, email, billing info, transaction data)' },
+      {
+        label: 'Lemon Squeezy',
+        detail:
+          'Payment processing and merchant of record (name, email, billing info, transaction data)',
+      },
       { label: 'AI providers', detail: 'Query generation (schema metadata only, no row data)' },
       { label: 'Law enforcement', detail: 'When required by valid legal process' },
     ],

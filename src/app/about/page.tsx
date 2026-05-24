@@ -57,7 +57,7 @@ const MILESTONES = [
     date: 'Feb 2026',
     title: 'First Prototype',
     description:
-      "Built the core NL-to-SQL engine with Groq's Llama 3.3 model. First successful query generated.",
+      'Built the core natural-language-to-SQL engine. First successful query generated from plain English.',
   },
   {
     date: 'Mar 2026',
@@ -68,7 +68,7 @@ const MILESTONES = [
   {
     date: 'May 2026',
     title: 'Public Launch',
-    description: 'Launching with 30+ features and 6 database types supported.',
+    description: 'Launching with 30+ features and 14+ database types supported.',
   },
 ]
 
