@@ -25,7 +25,7 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Getting Started',
     question: 'Which databases are supported?',
     answer:
-      'NatureQuery supports PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift. We connect directly to your database using encrypted credentials — no data migration or ETL needed.',
+      'NatureQuery supports PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift. We connect directly to your database using encrypted credentials. No data migration or ETL needed.',
   },
   {
     category: 'Getting Started',
@@ -62,13 +62,13 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Features',
     question: 'What is Magic CSV Upload?',
     answer:
-      'Magic CSV Upload lets you upload a CSV file and instantly query it using natural language — no database setup required. NatureQuery auto-creates a database table from your CSV, infers column types, and lets you explore it with AI.',
+      'Magic CSV Upload lets you upload a CSV file and instantly query it using natural language. No database setup required. NatureQuery auto-creates a database table from your CSV, infers column types, and lets you explore it with AI.',
   },
   {
     category: 'Features',
     question: 'Does NatureQuery support Chain-of-Thought mode?',
     answer:
-      "Yes. Chain-of-Thought (CoT) mode shows you the AI's reasoning process as it generates SQL — what tables it's considering, how it interprets your question, and why it chose a particular approach. Great for learning and debugging.",
+      "Yes. Chain-of-Thought (CoT) mode shows you the AI's reasoning process as it generates SQL, including what tables it's considering, how it interprets your question, and why it chose a particular approach. Great for learning and debugging.",
   },
   // Security
   {
@@ -87,7 +87,7 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Security',
     question: 'Where is my data processed?',
     answer:
-      "Your natural language queries are processed by our AI engine to generate SQL. The generated SQL is then executed directly against your database. We don't store your data or query results — only metadata like query count for billing.",
+      "Your natural language queries are processed by our AI engine to generate SQL. The generated SQL is then executed directly against your database. We don't store your data or query results, only metadata like query count for billing.",
   },
   // Billing
   {
@@ -119,7 +119,7 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Enterprise',
     question: 'Do you offer on-premise deployment?',
     answer:
-      "Not yet, but it's on our roadmap for Q3 2026. In the meantime, our cloud offering uses enterprise-grade security with encrypted connections, and your data never leaves your database — only the generated SQL is transmitted.",
+      "Not yet, but it's on our roadmap for Q3 2026. In the meantime, our cloud offering uses enterprise-grade security with encrypted connections, and your data never leaves your database. Only the generated SQL is transmitted.",
   },
   {
     category: 'Enterprise',
