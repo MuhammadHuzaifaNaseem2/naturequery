@@ -32,8 +32,8 @@ import { validateSQLSafety } from '@/lib/sql-validator'
 import { getCachedSchema, setCachedSchema } from '@/lib/query-cache'
 import { checkPlanLimits } from '@/lib/plan-limits'
 import { DatabaseSchema } from '@/actions/db'
-import Groq from 'groq-sdk'
-import { getGroqClient, markKeyExhausted, isRateLimitError } from '@/lib/groq-keys'
+import { getGroqClient, isRateLimitError } from '@/lib/groq-keys'
+import { aiChatCompletion, aiChatCompletionStream, type ChatMessage } from '@/lib/ai-client'
 
 // ---------------------------------------------------------------------------
 // System prompt builder â€” DB-aware + messy data hardened
@@ -207,15 +207,13 @@ function parseAliasMap(sql: string): Map<string, string> {
 // Stream AI response and collect full text (for retry calls)
 // ---------------------------------------------------------------------------
 
-async function streamGroqResponse(
-  groq: Groq,
-  messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+async function streamAIResponse(
+  messages: ChatMessage[],
   send: (event: string, data: unknown) => Promise<void>,
   emitThoughts: boolean
 ): Promise<{ chainOfThought: string; sqlContent: string }> {
-  const groqStream = await groq.chat.completions.create({
+  const aiStream = await aiChatCompletionStream({
     model: 'llama-3.1-8b-instant',
-    stream: true,
     messages,
     max_tokens: 2048,
     temperature: 0.1,
@@ -229,7 +227,7 @@ async function streamGroqResponse(
   const SQL_OPEN = '<sql>'
   const SQL_CLOSE = '</sql>'
 
-  for await (const chunk of groqStream) {
+  for await (const chunk of aiStream) {
     const token = chunk.choices[0]?.delta?.content ?? ''
     if (!token) continue
     buffer += token
@@ -470,18 +468,15 @@ export async function POST(request: NextRequest) {
       }
 
       // 6. Get Groq client from key pool â€” mock mode if no keys configured
+      // Check if any AI provider is configured; fall back to mock if not
       const groqEntry = getGroqClient()
-      if (!groqEntry) {
+      if (!groqEntry && !process.env.CEREBRAS_API_KEY) {
         await streamMockResponse(question, filteredSchema, userId, send)
         return
       }
-      let groq = groqEntry.client
-      let currentApiKey = groqEntry.apiKey
 
       // 7. Build messages with conversation history
-      const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-        { role: 'system', content: systemPrompt },
-      ]
+      const messages: ChatMessage[] = [{ role: 'system', content: systemPrompt }]
       if (hasContext) {
         for (const turn of conversationContext!) {
           messages.push({ role: 'user', content: turn.question })
@@ -490,36 +485,21 @@ export async function POST(request: NextRequest) {
       }
       messages.push({ role: 'user', content: question })
 
-      // 8. Stream from Groq (with key rotation on 429)
+      // 8. Stream from AI (Groq primary; Cerebras automatic fallback on rate limit)
       let chainOfThought = ''
       let sqlContent = ''
-      let streamSuccess = false
 
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const result = await streamGroqResponse(groq, messages, send, attempt === 0)
-          chainOfThought = result.chainOfThought
-          sqlContent = result.sqlContent
-          streamSuccess = true
-          break
-        } catch (streamErr) {
-          if (isRateLimitError(streamErr)) {
-            markKeyExhausted(currentApiKey)
-            const nextEntry = getGroqClient()
-            if (nextEntry && nextEntry.apiKey !== currentApiKey) {
-              groq = nextEntry.client
-              currentApiKey = nextEntry.apiKey
-              await send('thought', { token: '\nâ³ Switching AI provider key, retrying...\n' })
-              continue
-            }
-          }
-          throw streamErr
-        }
-      }
-
-      if (!streamSuccess) {
+      try {
+        const result = await streamAIResponse(messages, send, true)
+        chainOfThought = result.chainOfThought
+        sqlContent = result.sqlContent
+      } catch (streamErr) {
         await send('error', {
-          message: 'All AI keys are temporarily rate-limited. Please try again in a minute.',
+          message: isRateLimitError(streamErr)
+            ? 'AI service rate limit reached. Please try again in a minute.'
+            : streamErr instanceof Error
+              ? streamErr.message
+              : 'Failed to generate SQL',
         })
         return
       }
@@ -557,9 +537,8 @@ Output only the corrected SQL in <sql></sql> tags.`
           { role: 'user', content: selfSubtractFix },
         ]
         try {
-          const selfFix = await groq.chat.completions.create({
+          const selfFix = await aiChatCompletion({
             model: 'llama-3.3-70b-versatile',
-            stream: false,
             messages: selfSubMessages,
             max_tokens: 1024,
             temperature: 0.05,
@@ -603,9 +582,8 @@ Output only the corrected SQL in <sql></sql> tags.`
           ]
 
           try {
-            const fix = await groq.chat.completions.create({
+            const fix = await aiChatCompletion({
               model: 'llama-3.3-70b-versatile',
-              stream: false,
               messages: fixMessages,
               max_tokens: 1024,
               temperature: 0.05,
@@ -717,9 +695,8 @@ Output only the corrected SQL in <sql></sql> tags.`
         ]
 
         try {
-          const fix = await groq.chat.completions.create({
+          const fix = await aiChatCompletion({
             model: 'llama-3.3-70b-versatile',
-            stream: false,
             messages: fixMessages,
             max_tokens: 1024,
             temperature: 0.05,
@@ -777,9 +754,8 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
         ]
 
         try {
-          const zeroFix = await groq.chat.completions.create({
+          const zeroFix = await aiChatCompletion({
             model: 'llama-3.3-70b-versatile',
-            stream: false,
             messages: zeroRowMessages,
             max_tokens: 1024,
             temperature: 0.05,
