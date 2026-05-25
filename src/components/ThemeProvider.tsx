@@ -18,14 +18,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // so there is no visual flash of wrong theme.
   const [theme, setTheme] = useState<Theme>('system')
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+  const [hydrated, setHydrated] = useState(false)
 
-  // After mount, read the stored preference from localStorage (client-only).
+  // After mount, sync state with what the inline script + localStorage already decided.
+  // We do NOT re-apply DOM classes here — the inline script handled that pre-paint.
   useEffect(() => {
     const saved = (localStorage.getItem('theme') as Theme) || 'system'
     setTheme(saved)
+    // Mirror whatever the inline script wrote to the <html> element
+    setResolvedTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+    setHydrated(true)
   }, [])
 
+  // Apply theme changes to the DOM — but only AFTER hydration completes.
+  // The first mount run is suppressed because the inline script already
+  // applied the correct class before React ever painted.
   useEffect(() => {
+    if (!hydrated) return
+
     const root = window.document.documentElement
 
     const applyTheme = (mode: 'dark' | 'light' | 'warm') => {
@@ -53,7 +63,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       applyTheme(theme === 'dark' ? 'dark' : 'light')
     }
-  }, [theme])
+  }, [theme, hydrated])
 
   const handleSetTheme = (newTheme: Theme) => {
     setTheme(newTheme)
