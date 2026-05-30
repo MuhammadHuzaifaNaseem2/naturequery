@@ -8,5 +8,12 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 1.0,
     debug: false,
+    ignoreErrors: [
+      // Outlook SafeLink scanner injects a buggy script when previewing URLs
+      'Object Not Found Matching Id',
+      // Harmless browser quirk, not actionable
+      'ResizeObserver loop limit exceeded',
+      'ResizeObserver loop completed with undelivered notifications',
+    ],
   })
 }
