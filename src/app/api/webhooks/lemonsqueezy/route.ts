@@ -71,6 +71,17 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      const userExists = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      })
+      if (!userExists) {
+        console.warn(
+          `[ls webhook] Skipping ${eventName} for non-existent user ${userId} (subscription ${subscriptionId}). Likely a test webhook or deleted account.`
+        )
+        break
+      }
+
       const variantId = String(data?.variant_id ?? '')
       const resolvedPlan = planFromVariantId(variantId)
       const status = mapStatus(String(data?.status ?? 'active'))
