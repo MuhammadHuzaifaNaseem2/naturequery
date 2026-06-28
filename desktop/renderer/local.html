@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NatureQuery — Local Databases</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #11161d;
+        --card: #161b22;
+        --border: #21262d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --primary: #2f81f7;
+        --emerald: #2ea043;
+        --danger: #f85149;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        display: flex;
+        overflow: hidden;
+        font-size: 13px;
+      }
+      /* Sidebar */
+      .sidebar {
+        width: 280px;
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+      .sidebar-head {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .logo-badge {
+        width: 28px; height: 28px; border-radius: 7px;
+        background: linear-gradient(135deg, var(--emerald), var(--primary));
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; color: white; font-size: 15px;
+      }
+      .sidebar-head h1 { font-size: 14px; font-weight: 700; }
+      .conn-list { flex: 1; overflow-y: auto; padding: 8px; }
+      .conn {
+        padding: 10px 12px; border-radius: 8px; cursor: pointer;
+        border: 1px solid transparent; margin-bottom: 4px;
+      }
+      .conn:hover { background: var(--card); }
+      .conn.active { background: var(--card); border-color: var(--primary); }
+      .conn .name { font-weight: 600; }
+      .conn .meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+      .sidebar-foot { padding: 12px; border-top: 1px solid var(--border); }
+      .empty-list { color: var(--muted); font-size: 12px; padding: 16px; text-align: center; }
+      /* Main */
+      .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+      .main-head {
+        padding: 14px 18px; border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      }
+      .main-head .title { font-weight: 600; }
+      .main-head .sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+      .main-body { flex: 1; overflow-y: auto; padding: 18px; }
+      .placeholder {
+        height: 100%; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; color: var(--muted); gap: 8px;
+      }
+      label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+      input, select, textarea {
+        width: 100%; background: var(--bg); border: 1px solid var(--border);
+        border-radius: 8px; color: var(--text); padding: 9px 11px; font-size: 13px;
+        font-family: inherit;
+      }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+      textarea { font-family: 'Consolas', 'Monaco', monospace; resize: vertical; min-height: 90px; }
+      .row { margin-bottom: 10px; }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+      button {
+        border: none; border-radius: 8px; padding: 9px 14px; font-size: 13px;
+        font-weight: 600; cursor: pointer;
+      }
+      button:hover { opacity: 0.9; }
+      .btn-primary { background: var(--primary); color: white; }
+      .btn-secondary { background: var(--border); color: var(--text); }
+      .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+      .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--border); }
+      .btn-block { width: 100%; }
+      .toolbar { display: flex; gap: 8px; margin: 12px 0; }
+      .status { margin-top: 12px; font-size: 12px; padding: 10px 12px; border-radius: 8px;
+        display: none; white-space: pre-wrap; font-family: 'Consolas','Monaco',monospace; }
+      .status.ok { display: block; background: rgba(46,160,67,.12); border: 1px solid rgba(46,160,67,.4); color: #56d364; }
+      .status.err { display: block; background: rgba(248,81,73,.12); border: 1px solid rgba(248,81,73,.4); color: #ff7b72; }
+      /* schema + results */
+      .section-title { font-size: 12px; color: var(--muted); margin: 18px 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+      .tables { display: flex; flex-direction: column; gap: 6px; }
+      .table-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+      .table-item .tname { font-weight: 600; cursor: pointer; }
+      .table-item .cols { color: var(--muted); font-size: 11px; margin-top: 4px; display: none; }
+      .table-item.open .cols { display: block; }
+      table.results { width: 100%; border-collapse: collapse; font-size: 12px; }
+      table.results th, table.results td {
+        border: 1px solid var(--border); padding: 6px 8px; text-align: left;
+        max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      table.results th { background: var(--card); position: sticky; top: 0; }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div class="logo-badge">N</div>
+        <h1>Local Databases</h1>
+      </div>
+      <div class="conn-list" id="connList"></div>
+      <div class="sidebar-foot">
+        <button class="btn-primary btn-block" id="addBtn">+ Add connection</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="main-head">
+        <div>
+          <div class="title" id="mainTitle">Select a connection</div>
+          <div class="sub" id="mainSub">Connections are stored on this computer. Passwords never leave your machine.</div>
+        </div>
+        <div id="mainActions" class="hidden">
+          <button class="btn-secondary" id="loadSchemaBtn">Load tables</button>
+          <button class="btn-danger" id="removeBtn">Remove</button>
+        </div>
+      </div>
+
+      <div class="main-body">
+        <!-- Add / edit form -->
+        <div id="formView" class="hidden">
+          <div class="row">
+            <label>Connection name</label>
+            <input id="f_name" placeholder="My local database" />
+          </div>
+          <div class="row">
+            <label>Database type</label>
+            <select id="f_dbType">
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+              <option value="mariadb">MariaDB</option>
+              <option value="sqlserver">SQL Server</option>
+            </select>
+          </div>
+          <div class="grid2">
+            <div><label>Host</label><input id="f_host" value="localhost" /></div>
+            <div><label>Port</label><input id="f_port" value="5432" /></div>
+          </div>
+          <div class="row"><label>Database</label><input id="f_database" /></div>
+          <div class="grid2">
+            <div><label>User</label><input id="f_user" /></div>
+            <div><label>Password</label><input id="f_password" type="password" /></div>
+          </div>
+          <div class="toolbar">
+            <button class="btn-primary" id="saveBtn">Save connection</button>
+            <button class="btn-ghost" id="cancelBtn">Cancel</button>
+          </div>
+          <div class="status" id="formStatus"></div>
+        </div>
+
+        <!-- Workspace -->
+        <div id="workView" class="hidden">
+          <div id="schemaArea"></div>
+          <div class="section-title">Run SQL (read-only)</div>
+          <textarea id="sql" placeholder="SELECT * FROM ...">SELECT version();</textarea>
+          <div class="toolbar">
+            <button class="btn-primary" id="runBtn">Run query</button>
+            <button class="btn-secondary" id="testBtn">Test connection</button>
+          </div>
+          <div class="status" id="runStatus"></div>
+          <div id="resultsArea"></div>
+        </div>
+
+        <!-- Empty -->
+        <div id="emptyView" class="placeholder">
+          <div class="logo-badge" style="width:44px;height:44px;font-size:22px;">N</div>
+          <p>Pick a connection on the left, or add a new one.</p>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id)
+      const api = window.naturequery.localdb
+      const DEFAULT_PORTS = { postgresql: '5432', mysql: '3306', mariadb: '3306', sqlserver: '1433' }
+
+      let connections = []
+      let selectedId = null
+      let editingId = null
+
+      function show(view) {
+        for (const v of ['formView', 'workView', 'emptyView']) $(v).classList.add('hidden')
+        $(view).classList.remove('hidden')
+        $('mainActions').classList.toggle('hidden', view !== 'workView')
+      }
+
+      function setStatus(el, kind, text) {
+        el.className = 'status ' + kind
+        el.textContent = text
+      }
+
+      async function refreshList() {
+        connections = await api.list()
+        const list = $('connList')
+        if (connections.length === 0) {
+          list.innerHTML = '<div class="empty-list">No saved connections yet.</div>'
+          return
+        }
+        list.innerHTML = ''
+        for (const c of connections) {
+          const div = document.createElement('div')
+          div.className = 'conn' + (c.id === selectedId ? ' active' : '')
+          div.innerHTML =
+            '<div class="name">' + escapeHtml(c.name) + '</div>' +
+            '<div class="meta">' + c.dbType + ' · ' + escapeHtml(c.host) + ':' + c.port + '</div>'
+          div.onclick = () => selectConnection(c.id)
+          list.appendChild(div)
+        }
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]))
+      }
+
+      function selectConnection(id) {
+        selectedId = id
+        const c = connections.find((x) => x.id === id)
+        if (!c) return
+        $('mainTitle').textContent = c.name
+        $('mainSub').textContent = c.dbType + ' · ' + c.host + ':' + c.port + ' · ' + c.database
+        $('schemaArea').innerHTML = ''
+        $('resultsArea').innerHTML = ''
+        $('runStatus').className = 'status'
+        show('workView')
+        refreshList()
+      }
+
+      // ── Add / edit form ──
+      $('addBtn').onclick = () => {
+        editingId = null
+        $('f_name').value = ''
+        $('f_dbType').value = 'postgresql'
+        $('f_host').value = 'localhost'
+        $('f_port').value = '5432'
+        $('f_database').value = ''
+        $('f_user').value = ''
+        $('f_password').value = ''
+        $('formStatus').className = 'status'
+        $('mainTitle').textContent = 'Add connection'
+        $('mainSub').textContent = 'Credentials are saved on this computer only.'
+        show('formView')
+      }
+      $('f_dbType').onchange = () => { $('f_port').value = DEFAULT_PORTS[$('f_dbType').value] || '' }
+      $('cancelBtn').onclick = () => (selectedId ? selectConnection(selectedId) : show('emptyView'))
+
+      $('saveBtn').onclick = async () => {
+        const conn = {
+          id: editingId || undefined,
+          name: $('f_name').value.trim(),
+          dbType: $('f_dbType').value,
+          host: $('f_host').value.trim(),
+          port: $('f_port').value.trim(),
+          database: $('f_database').value.trim(),
+          user: $('f_user').value.trim(),
+          password: $('f_password').value,
+        }
+        if (!conn.host || !conn.database) {
+          setStatus($('formStatus'), 'err', 'Host and database are required.')
+          return
+        }
+        const saved = await api.save(conn)
+        await refreshList()
+        selectConnection(saved.id)
+      }
+
+      // ── Workspace actions ──
+      $('removeBtn').onclick = async () => {
+        if (!selectedId) return
+        await api.remove(selectedId)
+        selectedId = null
+        await refreshList()
+        show('emptyView')
+        $('mainTitle').textContent = 'Select a connection'
+      }
+
+      $('testBtn').onclick = async () => {
+        setStatus($('runStatus'), 'ok', 'Testing...')
+        const res = await api.test(selectedId)
+        if (res.ok) setStatus($('runStatus'), 'ok', 'Connected successfully.')
+        else setStatus($('runStatus'), 'err', 'Connection failed:\n' + res.error)
+      }
+
+      $('loadSchemaBtn').onclick = async () => {
+        $('schemaArea').innerHTML = '<div class="section-title">Tables</div><p style="color:var(--muted)">Loading...</p>'
+        const res = await api.schema(selectedId)
+        if (!res.ok) {
+          $('schemaArea').innerHTML = '<div class="section-title">Tables</div><p style="color:var(--danger)">' + escapeHtml(res.error) + '</p>'
+          return
+        }
+        const tables = res.schema || []
+        let html = '<div class="section-title">Tables (' + tables.length + ')</div><div class="tables">'
+        for (const t of tables) {
+          const cols = (t.columns || []).map((c) => c.name + ' (' + c.type + ')').join(', ')
+          html +=
+            '<div class="table-item"><div class="tname">▸ ' + escapeHtml(t.name) + '</div>' +
+            '<div class="cols">' + escapeHtml(cols) + '</div></div>'
+        }
+        html += '</div>'
+        $('schemaArea').innerHTML = html
+        document.querySelectorAll('.table-item .tname').forEach((el) => {
+          el.onclick = () => el.parentElement.classList.toggle('open')
+        })
+      }
+
+      $('runBtn').onclick = async () => {
+        setStatus($('runStatus'), 'ok', 'Running...')
+        $('resultsArea').innerHTML = ''
+        const res = await api.query(selectedId, $('sql').value)
+        if (!res.ok) {
+          setStatus($('runStatus'), 'err', 'Query failed:\n' + res.error)
+          return
+        }
+        setStatus($('runStatus'), 'ok', res.rowCount + ' row(s)' + (res.truncated ? ' (capped at 1000)' : ''))
+        renderResults(res.fields || [], res.rows || [])
+      }
+
+      function renderResults(fields, rows) {
+        if (rows.length === 0) {
+          $('resultsArea').innerHTML = '<p style="color:var(--muted);margin-top:12px">No rows.</p>'
+          return
+        }
+        const cols = fields.length ? fields : Object.keys(rows[0])
+        let html = '<div style="overflow:auto;margin-top:12px;max-height:340px"><table class="results"><thead><tr>'
+        for (const c of cols) html += '<th>' + escapeHtml(c) + '</th>'
+        html += '</tr></thead><tbody>'
+        for (const row of rows.slice(0, 200)) {
+          html += '<tr>'
+          for (const c of cols) {
+            const v = row[c]
+            html += '<td>' + escapeHtml(v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : v) + '</td>'
+          }
+          html += '</tr>'
+        }
+        html += '</tbody></table></div>'
+        $('resultsArea').innerHTML = html
+      }
+
+      // init
+      refreshList().then(() => show('emptyView'))
+    </script>
+  </body>
+</html>

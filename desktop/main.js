@@ -24,6 +24,10 @@ function loadApp() {
   if (mainWindow) mainWindow.loadURL(WEB_APP_URL)
 }
 
+function loadLocalDatabases() {
+  if (mainWindow) mainWindow.loadFile(path.join(__dirname, 'renderer', 'local.html'))
+}
+
 function loadLocalDbTest() {
   if (mainWindow) mainWindow.loadFile(path.join(__dirname, 'renderer', 'welcome.html'))
 }
@@ -47,6 +51,8 @@ function createWindow() {
 
   if (LOAD_TARGET === 'test') {
     loadLocalDbTest()
+  } else if (LOAD_TARGET === 'local') {
+    loadLocalDatabases()
   } else {
     loadApp()
   }
@@ -74,6 +80,7 @@ function buildMenu() {
       label: 'NatureQuery',
       submenu: [
         { label: 'Open NatureQuery', click: loadApp },
+        { label: 'Local Databases', click: loadLocalDatabases },
         { label: 'Local Database Test', click: loadLocalDbTest },
         { type: 'separator' },
         { role: 'quit' },
@@ -156,6 +163,43 @@ ipcMain.handle('db:schema', async (_event, creds) => {
   } catch (err) {
     return { ok: false, error: friendlyError(err) }
   }
+})
+
+// ─── Saved local connections ──────────────────────────────────────────────
+//
+// These operate by connection id. Credentials (including the password) stay in
+// the main process; the renderer only ever sees connection metadata.
+
+const store = require('./store.cjs')
+
+ipcMain.handle('localdb:list', () => store.list())
+ipcMain.handle('localdb:save', (_event, input) => store.save(input))
+ipcMain.handle('localdb:remove', (_event, id) => store.remove(id))
+
+async function withSavedConnection(id, fn) {
+  const creds = store.credsFor(id)
+  if (!creds) return { ok: false, error: 'Connection not found' }
+  try {
+    const value = await withDriver(creds, fn)
+    return { ok: true, value }
+  } catch (err) {
+    return { ok: false, error: friendlyError(err) }
+  }
+}
+
+ipcMain.handle('localdb:test', async (_event, id) => {
+  const res = await withSavedConnection(id, (d) => d.testConnection())
+  return res.ok ? { ok: true } : res
+})
+
+ipcMain.handle('localdb:schema', async (_event, id) => {
+  const res = await withSavedConnection(id, (d) => d.fetchSchema())
+  return res.ok ? { ok: true, schema: res.value } : res
+})
+
+ipcMain.handle('localdb:query', async (_event, id, sql) => {
+  const res = await withSavedConnection(id, (d) => d.executeQuery(sql))
+  return res.ok ? { ok: true, ...res.value } : res
 })
 
 // ─── App lifecycle ───────────────────────────────────────────────────────
