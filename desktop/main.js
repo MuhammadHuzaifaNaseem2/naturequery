@@ -11,6 +11,15 @@
 const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron')
 const path = require('path')
 
+// Auto-update from GitHub Releases. Only meaningful in the packaged installer;
+// guarded so it never runs (or errors) during local development.
+let autoUpdater = null
+try {
+  autoUpdater = require('electron-updater').autoUpdater
+} catch {
+  autoUpdater = null
+}
+
 // The hosted web app. The desktop window loads the real NatureQuery product,
 // so users get every feature with no duplication.
 const WEB_APP_URL = process.env.NATUREQUERY_URL || 'https://naturequery.app'
@@ -207,6 +216,13 @@ ipcMain.handle('localdb:query', async (_event, id, sql) => {
 app.whenReady().then(() => {
   buildMenu()
   createWindow()
+
+  // Check for updates in the background (packaged app only). If a newer version
+  // is published to GitHub Releases, electron-updater downloads it and notifies
+  // the user to restart. Failures are non-fatal (e.g. offline).
+  if (app.isPackaged && autoUpdater) {
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {})
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

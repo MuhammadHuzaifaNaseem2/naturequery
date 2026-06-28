@@ -8,44 +8,59 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win --x64",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "build:win": "electron-builder --win --x64 --publish never",
+    "build:mac": "electron-builder --mac --publish never",
+    "build:linux": "electron-builder --linux --publish never",
+    "release:win": "electron-builder --win --x64 --publish always"
   },
   "build": {
     "appId": "app.naturequery.desktop",
     "productName": "NatureQuery",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "files": [
       "main.js",
       "preload.js",
+      "store.cjs",
+      "engine/**/*",
       "renderer/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "MuhammadHuzaifaNaseem2",
+        "repo": "naturequery"
+      }
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico"
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "NatureQuery"
     },
     "mac": {
       "target": "dmg",
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.png"
     },
     "linux": {
       "target": "AppImage",
-      "category": "Development"
+      "category": "Development",
+      "icon": "build/icon.png"
     }
   },
   "dependencies": {
     "pg": "^8.13.1",
     "mysql2": "^3.11.5",
-    "mssql": "^11.0.1"
+    "mssql": "^11.0.1",
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "electron": "^31.0.0",

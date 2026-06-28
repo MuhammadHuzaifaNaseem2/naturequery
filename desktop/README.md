@@ -58,9 +58,10 @@ Output appears in `desktop/dist/`.
    **Next (4b):** A desktop-local connection manager that keeps credentials on
    the user's machine, and routes those connections' queries through the
    bridge so local databases work inside the real UI.
-5. Code signing (Windows cert, Apple notarization) + auto-update via GitHub
-   Releases (`electron-updater`).
-6. Branded installer, app icon, first-run onboarding.
+5. **Done:** Branded installer (NSIS) with the app icon, and auto-update via
+   GitHub Releases (`electron-updater`). See `RELEASE.md`. Remaining polish:
+   code signing to remove the Windows SmartScreen warning.
+6. First-run onboarding and macOS build.
 
 ## Files
 
