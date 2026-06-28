@@ -7,8 +7,23 @@ import { useSession } from 'next-auth/react'
 import { useTheme } from '@/components/ThemeProvider'
 import { useTranslation } from '@/contexts/LocaleContext'
 import {
-  LayoutDashboard, History, Settings, Shield, CreditCard, Database,
-  Moon, Sun, Monitor, Flame, Search, Play, Download, Trash2, Bookmark,
+  LayoutDashboard,
+  History,
+  Settings,
+  Shield,
+  CreditCard,
+  Database,
+  Moon,
+  MoonStar,
+  Sun,
+  Monitor,
+  Flame,
+  Leaf,
+  Search,
+  Play,
+  Download,
+  Trash2,
+  Bookmark,
 } from 'lucide-react'
 
 interface CommandPaletteProps {
@@ -26,9 +41,17 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({
-  open, onOpenChange, connections, activeConnectionId,
-  onSelectConnection, queryHistory, savedQueries,
-  onSelectQuery, onExport, onClearHistory, onNewQuery,
+  open,
+  onOpenChange,
+  connections,
+  activeConnectionId,
+  onSelectConnection,
+  queryHistory,
+  savedQueries,
+  onSelectQuery,
+  onExport,
+  onClearHistory,
+  onNewQuery,
 }: CommandPaletteProps) {
   const router = useRouter()
   const { data: session } = useSession()
@@ -53,7 +76,8 @@ export function CommandPalette({
 
   if (!open) return null
 
-  const groupHeadingClass = '[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground'
+  const groupHeadingClass =
+    '[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground'
 
   return (
     <div className="fixed inset-0 z-[100] animate-fadeIn">
@@ -86,37 +110,80 @@ export function CommandPalette({
               {t('dashboard.commandPalette.noResults')}
             </Command.Empty>
 
-            <Command.Group heading={t('dashboard.commandPalette.navigation')} className={groupHeadingClass}>
-              <CmdItem icon={LayoutDashboard} onSelect={() => { router.push('/dashboard'); onOpenChange(false) }}>
+            <Command.Group
+              heading={t('dashboard.commandPalette.navigation')}
+              className={groupHeadingClass}
+            >
+              <CmdItem
+                icon={LayoutDashboard}
+                onSelect={() => {
+                  router.push('/dashboard')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.header.dashboard')}
               </CmdItem>
-              <CmdItem icon={History} onSelect={() => { router.push('/dashboard/history'); onOpenChange(false) }}>
+              <CmdItem
+                icon={History}
+                onSelect={() => {
+                  router.push('/dashboard/history')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.fullHistory')}
               </CmdItem>
-              <CmdItem icon={Settings} onSelect={() => { router.push('/settings'); onOpenChange(false) }}>
+              <CmdItem
+                icon={Settings}
+                onSelect={() => {
+                  router.push('/settings')
+                  onOpenChange(false)
+                }}
+              >
                 {t('common.settings')}
               </CmdItem>
-              <CmdItem icon={CreditCard} onSelect={() => { router.push('/settings'); onOpenChange(false) }}>
+              <CmdItem
+                icon={CreditCard}
+                onSelect={() => {
+                  router.push('/settings')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.billing')}
               </CmdItem>
               {isAdmin && (
-                <CmdItem icon={Shield} onSelect={() => { router.push('/admin'); onOpenChange(false) }}>
+                <CmdItem
+                  icon={Shield}
+                  onSelect={() => {
+                    router.push('/admin')
+                    onOpenChange(false)
+                  }}
+                >
                   {t('dashboard.commandPalette.adminPanel')}
                 </CmdItem>
               )}
             </Command.Group>
 
             {connections && connections.length > 0 && (
-              <Command.Group heading={t('dashboard.commandPalette.connections')} className={groupHeadingClass}>
+              <Command.Group
+                heading={t('dashboard.commandPalette.connections')}
+                className={groupHeadingClass}
+              >
                 {connections.map((conn) => (
                   <CmdItem
                     key={conn.id}
                     icon={Database}
-                    onSelect={() => { onSelectConnection?.(conn.id); onOpenChange(false) }}
+                    onSelect={() => {
+                      onSelectConnection?.(conn.id)
+                      onOpenChange(false)
+                    }}
                   >
-                    <span className="flex-1">{t('dashboard.commandPalette.switchTo', { name: conn.name })}</span>
+                    <span className="flex-1">
+                      {t('dashboard.commandPalette.switchTo', { name: conn.name })}
+                    </span>
                     {conn.id === activeConnectionId && (
-                      <span className="text-xs text-primary">({t('dashboard.commandPalette.active')})</span>
+                      <span className="text-xs text-primary">
+                        ({t('dashboard.commandPalette.active')})
+                      </span>
                     )}
                   </CmdItem>
                 ))}
@@ -124,12 +191,18 @@ export function CommandPalette({
             )}
 
             {queryHistory && queryHistory.length > 0 && (
-              <Command.Group heading={t('dashboard.commandPalette.recentQueries')} className={groupHeadingClass}>
+              <Command.Group
+                heading={t('dashboard.commandPalette.recentQueries')}
+                className={groupHeadingClass}
+              >
                 {queryHistory.slice(0, 8).map((q, i) => (
                   <CmdItem
                     key={i}
                     icon={Play}
-                    onSelect={() => { onSelectQuery?.(q.question, q.sql); onOpenChange(false) }}
+                    onSelect={() => {
+                      onSelectQuery?.(q.question, q.sql)
+                      onOpenChange(false)
+                    }}
                   >
                     {q.question.length > 60 ? q.question.slice(0, 60) + '...' : q.question}
                   </CmdItem>
@@ -138,12 +211,18 @@ export function CommandPalette({
             )}
 
             {savedQueries && savedQueries.length > 0 && (
-              <Command.Group heading={t('dashboard.commandPalette.savedQueries')} className={groupHeadingClass}>
+              <Command.Group
+                heading={t('dashboard.commandPalette.savedQueries')}
+                className={groupHeadingClass}
+              >
                 {savedQueries.slice(0, 8).map((q) => (
                   <CmdItem
                     key={q.id}
                     icon={Bookmark}
-                    onSelect={() => { onSelectQuery?.(q.question, q.sql); onOpenChange(false) }}
+                    onSelect={() => {
+                      onSelectQuery?.(q.question, q.sql)
+                      onOpenChange(false)
+                    }}
                   >
                     {q.name}
                   </CmdItem>
@@ -152,31 +231,100 @@ export function CommandPalette({
             )}
 
             <Command.Group heading={t('common.actions')} className={groupHeadingClass}>
-              <CmdItem icon={Play} onSelect={() => { onNewQuery?.(); onOpenChange(false) }}>
+              <CmdItem
+                icon={Play}
+                onSelect={() => {
+                  onNewQuery?.()
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.newQuery')}
               </CmdItem>
-              <CmdItem icon={Download} onSelect={() => { onExport?.('excel'); onOpenChange(false) }}>
+              <CmdItem
+                icon={Download}
+                onSelect={() => {
+                  onExport?.('excel')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.exportExcel')}
               </CmdItem>
-              <CmdItem icon={Download} onSelect={() => { onExport?.('csv'); onOpenChange(false) }}>
+              <CmdItem
+                icon={Download}
+                onSelect={() => {
+                  onExport?.('csv')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.exportCsv')}
               </CmdItem>
-              <CmdItem icon={Trash2} onSelect={() => { onClearHistory?.(); onOpenChange(false) }}>
+              <CmdItem
+                icon={Trash2}
+                onSelect={() => {
+                  onClearHistory?.()
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.clearHistory')}
               </CmdItem>
             </Command.Group>
 
-            <Command.Group heading={t('dashboard.commandPalette.theme')} className={groupHeadingClass}>
-              <CmdItem icon={Sun} onSelect={() => { setTheme('light'); onOpenChange(false) }}>
+            <Command.Group
+              heading={t('dashboard.commandPalette.theme')}
+              className={groupHeadingClass}
+            >
+              <CmdItem
+                icon={Sun}
+                onSelect={() => {
+                  setTheme('light')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.lightMode')}
               </CmdItem>
-              <CmdItem icon={Moon} onSelect={() => { setTheme('dark'); onOpenChange(false) }}>
+              <CmdItem
+                icon={Moon}
+                onSelect={() => {
+                  setTheme('dark')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.darkMode')}
               </CmdItem>
-              <CmdItem icon={Flame} onSelect={() => { setTheme('warm'); onOpenChange(false) }}>
+              <CmdItem
+                icon={MoonStar}
+                onSelect={() => {
+                  setTheme('dim')
+                  onOpenChange(false)
+                }}
+              >
+                Dim mode
+              </CmdItem>
+              <CmdItem
+                icon={Leaf}
+                onSelect={() => {
+                  setTheme('forest')
+                  onOpenChange(false)
+                }}
+              >
+                Forest mode
+              </CmdItem>
+              <CmdItem
+                icon={Flame}
+                onSelect={() => {
+                  setTheme('warm')
+                  onOpenChange(false)
+                }}
+              >
                 Warm mode
               </CmdItem>
-              <CmdItem icon={Monitor} onSelect={() => { setTheme('system'); onOpenChange(false) }}>
+              <CmdItem
+                icon={Monitor}
+                onSelect={() => {
+                  setTheme('system')
+                  onOpenChange(false)
+                }}
+              >
                 {t('dashboard.commandPalette.systemTheme')}
               </CmdItem>
             </Command.Group>
@@ -185,7 +333,10 @@ export function CommandPalette({
           <div className="border-t border-border px-4 py-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>{t('dashboard.commandPalette.navigateArrows')}</span>
             <span>
-              <kbd className="px-1.5 py-0.5 bg-secondary rounded border border-border text-[10px]">Esc</kbd> {t('dashboard.commandPalette.escClose')}
+              <kbd className="px-1.5 py-0.5 bg-secondary rounded border border-border text-[10px]">
+                Esc
+              </kbd>{' '}
+              {t('dashboard.commandPalette.escClose')}
             </span>
           </div>
         </Command>
@@ -195,7 +346,9 @@ export function CommandPalette({
 }
 
 function CmdItem({
-  icon: Icon, children, onSelect,
+  icon: Icon,
+  children,
+  onSelect,
 }: {
   icon: React.ComponentType<{ className?: string }>
   children: React.ReactNode

@@ -81,6 +81,60 @@
     --input: 223 47% 15%;
     --ring: 217 91% 60%;
   }
+
+  /* Dim — soft slate-navy dark. Lower contrast than .dark, easier on the eyes. */
+  .dim {
+    --background: 215 27% 13%;
+    --foreground: 214 20% 89%;
+    --card: 215 24% 16%;
+    --card-foreground: 214 20% 89%;
+    --popover: 215 24% 16%;
+    --popover-foreground: 214 20% 89%;
+    --primary: 217 91% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 21% 21%;
+    --secondary-foreground: 214 20% 89%;
+    --muted: 215 21% 21%;
+    --muted-foreground: 215 14% 63%;
+    --accent: 262 72% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 60% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 90% 56%;
+    --warning-foreground: 0 0% 100%;
+    --border: 215 18% 25%;
+    --input: 215 18% 25%;
+    --ring: 217 91% 64%;
+  }
+
+  /* Forest — deep evergreen dark with emerald accents. On-brand for NatureQuery. */
+  .forest {
+    --background: 160 30% 7%;
+    --foreground: 150 18% 90%;
+    --card: 160 28% 10%;
+    --card-foreground: 150 18% 90%;
+    --popover: 160 28% 10%;
+    --popover-foreground: 150 18% 90%;
+    --primary: 158 64% 48%;
+    --primary-foreground: 160 40% 6%;
+    --secondary: 160 22% 15%;
+    --secondary-foreground: 150 18% 90%;
+    --muted: 160 22% 15%;
+    --muted-foreground: 150 12% 60%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 90% 55%;
+    --warning-foreground: 45 40% 8%;
+    --border: 160 20% 18%;
+    --input: 160 20% 18%;
+    --ring: 158 64% 48%;
+  }
 }
 
 @layer base {

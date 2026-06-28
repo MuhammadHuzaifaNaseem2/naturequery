@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 
-type Theme = 'light' | 'dark' | 'warm' | 'system'
+type Theme = 'light' | 'dark' | 'dim' | 'forest' | 'warm' | 'system'
 
 interface ThemeContextType {
   theme: Theme
@@ -25,8 +25,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = (localStorage.getItem('theme') as Theme) || 'system'
     setTheme(saved)
-    // Mirror whatever the inline script wrote to the <html> element
-    setResolvedTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+    // Mirror whatever the inline script wrote to the <html> element.
+    // dim and forest are dark-family themes, so they resolve to 'dark'.
+    const root = document.documentElement
+    const isDarkFamily =
+      root.classList.contains('dark') ||
+      root.classList.contains('dim') ||
+      root.classList.contains('forest')
+    setResolvedTheme(isDarkFamily ? 'dark' : 'light')
     setHydrated(true)
   }, [])
 
@@ -38,10 +44,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const root = window.document.documentElement
 
-    const applyTheme = (mode: 'dark' | 'light' | 'warm') => {
-      root.classList.remove('dark', 'warm')
+    // dim and forest are dark-family (resolvedTheme = 'dark'); warm is light-family.
+    const applyTheme = (mode: 'dark' | 'light' | 'dim' | 'forest' | 'warm') => {
+      root.classList.remove('dark', 'dim', 'forest', 'warm')
       if (mode === 'dark') {
         root.classList.add('dark')
+        setResolvedTheme('dark')
+      } else if (mode === 'dim') {
+        root.classList.add('dim')
+        setResolvedTheme('dark')
+      } else if (mode === 'forest') {
+        root.classList.add('forest')
         setResolvedTheme('dark')
       } else if (mode === 'warm') {
         root.classList.add('warm')
@@ -58,8 +71,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const listener = (e: MediaQueryListEvent) => applyTheme(e.matches ? 'dark' : 'light')
       mediaQuery.addEventListener('change', listener)
       return () => mediaQuery.removeEventListener('change', listener)
-    } else if (theme === 'warm') {
-      applyTheme('warm')
+    } else if (theme === 'dim' || theme === 'forest' || theme === 'warm') {
+      applyTheme(theme)
     } else {
       applyTheme(theme === 'dark' ? 'dark' : 'light')
     }

@@ -1240,10 +1240,14 @@ export function useDashboard() {
         theme === 'light'
           ? 'dark'
           : theme === 'dark'
-            ? 'warm'
-            : theme === 'warm'
-              ? 'system'
-              : 'light'
+            ? 'dim'
+            : theme === 'dim'
+              ? 'forest'
+              : theme === 'forest'
+                ? 'warm'
+                : theme === 'warm'
+                  ? 'system'
+                  : 'light'
       ),
     onClearInput: () => setNlQuery(''),
     onToggleHelp: () => setShowShortcutsHelp((prev) => !prev),

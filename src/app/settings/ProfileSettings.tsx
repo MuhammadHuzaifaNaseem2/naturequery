@@ -1,7 +1,20 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { User, Moon, Sun, Monitor, Flame, Edit2, Check, X, Loader2, Camera } from 'lucide-react'
+import {
+  User,
+  Moon,
+  MoonStar,
+  Sun,
+  Monitor,
+  Flame,
+  Leaf,
+  Edit2,
+  Check,
+  X,
+  Loader2,
+  Camera,
+} from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 import { clsx } from 'clsx'
 import { useRouter } from 'next/navigation'
@@ -32,6 +45,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
   const themes = [
     { value: 'light' as const, label: 'Light', icon: Sun },
     { value: 'dark' as const, label: 'Dark', icon: Moon },
+    { value: 'dim' as const, label: 'Dim', icon: MoonStar },
+    { value: 'forest' as const, label: 'Forest', icon: Leaf },
     { value: 'warm' as const, label: 'Warm', icon: Flame },
     { value: 'system' as const, label: 'System', icon: Monitor },
   ]
@@ -194,7 +209,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
       {/* Theme Selector */}
       <div className="card p-5">
         <h4 className="font-medium mb-3">Appearance</h4>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {themes.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
