@@ -8,19 +8,25 @@
 // over a secure bridge (see preload.js) and THIS process does the actual
 // connecting, using the same logic the web app already uses on the server.
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron')
 const path = require('path')
 
-// The hosted web app. In production the desktop window loads the real
-// NatureQuery product, so users get every feature with no duplication.
+// The hosted web app. The desktop window loads the real NatureQuery product,
+// so users get every feature with no duplication.
 const WEB_APP_URL = process.env.NATUREQUERY_URL || 'https://naturequery.app'
 
-// For the proof-of-concept we open a local welcome screen first that proves
-// local-database access works. Set NATUREQUERY_LOAD=web to skip straight to
-// the hosted app instead.
-const LOAD_TARGET = process.env.NATUREQUERY_LOAD || 'welcome'
+// Set NATUREQUERY_LOAD=test to open the local-database test screen on start.
+const LOAD_TARGET = process.env.NATUREQUERY_LOAD || 'app'
 
 let mainWindow = null
+
+function loadApp() {
+  if (mainWindow) mainWindow.loadURL(WEB_APP_URL)
+}
+
+function loadLocalDbTest() {
+  if (mainWindow) mainWindow.loadFile(path.join(__dirname, 'renderer', 'welcome.html'))
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -39,10 +45,10 @@ function createWindow() {
     },
   })
 
-  if (LOAD_TARGET === 'web') {
-    mainWindow.loadURL(WEB_APP_URL)
+  if (LOAD_TARGET === 'test') {
+    loadLocalDbTest()
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'renderer', 'welcome.html'))
+    loadApp()
   }
 
   // Open external links (e.g. docs, pricing) in the user's real browser,
@@ -58,6 +64,39 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+}
+
+// Native application menu. Keeps the real product front-and-centre while still
+// giving easy access to the local-database test screen and the usual controls.
+function buildMenu() {
+  const template = [
+    {
+      label: 'NatureQuery',
+      submenu: [
+        { label: 'Open NatureQuery', click: loadApp },
+        { label: 'Local Database Test', click: loadLocalDbTest },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    { role: 'editMenu' },
+    { role: 'windowMenu' },
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
 // ─── Local database bridge ───────────────────────────────────────────────
@@ -122,6 +161,7 @@ ipcMain.handle('db:schema', async (_event, creds) => {
 // ─── App lifecycle ───────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  buildMenu()
   createWindow()
 
   app.on('activate', () => {

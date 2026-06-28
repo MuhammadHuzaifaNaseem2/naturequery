@@ -30,13 +30,13 @@ npm install
 npm start
 ```
 
-This opens a proof-of-concept screen that connects to a local PostgreSQL
-database, proving the core capability. To load the full hosted product
-instead:
+This opens the real NatureQuery product in a desktop window. To open the
+local-database test screen instead, use the **NatureQuery → Local Database
+Test** menu item, or start with:
 
 ```bash
 # Windows PowerShell
-$env:NATUREQUERY_LOAD = "web"; npm start
+$env:NATUREQUERY_LOAD = "test"; npm start
 ```
 
 ## Build an installer
@@ -51,11 +51,13 @@ Output appears in `desktop/dist/`.
 
 ## Roadmap
 
-1. **POC (done):** Electron shell + local PostgreSQL connection bridge.
-2. Port the remaining 13 database drivers from the web app.
-3. Port the SQL safety/read-only blocklist into the desktop bridge.
-4. Have the web app detect when it runs inside the desktop app and route
-   local-database queries through the bridge automatically.
+1. **Done:** Electron shell + local database bridge.
+2. **Done:** Multi-database engine (PostgreSQL, MySQL, MariaDB, SQL Server).
+3. **Done:** Read-only SQL safety in the engine.
+4. **Done (4a):** Load the real NatureQuery product in the desktop window.
+   **Next (4b):** A desktop-local connection manager that keeps credentials on
+   the user's machine, and routes those connections' queries through the
+   bridge so local databases work inside the real UI.
 5. Code signing (Windows cert, Apple notarization) + auto-update via GitHub
    Releases (`electron-updater`).
 6. Branded installer, app icon, first-run onboarding.
