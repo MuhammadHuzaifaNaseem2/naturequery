@@ -12,10 +12,27 @@
 // Every driver exposes the same shape the web app uses:
 //   testConnection(), fetchSchema(), executeQuery(sql), close()
 
+const { validateReadOnly, ensureLimit } = require('./sql-safety.cjs')
+
 const MAX_ROWS = 1000
 
 function isLocal(host) {
   return ['localhost', '127.0.0.1', '::1'].includes(host)
+}
+
+// Wrap a driver so every query is checked for safety (read-only) and capped
+// to MAX_ROWS before it ever reaches the database. Centralised here so all
+// drivers get identical protection.
+function withSafety(driver, dbType) {
+  const runQuery = driver.executeQuery.bind(driver)
+  driver.executeQuery = async (sql) => {
+    const check = validateReadOnly(sql)
+    if (!check.valid) {
+      throw new Error(check.error)
+    }
+    return runQuery(ensureLimit(sql, MAX_ROWS, dbType))
+  }
+  return driver
 }
 
 // Turn flat { table, column, type, nullable } rows into grouped tables.
@@ -200,25 +217,30 @@ function createSqlServerDriver(creds) {
 // ─── Router ─────────────────────────────────────────────────────────────
 function createDriver(creds) {
   const type = String(creds.dbType || 'postgresql').toLowerCase()
+  let driver
   switch (type) {
     case 'mysql':
     case 'mariadb':
     case 'planetscale':
-      return createMysqlDriver(creds)
+      driver = createMysqlDriver(creds)
+      break
     case 'sqlserver':
     case 'mssql':
-      return createSqlServerDriver(creds)
+      driver = createSqlServerDriver(creds)
+      break
     case 'postgresql':
     case 'postgres':
     case 'cockroachdb':
     case 'neon':
     case 'redshift':
-      return createPostgresDriver(creds)
+      driver = createPostgresDriver(creds)
+      break
     default:
       throw new Error(
         `Database type "${type}" is not supported in the desktop app yet.`
       )
   }
+  return withSafety(driver, type)
 }
 
 module.exports = { createDriver, MAX_ROWS }
