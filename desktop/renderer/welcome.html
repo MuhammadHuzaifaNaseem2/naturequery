@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NatureQuery Desktop</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --card: #161b22;
+        --border: #21262d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --primary: #2f81f7;
+        --emerald: #2ea043;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+      }
+      .wrap {
+        width: 100%;
+        max-width: 560px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+      .logo-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, var(--emerald), var(--primary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 18px;
+        color: white;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .tag {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 24px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px;
+      }
+      .card h2 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .card p.hint {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 16px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        padding: 9px 11px;
+        font-size: 13px;
+        font-family: inherit;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      textarea {
+        font-family: 'Consolas', 'Monaco', monospace;
+        resize: vertical;
+        min-height: 64px;
+      }
+      .row {
+        margin-bottom: 10px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      button {
+        flex: 1;
+        border: none;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-secondary {
+        background: var(--border);
+        color: var(--text);
+      }
+      .status {
+        margin-top: 14px;
+        font-size: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        display: none;
+        white-space: pre-wrap;
+        font-family: 'Consolas', 'Monaco', monospace;
+      }
+      .status.ok {
+        display: block;
+        background: rgba(46, 160, 67, 0.12);
+        border: 1px solid rgba(46, 160, 67, 0.4);
+        color: #56d364;
+      }
+      .status.err {
+        display: block;
+        background: rgba(248, 81, 73, 0.12);
+        border: 1px solid rgba(248, 81, 73, 0.4);
+        color: #ff7b72;
+      }
+      .note {
+        margin-top: 20px;
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="logo">
+        <div class="logo-badge">N</div>
+        <h1>NatureQuery Desktop</h1>
+      </div>
+      <p class="tag">
+        Proof of concept: connect to a database on this computer or your private
+        network, which the website cannot reach.
+      </p>
+
+      <div class="card">
+        <h2>Connect to a local database</h2>
+        <p class="hint">Enter the details of a PostgreSQL database on this machine.</p>
+
+        <div class="grid">
+          <div>
+            <label>Host</label>
+            <input id="host" value="localhost" />
+          </div>
+          <div>
+            <label>Port</label>
+            <input id="port" value="5432" />
+          </div>
+        </div>
+        <div class="row">
+          <label>Database</label>
+          <input id="database" value="postgres" />
+        </div>
+        <div class="grid">
+          <div>
+            <label>User</label>
+            <input id="user" value="postgres" />
+          </div>
+          <div>
+            <label>Password</label>
+            <input id="password" type="password" />
+          </div>
+        </div>
+        <div class="row">
+          <label>Test query</label>
+          <textarea id="sql">SELECT version();</textarea>
+        </div>
+
+        <div class="actions">
+          <button class="btn-secondary" id="testBtn">Test connection</button>
+          <button class="btn-primary" id="runBtn">Run query</button>
+        </div>
+
+        <div class="status" id="status"></div>
+      </div>
+
+      <p class="note">
+        This screen proves the desktop app can reach local databases.<br />
+        The full NatureQuery product loads on top of this engine.
+      </p>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id)
+      const status = $('status')
+
+      function creds() {
+        return {
+          host: $('host').value.trim(),
+          port: $('port').value.trim(),
+          database: $('database').value.trim(),
+          user: $('user').value.trim(),
+          password: $('password').value,
+        }
+      }
+
+      function show(kind, text) {
+        status.className = 'status ' + kind
+        status.textContent = text
+      }
+
+      $('testBtn').addEventListener('click', async () => {
+        show('ok', 'Testing...')
+        const res = await window.naturequery.db.test(creds())
+        if (res.ok) show('ok', 'Connected successfully. The desktop app can reach this database.')
+        else show('err', 'Connection failed:\n' + res.error)
+      })
+
+      $('runBtn').addEventListener('click', async () => {
+        show('ok', 'Running...')
+        const res = await window.naturequery.db.query(creds(), $('sql').value)
+        if (res.ok) {
+          show(
+            'ok',
+            res.rowCount +
+              ' row(s) returned:\n\n' +
+              JSON.stringify(res.rows, null, 2)
+          )
+        } else {
+          show('err', 'Query failed:\n' + res.error)
+        }
+      })
+    </script>
+  </body>
+</html>
