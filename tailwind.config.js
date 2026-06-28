@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class',
+  // Treat dim and forest as dark-family themes so every `dark:` utility
+  // (e.g. GlowCard's dark:bg-black/40) applies under .dim and .forest too,
+  // not just .dark. Without this they fall back to light styles (white film).
+  darkMode: ['class', ':is(.dark, .dim, .forest)'],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',

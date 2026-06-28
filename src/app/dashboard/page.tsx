@@ -127,6 +127,8 @@ export default function DashboardPage() {
               dashboard.setShowRightSidebar(true)
             }
           }}
+          onOpenScheduler={() => dashboard.setShowScheduler(true)}
+          scheduledCount={dashboard.scheduledQueries.length}
           onShowShortcuts={() => dashboard.setShowShortcutsHelp(true)}
           showProfileMenu={dashboard.showProfileMenu}
           onToggleProfileMenu={() => dashboard.setShowProfileMenu(!dashboard.showProfileMenu)}

@@ -122,15 +122,16 @@
     --secondary: 160 22% 15%;
     --secondary-foreground: 150 18% 90%;
     --muted: 160 22% 15%;
-    --muted-foreground: 150 12% 60%;
-    --accent: 142 71% 45%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 70% 55%;
+    --muted-foreground: 150 14% 65%;
+    /* Warm gold accent for contrast against the green base (sunlight-through-forest) */
+    --accent: 43 88% 60%;
+    --accent-foreground: 45 40% 10%;
+    --destructive: 0 70% 58%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --success: 152 60% 50%;
     --success-foreground: 0 0% 100%;
-    --warning: 45 90% 55%;
-    --warning-foreground: 45 40% 8%;
+    --warning: 43 88% 60%;
+    --warning-foreground: 45 40% 10%;
     --border: 160 20% 18%;
     --input: 160 20% 18%;
     --ring: 158 64% 48%;
