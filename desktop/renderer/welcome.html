@@ -90,7 +90,8 @@
         margin-bottom: 4px;
       }
       input,
-      textarea {
+      textarea,
+      select {
         width: 100%;
         background: var(--bg);
         border: 1px solid var(--border);
@@ -101,7 +102,8 @@
         font-family: inherit;
       }
       input:focus,
-      textarea:focus {
+      textarea:focus,
+      select:focus {
         outline: none;
         border-color: var(--primary);
       }
@@ -182,8 +184,17 @@
 
       <div class="card">
         <h2>Connect to a local database</h2>
-        <p class="hint">Enter the details of a PostgreSQL database on this machine.</p>
+        <p class="hint">Enter the details of a database on this machine or network.</p>
 
+        <div class="row">
+          <label>Database type</label>
+          <select id="dbType">
+            <option value="postgresql">PostgreSQL</option>
+            <option value="mysql">MySQL</option>
+            <option value="mariadb">MariaDB</option>
+            <option value="sqlserver">SQL Server</option>
+          </select>
+        </div>
         <div class="grid">
           <div>
             <label>Host</label>
@@ -231,8 +242,20 @@
       const $ = (id) => document.getElementById(id)
       const status = $('status')
 
+      // Sensible default port per database type.
+      const DEFAULT_PORTS = {
+        postgresql: '5432',
+        mysql: '3306',
+        mariadb: '3306',
+        sqlserver: '1433',
+      }
+      $('dbType').addEventListener('change', () => {
+        $('port').value = DEFAULT_PORTS[$('dbType').value] || ''
+      })
+
       function creds() {
         return {
+          dbType: $('dbType').value,
           host: $('host').value.trim(),
           port: $('port').value.trim(),
           database: $('database').value.trim(),

@@ -10,9 +10,10 @@ contextBridge.exposeInMainWorld('naturequery', {
   isDesktop: true,
   platform: process.platform,
   db: {
-    // Check a database is reachable. creds = { host, port, database, user, password }
+    // creds = { host, port, database, user, password, dbType }
+    // dbType is one of: postgresql, mysql, mariadb, sqlserver
     test: (creds) => ipcRenderer.invoke('db:test', creds),
-    // Run a query against a local/internal database.
     query: (creds, sql) => ipcRenderer.invoke('db:query', creds, sql),
+    schema: (creds) => ipcRenderer.invoke('db:schema', creds),
   },
 })

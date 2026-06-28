@@ -63,61 +63,59 @@ function createWindow() {
 // ─── Local database bridge ───────────────────────────────────────────────
 //
 // These handlers run in Node, on the user's machine. This is what lets the
-// desktop app connect to local/internal databases. Postgres is wired up
-// first as the proof; the other drivers follow the same shape and will be
-// ported from the web app's src/lib/db-drivers.ts.
+// desktop app connect to local/internal databases. The driver logic lives in
+// engine/db-drivers.cjs and mirrors the web app's drivers. It supports
+// PostgreSQL, MySQL/MariaDB, and SQL Server today; more are added there.
 
-const { Pool } = require('pg')
+const { createDriver } = require('./engine/db-drivers.cjs')
 
-function isLocalHost(host) {
-  return ['localhost', '127.0.0.1', '::1'].includes(host)
+// Turn raw errors into friendly messages. A missing database package means
+// that database type is not bundled in the desktop app yet.
+function friendlyError(err) {
+  const msg = err && err.message ? err.message : String(err)
+  if (err && err.code === 'MODULE_NOT_FOUND') {
+    return 'This database type is not available in the desktop app yet.'
+  }
+  return msg
 }
 
-function makePgPool(creds) {
-  return new Pool({
-    host: creds.host,
-    port: Number(creds.port) || 5432,
-    database: creds.database,
-    user: creds.user,
-    password: creds.password,
-    // Local databases generally don't use SSL; remote ones do.
-    ssl: isLocalHost(creds.host) ? false : { rejectUnauthorized: false },
-    max: 5,
-    connectionTimeoutMillis: 10000,
-  })
-}
-
-// Test that we can actually reach and authenticate against the database.
-ipcMain.handle('db:test', async (_event, creds) => {
-  const pool = makePgPool(creds)
+// Open a driver, run something with it, and always close it.
+async function withDriver(creds, fn) {
+  const driver = createDriver(creds)
   try {
-    const client = await pool.connect()
-    await client.query('SELECT 1')
-    client.release()
+    return await fn(driver)
+  } finally {
+    await driver.close().catch(() => {})
+  }
+}
+
+// Test that we can reach and authenticate against the database.
+ipcMain.handle('db:test', async (_event, creds) => {
+  try {
+    await withDriver(creds, (d) => d.testConnection())
     return { ok: true }
   } catch (err) {
-    return { ok: false, error: err.message }
-  } finally {
-    await pool.end().catch(() => {})
+    return { ok: false, error: friendlyError(err) }
   }
 })
 
-// Run a read-only query and return the rows. (Write-protection and the full
-// safety blocklist from the web app will be ported in the next step.)
+// Run a query and return the rows (capped to a safe maximum in the engine).
 ipcMain.handle('db:query', async (_event, creds, sql) => {
-  const pool = makePgPool(creds)
   try {
-    const result = await pool.query(sql)
-    return {
-      ok: true,
-      rows: result.rows,
-      fields: result.fields.map((f) => f.name),
-      rowCount: result.rowCount,
-    }
+    const result = await withDriver(creds, (d) => d.executeQuery(sql))
+    return { ok: true, ...result }
   } catch (err) {
-    return { ok: false, error: err.message }
-  } finally {
-    await pool.end().catch(() => {})
+    return { ok: false, error: friendlyError(err) }
+  }
+})
+
+// Read the database structure (tables and columns) for the AI prompt.
+ipcMain.handle('db:schema', async (_event, creds) => {
+  try {
+    const schema = await withDriver(creds, (d) => d.fetchSchema())
+    return { ok: true, schema }
+  } catch (err) {
+    return { ok: false, error: friendlyError(err) }
   }
 })
 
