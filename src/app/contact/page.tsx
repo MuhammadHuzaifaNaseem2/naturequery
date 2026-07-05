@@ -29,15 +29,15 @@ const CARDS = [
     icon: Mail,
     title: 'Email Us',
     description: 'For general inquiries and support',
-    action: 'support@naturequery.app',
-    href: 'mailto:support@naturequery.app',
+    action: 'hello@naturequery.app',
+    href: 'mailto:hello@naturequery.app',
   },
   {
     icon: Building2,
     title: 'Enterprise Sales',
     description: 'Custom plans, SLA, and integrations',
-    action: 'sales@naturequery.app',
-    href: 'mailto:sales@naturequery.app',
+    action: 'hello@naturequery.app',
+    href: 'mailto:hello@naturequery.app',
   },
   {
     icon: Clock,
@@ -211,7 +211,7 @@ export default function ContactPage() {
                       required
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      placeholder="John Doe"
+                      placeholder="Your full name"
                       className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
                     />
                   </div>
@@ -222,7 +222,7 @@ export default function ContactPage() {
                       required
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                      placeholder="john@company.com"
+                      placeholder="you@example.com"
                       className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
                     />
                   </div>
@@ -251,7 +251,7 @@ export default function ContactPage() {
                       type="text"
                       value={form.company}
                       onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
-                      placeholder="Acme Inc."
+                      placeholder="Your company"
                       className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
                     />
                   </div>

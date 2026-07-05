@@ -196,10 +196,10 @@ export default function TermsPage() {
                     Our team is happy to clarify anything in this document.
                   </p>
                   <a
-                    href="mailto:support@naturequery.com"
+                    href="mailto:hello@naturequery.app"
                     className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                   >
-                    support@naturequery.com
+                    hello@naturequery.app
                   </a>
                 </div>
               </div>

@@ -59,7 +59,7 @@
       "title": "Create Account",
       "subtitle": "Start your journey with NatureQuery",
       "fullName": "Full Name",
-      "namePlaceholder": "John Doe",
+      "namePlaceholder": "Your full name",
       "email": "Email",
       "emailPlaceholder": "you@example.com",
       "password": "Password",

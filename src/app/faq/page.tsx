@@ -315,10 +315,7 @@ export default function FAQPage() {
               <Link href="/contact" className="btn-primary text-sm py-2.5 px-6">
                 Contact Us <ArrowRight className="w-4 h-4" />
               </Link>
-              <a
-                href="mailto:support@naturequery.app"
-                className="btn-secondary text-sm py-2.5 px-6"
-              >
+              <a href="mailto:hello@naturequery.app" className="btn-secondary text-sm py-2.5 px-6">
                 Email Support
               </a>
             </div>

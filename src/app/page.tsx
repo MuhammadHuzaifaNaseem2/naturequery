@@ -497,7 +497,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a
-                    href="mailto:support@naturequery.com"
+                    href="mailto:hello@naturequery.app"
                     className="hover:text-foreground transition-colors"
                   >
                     Support

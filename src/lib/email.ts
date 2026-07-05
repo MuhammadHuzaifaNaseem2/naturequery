@@ -10,7 +10,7 @@
 import { rateLimitAsync } from '@/lib/rate-limit'
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-const from = process.env.EMAIL_FROM || 'NatureQuery <noreply@naturequery.com>'
+const from = process.env.EMAIL_FROM || 'NatureQuery <hello@naturequery.app>'
 
 export function isEmailConfigured(): boolean {
   return !!(process.env.RESEND_API_KEY || (process.env.SMTP_USER && process.env.SMTP_PASSWORD))

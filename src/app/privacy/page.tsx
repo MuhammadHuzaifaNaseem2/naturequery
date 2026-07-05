@@ -291,10 +291,10 @@ export default function PrivacyPage() {
                     To exercise your data rights or ask about this policy, reach out directly.
                   </p>
                   <a
-                    href="mailto:support@naturequery.app"
+                    href="mailto:hello@naturequery.app"
                     className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                   >
-                    support@naturequery.app
+                    hello@naturequery.app
                   </a>
                 </div>
               </div>
