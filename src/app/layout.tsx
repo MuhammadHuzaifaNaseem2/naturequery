@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { getLocale, getTranslations } from '@/lib/i18n'
 import { Toaster } from 'sonner'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -186,6 +187,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </ThemeProvider>
           </AuthProvider>
         </LocaleProvider>
+        <Analytics />
       </body>
     </html>
   )
