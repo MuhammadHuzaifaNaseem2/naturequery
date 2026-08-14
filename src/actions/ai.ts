@@ -273,7 +273,7 @@ DATABASE SCHEMA:
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages,
         max_tokens: 2048,
         temperature: 0.1,
@@ -332,7 +332,7 @@ DATABASE SCHEMA:
 
 /**
  * Generate a SQL SELECT query from a natural language question (authenticated server action).
- * Uses Groq with Llama 3.3 70B for fast inference.
+ * Uses Groq with GPT-OSS 20B for fast inference.
  * Falls back to mock mode if no API key is configured.
  *
  * Note: quota is checked/recorded at execution time in executeSQLByConnection,
@@ -402,7 +402,7 @@ Look at the schema again and try to answer the user's question. If the exact dat
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 2048,
         temperature: 0.1,
@@ -489,7 +489,7 @@ export async function explainSQL(sql: string): Promise<ExplainSQLResult> {
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: EXPLAIN_SYSTEM_PROMPT },
           { role: 'user', content: `Explain this SQL query:\n\n${sql}` },
@@ -601,7 +601,7 @@ export async function refineQueryWithFilter(
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: REFINE_SYSTEM_PROMPT },
           {
@@ -689,7 +689,7 @@ export async function explainSQLClause(
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: CLAUSE_EXPLAIN_PROMPT },
           {
@@ -787,7 +787,7 @@ export async function analyzeQueryPerformance(
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: PERFORMANCE_SYSTEM_PROMPT },
           { role: 'user', content: contextLines.join('\n') },
@@ -895,7 +895,7 @@ export async function discoverSchema(schema: DatabaseSchema): Promise<SchemaDisc
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: DISCOVERY_SYSTEM_PROMPT },
           { role: 'user', content: `DATABASE SCHEMA:\n${schemaDescription}` },
@@ -1007,7 +1007,7 @@ export async function recommendChart(
 
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: CHART_RECOMMEND_SYSTEM_PROMPT },
           {

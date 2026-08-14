@@ -44,8 +44,8 @@ export interface ChatCompletionChunk {
 
 // Groq model names → Cerebras model names. Cerebras uses slightly different ids.
 const MODEL_MAP: Record<string, string> = {
-  'llama-3.1-8b-instant': 'llama3.1-8b',
-  'llama-3.3-70b-versatile': 'llama-3.3-70b',
+  'openai/gpt-oss-20b': 'gpt-oss-120b',
+  'openai/gpt-oss-120b': 'gpt-oss-120b',
 }
 
 function cerebrasModel(groqModel: string): string {

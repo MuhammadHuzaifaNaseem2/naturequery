@@ -399,7 +399,7 @@ async function generateAIInsights(
   try {
     const completion = await withKeyRotation((groq) =>
       groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: INSIGHTS_SYSTEM_PROMPT },
           { role: 'user', content: `Analyze this data:\n${JSON.stringify(dataSummary, null, 2)}` },

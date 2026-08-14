@@ -213,7 +213,7 @@ async function streamAIResponse(
   emitThoughts: boolean
 ): Promise<{ chainOfThought: string; sqlContent: string }> {
   const aiStream = await aiChatCompletionStream({
-    model: 'llama-3.1-8b-instant',
+    model: 'openai/gpt-oss-20b',
     messages,
     max_tokens: 2048,
     temperature: 0.1,
@@ -538,7 +538,7 @@ Output only the corrected SQL in <sql></sql> tags.`
         ]
         try {
           const selfFix = await aiChatCompletion({
-            model: 'llama-3.3-70b-versatile',
+            model: 'openai/gpt-oss-120b',
             messages: selfSubMessages,
             max_tokens: 1024,
             temperature: 0.05,
@@ -583,7 +583,7 @@ Output only the corrected SQL in <sql></sql> tags.`
 
           try {
             const fix = await aiChatCompletion({
-              model: 'llama-3.3-70b-versatile',
+              model: 'openai/gpt-oss-120b',
               messages: fixMessages,
               max_tokens: 1024,
               temperature: 0.05,
@@ -696,7 +696,7 @@ Output only the corrected SQL in <sql></sql> tags.`
 
         try {
           const fix = await aiChatCompletion({
-            model: 'llama-3.3-70b-versatile',
+            model: 'openai/gpt-oss-120b',
             messages: fixMessages,
             max_tokens: 1024,
             temperature: 0.05,
@@ -755,7 +755,7 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
 
         try {
           const zeroFix = await aiChatCompletion({
-            model: 'llama-3.3-70b-versatile',
+            model: 'openai/gpt-oss-120b',
             messages: zeroRowMessages,
             max_tokens: 1024,
             temperature: 0.05,
