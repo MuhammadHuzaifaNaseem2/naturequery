@@ -443,11 +443,13 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
     setSource({ name: imported.name, rows: imported.rows, fields: imported.fields })
     setSourceKey('order_id')
     setSourceAmount('net_amount')
-    setComparison({
-      name: 'Upload payment settlement',
-      rows: [],
-      fields: ['reference', 'net_amount'],
-    })
+    setComparison(
+      imported.comparison || {
+        name: 'Upload payment settlement',
+        rows: [],
+        fields: ['reference', 'net_amount'],
+      }
+    )
     setComparisonKey('reference')
     setComparisonAmount('net_amount')
     setMetric('WooCommerce orders vs payment settlement')
