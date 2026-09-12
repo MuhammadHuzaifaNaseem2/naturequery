@@ -18,6 +18,7 @@ import {
   Bell,
   HelpCircle,
   Clock,
+  Scale,
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/NotificationCenter'
 import { signOut, useSession } from 'next-auth/react'
@@ -186,6 +187,14 @@ export function WorkspaceHeader({
           >
             <Sparkles className="w-4 h-4" />
             <span className="hidden lg:inline">{t('dashboard.header.insights')}</span>
+          </button>
+          <button
+            onClick={() => router.push('/dashboard/investigate')}
+            className="hidden sm:flex btn-ghost text-sm items-center gap-1.5"
+            title="Investigate report differences"
+          >
+            <Scale className="w-4 h-4" />
+            <span className="hidden lg:inline">Investigate</span>
           </button>
           <button
             onClick={() => setShowShareModal(true)}

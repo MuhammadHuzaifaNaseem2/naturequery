@@ -1,6 +1,7 @@
 'use client'
 
 import { type Ref, type RefObject, useState, useEffect, lazy, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Play,
   Brain,
@@ -30,6 +31,8 @@ import {
   RotateCcw,
   Gauge,
   Code2,
+  CopyPlus,
+  Scale,
 } from 'lucide-react'
 import { StreamingQueryPanel } from '@/components/StreamingQueryPanel'
 import { NLFilterBar, type ActiveFilter } from '@/components/NLFilterBar'
@@ -52,6 +55,13 @@ import type { QueryHistoryItem, SavedQueryItem } from '@/actions/queries'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { SmartQueryInput } from './SmartQueryInput'
 import { useTheme } from '@/components/ThemeProvider'
+import {
+  createInvestigationReport,
+  INVESTIGATION_BASELINE_KEY,
+  INVESTIGATION_TRANSFER_KEY,
+  isInvestigationReport,
+  type InvestigationReport,
+} from '@/lib/investigation-transfer'
 
 type ResultsView = 'table' | 'chart' | 'insights' | 'performance'
 
@@ -153,6 +163,7 @@ export function QueryPanel({
 }: QueryPanelProps) {
   const { t } = useTranslation()
   const { resolvedTheme } = useTheme()
+  const router = useRouter()
   const [resultsView, setResultsView] = useState<ResultsView>('table')
   const [explanation, setExplanation] = useState<string | null>(null)
   const [isExplaining, setIsExplaining] = useState(false)
@@ -161,6 +172,66 @@ export function QueryPanel({
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [templateState, setTemplateState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null)
+  const [investigationBaseline, setInvestigationBaseline] = useState<InvestigationReport | null>(
+    null
+  )
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(INVESTIGATION_BASELINE_KEY)
+      if (!saved) return
+      const parsed: unknown = JSON.parse(saved)
+      if (isInvestigationReport(parsed)) setInvestigationBaseline(parsed)
+    } catch {
+      sessionStorage.removeItem(INVESTIGATION_BASELINE_KEY)
+    }
+  }, [])
+
+  const currentInvestigationReport = () => {
+    if (!queryResults || !activeConnection) return null
+    const question = nlQuery.trim()
+    return createInvestigationReport({
+      name: question || `Query result from ${activeConnection.name}`,
+      question,
+      sql: generatedSQL,
+      connectionId: activeConnection.id,
+      connectionName: activeConnection.name,
+      rows: queryResults.rows,
+      fields: queryResults.fields,
+    })
+  }
+
+  const setCurrentAsReportA = () => {
+    const report = currentInvestigationReport()
+    if (!report) return
+    try {
+      sessionStorage.setItem(INVESTIGATION_BASELINE_KEY, JSON.stringify(report))
+      setInvestigationBaseline(report)
+      toast.success('Report A is ready', {
+        description: 'Run the second query, then click Compare with A.',
+      })
+    } catch {
+      toast.error('This result is too large to keep for comparison', {
+        description: 'Run a smaller query by adding a date range or LIMIT.',
+      })
+    }
+  }
+
+  const compareCurrentWithReportA = () => {
+    const comparison = currentInvestigationReport()
+    if (!investigationBaseline || !comparison) return
+    try {
+      sessionStorage.setItem(
+        INVESTIGATION_TRANSFER_KEY,
+        JSON.stringify({ source: investigationBaseline, comparison })
+      )
+      router.push('/dashboard/investigate')
+    } catch {
+      toast.error('These results are too large to compare in this browser', {
+        description: 'Run smaller queries by adding a date range or LIMIT.',
+      })
+    }
+  }
 
   // Parse AI rate limit retry delay from error message and start countdown
   useEffect(() => {
@@ -899,6 +970,34 @@ export function QueryPanel({
 
                 {/* Actions */}
                 <div className="w-px h-5 bg-border mx-1" />
+                {queryResults.rows.length > 0 && (
+                  <>
+                    <button
+                      onClick={setCurrentAsReportA}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-secondary transition-colors whitespace-nowrap"
+                      title={
+                        investigationBaseline
+                          ? 'Replace the saved Report A'
+                          : 'Use this result as Report A'
+                      }
+                    >
+                      <CopyPlus className="w-4 h-4" />
+                      <span className="hidden xl:inline">
+                        {investigationBaseline ? 'Replace A' : 'Set as Report A'}
+                      </span>
+                    </button>
+                    {investigationBaseline && (
+                      <button
+                        onClick={compareCurrentWithReportA}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors text-xs font-semibold whitespace-nowrap"
+                        title={`Compare this result with ${investigationBaseline.name}`}
+                      >
+                        <Scale className="w-4 h-4" />
+                        <span className="hidden lg:inline">Compare with A</span>
+                      </button>
+                    )}
+                  </>
+                )}
                 {onPinToDashboard && queryResults.rows.length > 0 && (
                   <button
                     onClick={() =>

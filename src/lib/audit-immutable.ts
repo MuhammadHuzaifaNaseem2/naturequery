@@ -85,15 +85,15 @@ const GENESIS_HASH = '0'.repeat(64)
  * (e.g. Inngest step function, or a Postgres advisory lock wrapper).
  * At typical B2B SaaS volumes this is fine.
  */
-export async function writeImmutableAuditLog(
-  entry: AuditLogEntry
-): Promise<AuditLogWriteResult> {
+export async function writeImmutableAuditLog(entry: AuditLogEntry): Promise<AuditLogWriteResult> {
   const timestamp = new Date()
 
   // Get chain tip for this user (null userId entries share a global chain)
   const chainKey = entry.userId ?? '__system__'
   const previous = await prisma.auditLog.findFirst({
-    where: entry.userId ? { userId: entry.userId } : { userId: null },
+    where: entry.userId
+      ? { userId: entry.userId, hash: { not: null } }
+      : { userId: null, hash: { not: null } },
     orderBy: { createdAt: 'desc' },
     select: { hash: true },
   })

@@ -12,6 +12,7 @@ import {
 import { auditQueryExecuted } from '@/lib/audit-immutable'
 import { checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
 import { createNotification } from '@/actions/notifications'
+import { runDueReconciliationMonitors } from '@/lib/reconciliation-monitor-runner'
 
 /**
  * GET /api/cron/run-schedules
@@ -50,8 +51,19 @@ export async function GET(request: Request) {
     take: 100, // safety cap — prevents runaway in catch-up scenarios
   })
 
+  const monitorResults = await runDueReconciliationMonitors(now)
+
   if (due.length === 0) {
-    return NextResponse.json({ ran: 0, message: 'No schedules due' })
+    return NextResponse.json({
+      ran: 0,
+      message: 'No scheduled queries due',
+      monitors: {
+        ran: monitorResults.length,
+        alerts: monitorResults.filter((result) => result.status === 'alert').length,
+        failed: monitorResults.filter((result) => result.status === 'failed').length,
+        results: monitorResults,
+      },
+    })
   }
 
   const results: Array<{ id: string; name: string; status: string; error?: string }> = []
@@ -195,7 +207,18 @@ export async function GET(request: Request) {
   const succeeded = results.filter((r) => r.status === 'success').length
   const failed = results.filter((r) => r.status === 'failed').length
 
-  return NextResponse.json({ ran: results.length, succeeded, failed, results })
+  return NextResponse.json({
+    ran: results.length,
+    succeeded,
+    failed,
+    results,
+    monitors: {
+      ran: monitorResults.length,
+      alerts: monitorResults.filter((result) => result.status === 'alert').length,
+      failed: monitorResults.filter((result) => result.status === 'failed').length,
+      results: monitorResults,
+    },
+  })
 }
 
 function getNextRunAt(frequency: string, from: Date): Date {

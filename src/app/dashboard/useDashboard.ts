@@ -35,6 +35,7 @@ import { useTheme } from '@/components/ThemeProvider'
 import { friendlySqlError } from '@/lib/friendly-sql-error'
 import { SavedConnection, QueryResults } from './types'
 import { DEMO_SCHEMA, DEMO_DATA } from './demo-data'
+import { applyDemoQueryFilters } from '@/lib/demo-query'
 import { useDashboardUI } from '@/hooks/dashboard/useDashboardUI'
 import { useDashboardHistory } from '@/hooks/dashboard/useDashboardHistory'
 import { useDashboardWidgets } from '@/hooks/dashboard/useDashboardWidgets'
@@ -877,11 +878,7 @@ export function useDashboard() {
           fields = ['id', 'name', 'price', 'category', 'stock']
         }
 
-        const limitMatch = sqlLower.match(/limit\s+(\d+)/)
-        if (limitMatch) {
-          const limit = parseInt(limitMatch[1])
-          demoRows = demoRows.slice(0, limit)
-        }
+        demoRows = applyDemoQueryFilters(demoRows, sqlToRun)
 
         const results = {
           rows: demoRows,

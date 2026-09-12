@@ -7,22 +7,22 @@
  *   5. Close
  *
  * Usage:
- *   npx tsx scripts/test-db-driver.ts <type> <host> <port> <db> <user> <pass> [--ssl]
+ *   npx tsx scripts/test-db-driver.ts <type> <host> <port> <db> <user> <pass>
  *
  * Example:
  *   npx tsx scripts/test-db-driver.ts mariadb localhost 3307 testdb testuser testpass
  *   npx tsx scripts/test-db-driver.ts mongodb localhost 27017 testdb testuser testpass
  */
-import { createDriver, type DatabaseType, type DBCredentials } from '../src/lib/db-drivers'
+import { createDriver, type DatabaseType } from '../src/lib/db-drivers'
+import type { DBCredentials } from '../src/actions/db'
 
 function parseArgs() {
   const argv = process.argv.slice(2)
   if (argv.length < 6) {
-    console.error('Usage: test-db-driver <type> <host> <port> <db> <user> <pass> [--ssl]')
+    console.error('Usage: test-db-driver <type> <host> <port> <db> <user> <pass>')
     process.exit(1)
   }
   const [type, host, portStr, database, user, password] = argv
-  const ssl = argv.includes('--ssl')
   return {
     type: type as DatabaseType,
     host,
@@ -30,7 +30,6 @@ function parseArgs() {
     database,
     user,
     password,
-    ssl,
   } satisfies DBCredentials & { type: DatabaseType }
 }
 
@@ -52,7 +51,7 @@ async function main() {
   const { type, ...creds } = parseArgs()
   console.log(`\n=== Testing ${type} driver ===`)
   console.log(
-    `  ${creds.user}@${creds.host}:${creds.port}/${creds.database}${creds.ssl ? ' (ssl)' : ''}`
+    `  ${creds.user}@${creds.host}:${creds.port}/${creds.database}`
   )
 
   const driver = createDriver(creds as DBCredentials, type)
@@ -63,7 +62,7 @@ async function main() {
     // 1. Schema
     try {
       const schema = await time('fetchSchema', () => driver.fetchSchema())
-      const tableCount = schema.tables?.length ?? 0
+      const tableCount = schema.length
       console.log(`    → ${tableCount} table(s) found`)
       passed++
     } catch {
