@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ExternalLink, Link2, Plus, RefreshCcw, ShoppingBag, Sparkles } from 'lucide-react'
+import { ExternalLink, Link2, Plus, RefreshCcw, ShoppingBag } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getCommerceConnections,
@@ -10,7 +10,6 @@ import {
   type CommerceConnectionInfo,
 } from '@/actions/woocommerce'
 import type { ReconciliationRow } from '@/lib/reconciliation'
-import { getWooCommerceDemoReconciliation } from '@/lib/woocommerce-demo'
 
 export interface WooCommerceImportResult {
   name: string
@@ -19,11 +18,6 @@ export interface WooCommerceImportResult {
   currency: string
   period: string
   connectionName: string
-  comparison?: {
-    name: string
-    rows: ReconciliationRow[]
-    fields: string[]
-  }
 }
 
 function defaultDateRange() {
@@ -127,23 +121,6 @@ export function WooCommerceImportPanel({
     })
   }
 
-  const loadDemo = () => {
-    const demo = getWooCommerceDemoReconciliation()
-    onImport({
-      name: demo.source.name,
-      rows: demo.source.rows,
-      fields: demo.source.fields,
-      currency: demo.currency,
-      period: demo.period,
-      connectionName: 'WooCommerce demo',
-      comparison: demo.comparison,
-    })
-    setShowConnect(false)
-    toast.success('Demo reconciliation loaded', {
-      description: 'Review the fee, missing payout, and unknown settlement differences below.',
-    })
-  }
-
   return (
     <section className="card overflow-hidden">
       <div className="flex flex-col lg:flex-row lg:items-center gap-4 p-5">
@@ -160,9 +137,6 @@ export function WooCommerceImportPanel({
           </div>
         </div>
         <div className="flex flex-wrap items-end gap-2">
-          <button onClick={loadDemo} className="btn-secondary text-sm">
-            <Sparkles className="w-4 h-4" /> Load demo
-          </button>
           <label className="space-y-1 text-xs font-semibold text-muted-foreground min-w-52">
             Store
             <select

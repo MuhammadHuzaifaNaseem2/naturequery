@@ -59,29 +59,16 @@ interface ReportData {
   connectionName?: string
 }
 
-const SAMPLE_SOURCE: ReportData = {
-  name: 'Application revenue report',
-  fields: ['order_id', 'amount'],
-  rows: [
-    { order_id: 'ORD-1001', amount: 1200 },
-    { order_id: 'ORD-1002', amount: 800 },
-    { order_id: 'ORD-1002', amount: 800 },
-    { order_id: 'ORD-1003', amount: 500 },
-    { order_id: 'ORD-1004', amount: 900 },
-    { order_id: 'ORD-1005', amount: 400 },
-  ],
+const EMPTY_SOURCE: ReportData = {
+  name: 'Import WooCommerce orders or upload Report A',
+  fields: ['record_id', 'amount'],
+  rows: [],
 }
 
-const SAMPLE_COMPARISON: ReportData = {
-  name: 'Payment provider export',
-  fields: ['reference', 'net_amount'],
-  rows: [
-    { reference: 'ORD-1001', net_amount: 1200 },
-    { reference: 'ORD-1002', net_amount: 800 },
-    { reference: 'ORD-1003', net_amount: 450 },
-    { reference: 'ORD-1004', net_amount: 900 },
-    { reference: 'ORD-1006', net_amount: 300 },
-  ],
+const EMPTY_COMPARISON: ReportData = {
+  name: 'Upload payment settlement or Report B',
+  fields: ['record_id', 'amount'],
+  rows: [],
 }
 
 const CAUSES = [
@@ -117,17 +104,17 @@ function csvCell(value: unknown) {
 }
 
 export function ReconciliationWorkspace({ investigationId }: { investigationId?: string }) {
-  const [source, setSource] = useState<ReportData>(SAMPLE_SOURCE)
-  const [comparison, setComparison] = useState<ReportData>(SAMPLE_COMPARISON)
-  const [sourceKey, setSourceKey] = useState('order_id')
+  const [source, setSource] = useState<ReportData>(EMPTY_SOURCE)
+  const [comparison, setComparison] = useState<ReportData>(EMPTY_COMPARISON)
+  const [sourceKey, setSourceKey] = useState('record_id')
   const [sourceAmount, setSourceAmount] = useState('amount')
-  const [comparisonKey, setComparisonKey] = useState('reference')
-  const [comparisonAmount, setComparisonAmount] = useState('net_amount')
-  const [metric, setMetric] = useState('Collected revenue')
-  const [period, setPeriod] = useState('September 2026')
+  const [comparisonKey, setComparisonKey] = useState('record_id')
+  const [comparisonAmount, setComparisonAmount] = useState('amount')
+  const [metric, setMetric] = useState('Revenue reconciliation')
+  const [period, setPeriod] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [causes, setCauses] = useState<Record<string, string>>({})
-  const [investigationName, setInvestigationName] = useState('Revenue report investigation')
+  const [investigationName, setInvestigationName] = useState('New reconciliation')
   const [caseStatus, setCaseStatus] = useState<InvestigationCaseStatus>('OPEN')
   const [savedId, setSavedId] = useState<string | undefined>(investigationId)
   const [isSaving, setIsSaving] = useState(false)
@@ -422,15 +409,18 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
     })
   }
 
-  const resetSample = () => {
+  const clearWorkspace = () => {
     sessionStorage.removeItem(INVESTIGATION_TRANSFER_KEY)
-    setSource(SAMPLE_SOURCE)
-    setComparison(SAMPLE_COMPARISON)
-    setSourceKey('order_id')
+    setSource(EMPTY_SOURCE)
+    setComparison(EMPTY_COMPARISON)
+    setSourceKey('record_id')
     setSourceAmount('amount')
-    setComparisonKey('reference')
-    setComparisonAmount('net_amount')
-    setInvestigationName('Sample revenue investigation')
+    setComparisonKey('record_id')
+    setComparisonAmount('amount')
+    setMetric('Revenue reconciliation')
+    setPeriod('')
+    setCurrency('USD')
+    setInvestigationName('New reconciliation')
     setCaseStatus('OPEN')
     setSavedId(undefined)
     setLastSavedAt(null)
@@ -443,13 +433,11 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
     setSource({ name: imported.name, rows: imported.rows, fields: imported.fields })
     setSourceKey('order_id')
     setSourceAmount('net_amount')
-    setComparison(
-      imported.comparison || {
-        name: 'Upload payment settlement',
-        rows: [],
-        fields: ['reference', 'net_amount'],
-      }
-    )
+    setComparison({
+      name: 'Upload payment settlement',
+      rows: [],
+      fields: ['reference', 'net_amount'],
+    })
     setComparisonKey('reference')
     setComparisonAmount('net_amount')
     setMetric('WooCommerce orders vs payment settlement')
@@ -582,9 +570,9 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
             <div className="max-w-3xl">
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  <Scale className="w-3.5 h-3.5" /> Investigation prototype
+                  <Scale className="w-3.5 h-3.5" /> Reconciliation workspace
                 </span>
-                <span className="text-xs text-muted-foreground">Runs locally in your browser</span>
+                <span className="text-xs text-muted-foreground">Deterministic record matching</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Explain why two reports disagree
@@ -608,8 +596,8 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
               >
                 <Clock3 className="w-4 h-4" /> Monitor
               </button>
-              <button onClick={resetSample} className="btn-secondary text-sm">
-                <RefreshCcw className="w-4 h-4" /> Reset sample
+              <button onClick={clearWorkspace} className="btn-secondary text-sm">
+                <RefreshCcw className="w-4 h-4" /> Clear workspace
               </button>
               <button
                 onClick={exportInvestigation}
@@ -986,7 +974,7 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
       </section>
 
       <p className="text-xs text-muted-foreground text-center pb-4">
-        Prototype rule: totals and differences are deterministic. A human must confirm every
+        Reconciliation rule: totals and differences are deterministic. A human must confirm every
         business cause. Uploaded CSV and Excel files are processed in this browser session and are
         not sent to an AI service.
       </p>
