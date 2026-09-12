@@ -50,9 +50,7 @@ function time<T>(label: string, fn: () => Promise<T>): Promise<T> {
 async function main() {
   const { type, ...creds } = parseArgs()
   console.log(`\n=== Testing ${type} driver ===`)
-  console.log(
-    `  ${creds.user}@${creds.host}:${creds.port}/${creds.database}`
-  )
+  console.log(`  ${creds.user}@${creds.host}:${creds.port}/${creds.database}`)
 
   const driver = createDriver(creds as DBCredentials, type)
   let passed = 0
