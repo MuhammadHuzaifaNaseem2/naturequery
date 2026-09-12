@@ -44,6 +44,10 @@ import {
   type SavedReconciliationProfile,
 } from '@/lib/reconciliation-profile'
 import { parseXlsxBuffer } from '@/lib/spreadsheet-import'
+import {
+  WooCommerceImportPanel,
+  type WooCommerceImportResult,
+} from '@/components/WooCommerceImportPanel'
 
 interface ReportData {
   name: string
@@ -435,6 +439,27 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
     setCauses({})
   }
 
+  const loadWooCommerceOrders = (imported: WooCommerceImportResult) => {
+    setSource({ name: imported.name, rows: imported.rows, fields: imported.fields })
+    setSourceKey('order_id')
+    setSourceAmount('net_amount')
+    setComparison({
+      name: 'Upload payment settlement',
+      rows: [],
+      fields: ['reference', 'net_amount'],
+    })
+    setComparisonKey('reference')
+    setComparisonAmount('net_amount')
+    setMetric('WooCommerce orders vs payment settlement')
+    setPeriod(imported.period)
+    if (imported.currency) setCurrency(imported.currency)
+    setInvestigationName(`${imported.connectionName} payment reconciliation`.slice(0, 120))
+    setCaseStatus('OPEN')
+    setSavedId(undefined)
+    setLastSavedAt(null)
+    setCauses({})
+  }
+
   const saveCurrentInvestigation = async () => {
     if (!investigationName.trim()) {
       toast.error('Give this investigation a name')
@@ -766,6 +791,8 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
           </div>
         </div>
       </section>
+
+      <WooCommerceImportPanel onImport={loadWooCommerceOrders} />
 
       <div className="grid lg:grid-cols-2 gap-4">
         <ReportCard

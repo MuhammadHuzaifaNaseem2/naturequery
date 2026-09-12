@@ -19,7 +19,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   name          String?
-  password      String?   // hashed with bcrypt, null for OAuth users
+  password      String? // hashed with bcrypt, null for OAuth users
   image         String?
   role          UserRole  @default(ANALYST)
   createdAt     DateTime  @default(now())
@@ -27,7 +27,7 @@ model User {
 
   // 2FA
   twoFactorEnabled Boolean  @default(false)
-  twoFactorSecret  String?  // encrypted TOTP secret
+  twoFactorSecret  String? // encrypted TOTP secret
   backupCodes      String[] @default([]) // hashed backup codes
 
   // Brute-force lockout
@@ -38,20 +38,21 @@ model User {
   passwordChangedAt DateTime?
 
   // Relations
-  accounts      Account[]
-  sessions      Session[]
-  teamMembers   TeamMember[]
-  connections   DatabaseConnection[]
-  queries       SavedQuery[]
-  queryHistory  QueryHistory[]
-  apiKeys       ApiKey[]
-  auditLogs     AuditLog[]
-  subscription  Subscription?
-  usageRecords      UsageRecord[]
-  dashboardWidgets  DashboardWidget[]
-  scheduledQueries  ScheduledQuery[]
-  queryFeedback     QueryFeedback[]
-  notifications     Notification[]
+  accounts            Account[]
+  sessions            Session[]
+  teamMembers         TeamMember[]
+  connections         DatabaseConnection[]
+  commerceConnections CommerceConnection[]
+  queries             SavedQuery[]
+  queryHistory        QueryHistory[]
+  apiKeys             ApiKey[]
+  auditLogs           AuditLog[]
+  subscription        Subscription?
+  usageRecords        UsageRecord[]
+  dashboardWidgets    DashboardWidget[]
+  scheduledQueries    ScheduledQuery[]
+  queryFeedback       QueryFeedback[]
+  notifications       Notification[]
   onboardingChecklist OnboardingChecklist?
 
   // Onboarding
@@ -147,7 +148,7 @@ model Team {
 }
 
 model TeamMember {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
   teamId    String
   role      TeamRole         @default(MEMBER)
@@ -181,20 +182,20 @@ enum TeamMemberStatus {
 // ============================================
 
 model DatabaseConnection {
-  id          String   @id @default(cuid())
-  name        String
-  host        String
-  port        Int
-  database    String
-  user        String
-  password    String   // encrypted with AES-256
-  ssl         Boolean  @default(false)
-  dbType      String   @default("postgresql") // postgresql, mysql, sqlite, etc.
-  userId      String?
-  teamId      String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  host      String
+  port      Int
+  database  String
+  user      String
+  password  String // encrypted with AES-256
+  ssl       Boolean  @default(false)
+  dbType    String   @default("postgresql") // postgresql, mysql, sqlite, etc.
+  userId    String?
+  teamId    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   owner User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   team  Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -203,30 +204,47 @@ model DatabaseConnection {
   @@index([teamId])
 }
 
+model CommerceConnection {
+  id          String   @id @default(cuid())
+  name        String
+  provider    String   @default("woocommerce")
+  storeUrl    String
+  credentials String   @db.Text
+  userId      String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider, storeUrl])
+  @@index([userId])
+}
+
 // ============================================
 // Query Models
 // ============================================
 
 model SavedQuery {
-  id             String   @id @default(cuid())
-  name           String
-  description    String?
-  question       String   @db.Text
-  sql            String   @db.Text
-  userId         String
-  teamId         String?
-  connectionId   String?
-  connectionName String?
-  isPublic       Boolean  @default(false)
-  isFavorite     Boolean  @default(false)
-  isTemplate     Boolean  @default(false)
+  id               String   @id @default(cuid())
+  name             String
+  description      String?
+  question         String   @db.Text
+  sql              String   @db.Text
+  userId           String
+  teamId           String?
+  connectionId     String?
+  connectionName   String?
+  isPublic         Boolean  @default(false)
+  isFavorite       Boolean  @default(false)
+  isTemplate       Boolean  @default(false)
   templateCategory String?
-  tags           String[] @default([])
-  shareToken     String?  @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  tags             String[] @default([])
+  shareToken       String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   team Team? @relation(fields: [teamId], references: [id])
 
   @@index([userId])
@@ -262,14 +280,14 @@ model QueryHistory {
 // ============================================
 
 model ApiKey {
-  id          String    @id @default(cuid())
-  name        String
-  key         String    @unique // hashed
-  prefix      String    // first 8 chars for display (e.g., "rp_12345678...")
-  userId      String
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(cuid())
+  name       String
+  key        String    @unique // hashed
+  prefix     String // first 8 chars for display (e.g., "rp_12345678...")
+  userId     String
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -323,7 +341,7 @@ model Subscription {
 model UsageRecord {
   id        String   @id @default(cuid())
   userId    String
-  action    String   // "QUERY"
+  action    String // "QUERY"
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -377,7 +395,7 @@ model ScheduledQuery {
   notifyEmails   String[]          @default([]) // email addresses to notify on completion/failure
   lastRunAt      DateTime?
   nextRunAt      DateTime?
-  lastStatus     String?           // "success" | "failed"
+  lastStatus     String? // "success" | "failed"
   lastError      String?           @db.Text
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
@@ -389,22 +407,22 @@ model ScheduledQuery {
 }
 
 model AuditLog {
-  id           String   @id @default(cuid())
-  userId       String?
-  action       String   // LOGIN, LOGOUT, CREATE_CONNECTION, DELETE_QUERY, etc.
-  resource     String?  // resource type (connection, query, team)
-  resourceId   String?  // ID of the resource
-  metadata     Json?    // additional context
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String // LOGIN, LOGOUT, CREATE_CONNECTION, DELETE_QUERY, etc.
+  resource   String? // resource type (connection, query, team)
+  resourceId String? // ID of the resource
+  metadata   Json? // additional context
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
 
   // Immutable hash chain — SHA-256(previousHash + entryData)
   // entryData: canonical JSON snapshot of the log fields used for hashing
   // Once set, these fields must NEVER be updated (enforced at app + DB level)
-  hash         String?  // SHA-256 hash of this entry
-  previousHash String?  // hash of the immediately preceding entry for this user
-  entryData    String?  @db.Text // serialized JSON used for hashing
+  hash         String? // SHA-256 hash of this entry
+  previousHash String? // hash of the immediately preceding entry for this user
+  entryData    String? @db.Text // serialized JSON used for hashing
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -421,11 +439,11 @@ model AuditLog {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // query_complete, threshold_alert, team_invite, billing, system
+  type      String // query_complete, threshold_alert, team_invite, billing, system
   title     String
   message   String
   read      Boolean  @default(false)
-  metadata  Json?    // extra data (link, query ID, etc.)
+  metadata  Json? // extra data (link, query ID, etc.)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -456,15 +474,15 @@ model OnboardingChecklist {
 }
 
 model QueryFeedback {
-  id           String   @id @default(cuid())
-  userId       String
-  question     String   @db.Text
-  generatedSql String   @db.Text
-  correctedSql String?  @db.Text  // null = thumbs up (no correction needed)
-  rating       Int      // 1 = thumbs up, -1 = thumbs down
-  chainOfThought String? @db.Text // stored CoT for ML analysis
-  connectionId String?
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  question       String   @db.Text
+  generatedSql   String   @db.Text
+  correctedSql   String?  @db.Text // null = thumbs up (no correction needed)
+  rating         Int // 1 = thumbs up, -1 = thumbs down
+  chainOfThought String?  @db.Text // stored CoT for ML analysis
+  connectionId   String?
+  createdAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
