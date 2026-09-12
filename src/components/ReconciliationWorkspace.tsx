@@ -17,6 +17,10 @@ import {
 import { toast } from 'sonner'
 import { getInvestigation, saveInvestigation } from '@/actions/investigations'
 import {
+  getReconciliationProfiles,
+  saveReconciliationProfile,
+} from '@/actions/reconciliation-profiles'
+import {
   reconcileReports,
   type ReconciliationRow,
   type ReconciliationStatus,
@@ -34,6 +38,12 @@ import {
 import { suggestReconciliationCauses } from '@/lib/cause-engine'
 import { createReconciliationMonitor } from '@/actions/reconciliation-monitors'
 import type { MonitorFrequency } from '@/lib/reconciliation-monitor'
+import {
+  resolveProfileColumns,
+  type ReconciliationProfileDefinition,
+  type SavedReconciliationProfile,
+} from '@/lib/reconciliation-profile'
+import { parseXlsxBuffer } from '@/lib/spreadsheet-import'
 
 interface ReportData {
   name: string
@@ -122,8 +132,18 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
   const [monitorFrequency, setMonitorFrequency] = useState<MonitorFrequency>('DAILY')
   const [monitorThreshold, setMonitorThreshold] = useState('0')
   const [isCreatingMonitor, setIsCreatingMonitor] = useState(false)
+  const [profiles, setProfiles] = useState<SavedReconciliationProfile[]>([])
+  const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>()
+  const [profileName, setProfileName] = useState('Monthly revenue check')
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
   const sourceInput = useRef<HTMLInputElement>(null)
   const comparisonInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    getReconciliationProfiles().then((response) => {
+      if (response.success && response.data) setProfiles(response.data)
+    })
+  }, [])
 
   useEffect(() => {
     if (investigationId) {
@@ -261,33 +281,140 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
     }
   }
 
-  const loadCsv = (file: File, side: 'source' | 'comparison') => {
+  const activeProfile = profiles.find((profile) => profile.id === selectedProfileId)
+
+  const applyLoadedReport = (
+    file: File,
+    side: 'source' | 'comparison',
+    rows: ReconciliationRow[],
+    fields: string[],
+    sheetName?: string
+  ) => {
+    if (fields.length < 2 || rows.length === 0) {
+      toast.error('Could not read this report', {
+        description: 'Include a header row, at least two columns, and one data row.',
+      })
+      return
+    }
+
+    const definition = activeProfile?.definition
+    const preferredKey =
+      side === 'source'
+        ? definition?.sourceKey || sourceKey
+        : definition?.comparisonKey || comparisonKey
+    const preferredAmount =
+      side === 'source'
+        ? definition?.sourceAmount || sourceAmount
+        : definition?.comparisonAmount || comparisonAmount
+    const columns = resolveProfileColumns(fields, preferredKey, preferredAmount)
+    const name = sheetName ? `${file.name} · ${sheetName}` : file.name
+    const report = { name, rows, fields }
+
+    if (side === 'source') {
+      setSource(report)
+      setSourceKey(columns.key)
+      setSourceAmount(columns.amount)
+    } else {
+      setComparison(report)
+      setComparisonKey(columns.key)
+      setComparisonAmount(columns.amount)
+    }
+    setCauses({})
+    toast.success(`${file.name} loaded`, {
+      description: `${rows.length} rows found${definition ? ' · saved column mapping applied' : ''}`,
+    })
+  }
+
+  const loadFile = async (file: File, side: 'source' | 'comparison') => {
+    if (/\.xlsx$/i.test(file.name)) {
+      try {
+        const parsed = await parseXlsxBuffer(await file.arrayBuffer())
+        applyLoadedReport(file, side, parsed.rows, parsed.fields, parsed.sheetName)
+      } catch (error) {
+        toast.error('Could not read this Excel workbook', {
+          description: error instanceof Error ? error.message : 'Use a valid .xlsx file.',
+        })
+      }
+      return
+    }
+
+    if (!/\.csv$/i.test(file.name)) {
+      toast.error('Unsupported report file', { description: 'Upload a .csv or .xlsx file.' })
+      return
+    }
+
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: 'greedy',
       complete: ({ data, meta, errors }) => {
         const fields = meta.fields?.filter(Boolean) ?? []
-        if (errors.length || fields.length < 2 || data.length === 0) {
+        if (errors.length) {
           toast.error('Could not read this CSV', {
-            description: errors[0]?.message || 'Include a header row and at least one data row.',
+            description: errors[0]?.message,
           })
           return
         }
-
-        const report = { name: file.name, rows: data, fields }
-        if (side === 'source') {
-          setSource(report)
-          setSourceKey(fields[0])
-          setSourceAmount(fields[1])
-        } else {
-          setComparison(report)
-          setComparisonKey(fields[0])
-          setComparisonAmount(fields[1])
-        }
-        setCauses({})
-        toast.success(`${file.name} loaded`, { description: `${data.length} rows found` })
+        applyLoadedReport(file, side, data, fields)
       },
       error: (error) => toast.error('Could not read this CSV', { description: error.message }),
+    })
+  }
+
+  const applyProfile = (profile: SavedReconciliationProfile) => {
+    const definition = profile.definition
+    setSelectedProfileId(profile.id)
+    setProfileName(definition.name)
+    setMetric(definition.metric)
+    setCurrency(definition.currency)
+    const sourceColumns = resolveProfileColumns(
+      source.fields,
+      definition.sourceKey,
+      definition.sourceAmount
+    )
+    const comparisonColumns = resolveProfileColumns(
+      comparison.fields,
+      definition.comparisonKey,
+      definition.comparisonAmount
+    )
+    setSourceKey(sourceColumns.key)
+    setSourceAmount(sourceColumns.amount)
+    setComparisonKey(comparisonColumns.key)
+    setComparisonAmount(comparisonColumns.amount)
+    setCauses({})
+    toast.success(`${definition.name} applied`, {
+      description:
+        'Upload this period’s files; matching column names will be selected automatically.',
+    })
+  }
+
+  const saveCurrentProfile = async () => {
+    const definition: ReconciliationProfileDefinition = {
+      version: 1,
+      name: profileName.trim(),
+      metric,
+      currency,
+      sourceLabel: source.name,
+      comparisonLabel: comparison.name,
+      sourceKey,
+      sourceAmount,
+      comparisonKey,
+      comparisonAmount,
+    }
+    setIsSavingProfile(true)
+    const response = await saveReconciliationProfile({ id: selectedProfileId, definition })
+    setIsSavingProfile(false)
+    if (!response.success || !response.data) {
+      toast.error('Could not save profile', { description: response.error })
+      return
+    }
+
+    setSelectedProfileId(response.data.id)
+    setProfiles((current) => [
+      response.data!,
+      ...current.filter((profile) => profile.id !== response.data!.id),
+    ])
+    toast.success(selectedProfileId ? 'Profile updated' : 'Reusable profile saved', {
+      description: 'Mappings and rules were saved. Report rows were not stored in the profile.',
     })
   }
 
@@ -303,6 +430,8 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
     setCaseStatus('OPEN')
     setSavedId(undefined)
     setLastSavedAt(null)
+    setSelectedProfileId(undefined)
+    setProfileName('Monthly revenue check')
     setCauses({})
   }
 
@@ -506,6 +635,61 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
             </p>
           )}
 
+          <div className="mt-4 rounded-xl border border-border bg-secondary/30 p-4">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-semibold">Reusable reconciliation profile</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Save column mappings once, then apply them to next month’s CSV or Excel files.
+                  Profiles never contain uploaded report rows.
+                </p>
+              </div>
+              <label className="space-y-1 text-xs font-semibold text-muted-foreground lg:w-56">
+                Saved profile
+                <select
+                  value={selectedProfileId || ''}
+                  onChange={(event) => {
+                    const profile = profiles.find((item) => item.id === event.target.value)
+                    if (profile) applyProfile(profile)
+                    else {
+                      setSelectedProfileId(undefined)
+                      setProfileName('Monthly revenue check')
+                    }
+                  }}
+                  className="input block w-full text-sm font-normal text-foreground"
+                >
+                  <option value="">New profile</option>
+                  {profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.definition.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-muted-foreground lg:w-64">
+                Profile name
+                <input
+                  value={profileName}
+                  maxLength={120}
+                  onChange={(event) => setProfileName(event.target.value)}
+                  className="input block w-full text-sm font-normal text-foreground"
+                />
+              </label>
+              <button
+                onClick={saveCurrentProfile}
+                disabled={isSavingProfile || !profileName.trim()}
+                className="btn-secondary text-sm disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {isSavingProfile
+                  ? 'Saving...'
+                  : selectedProfileId
+                    ? 'Update profile'
+                    : 'Save profile'}
+              </button>
+            </div>
+          </div>
+
           {showMonitorSetup && (
             <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
               <div className="flex flex-col lg:flex-row lg:items-end gap-3">
@@ -605,22 +789,22 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
         <input
           ref={sourceInput}
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0]
-            if (file) loadCsv(file, 'source')
+            if (file) void loadFile(file, 'source')
             event.target.value = ''
           }}
         />
         <input
           ref={comparisonInput}
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0]
-            if (file) loadCsv(file, 'comparison')
+            if (file) void loadFile(file, 'comparison')
             event.target.value = ''
           }}
         />
@@ -774,8 +958,8 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
 
       <p className="text-xs text-muted-foreground text-center pb-4">
         Prototype rule: totals and differences are deterministic. A human must confirm every
-        business cause. Uploaded CSV files are processed in this browser session and are not sent to
-        an AI service.
+        business cause. Uploaded CSV and Excel files are processed in this browser session and are
+        not sent to an AI service.
       </p>
     </div>
   )
@@ -816,7 +1000,7 @@ function ReportCard({
           </div>
         </div>
         <button onClick={onUpload} className="btn-secondary text-xs whitespace-nowrap">
-          <UploadCloud className="w-3.5 h-3.5" /> Upload CSV
+          <UploadCloud className="w-3.5 h-3.5" /> Upload CSV / Excel
         </button>
       </div>
       <div className="grid sm:grid-cols-2 gap-3 mt-5">
