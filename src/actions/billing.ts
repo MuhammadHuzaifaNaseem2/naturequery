@@ -11,6 +11,11 @@ import {
   cancelSubscription as lsCancelSubscription,
   updateSubscription,
 } from '@lemonsqueezy/lemonsqueezy.js'
+import {
+  assertBillingIdentity,
+  effectiveSubscriptionPlan,
+  subscriptionLifecycleUpdate,
+} from '@/lib/billing-lifecycle'
 
 async function requireUser() {
   const session = await auth()
@@ -46,20 +51,22 @@ export async function getUserSubscription() {
 
   const sub = await getOrCreateSubscription(user.id!)
 
-  let effectivePlan = sub.plan as PlanKey
+  let effectivePlan = effectiveSubscriptionPlan(sub) as PlanKey
+  let effectiveStatus = sub.status
   if (sub.status === 'TRIALING' && sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
     await prisma.subscription.update({
       where: { userId: user.id! },
       data: { plan: 'FREE', status: 'ACTIVE', trialEndsAt: null },
     })
-    effectivePlan = 'FREE'
+    effectiveStatus = 'ACTIVE'
   }
 
   const plan = PLANS[effectivePlan]
   return {
     plan: effectivePlan,
-    planName: sub.status === 'TRIALING' ? `${plan.name} (Trial)` : plan.name,
-    status: sub.status,
+    planName:
+      sub.status === 'TRIALING' && effectivePlan !== 'FREE' ? `${plan.name} (Trial)` : plan.name,
+    status: effectiveStatus,
     currentPeriodStart: sub.currentPeriodStart?.toISOString() ?? null,
     currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
     cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
@@ -152,13 +159,14 @@ export async function resumeSubscription() {
   }
 
   await verifyStoredSubscription(user.id, sub.stripeSubscriptionId)
-  const { error } = await updateSubscription(sub.stripeSubscriptionId, { cancelled: false })
+  const { data, error } = await updateSubscription(sub.stripeSubscriptionId, { cancelled: false })
   if (error) throw new Error(error.message)
-
-  await prisma.subscription.update({
-    where: { userId: user.id },
-    data: { cancelAtPeriodEnd: false },
-  })
+  if (!data?.data) throw new Error('Lemon Squeezy returned no subscription after resuming')
+  await applyLSSubscription(
+    user.id,
+    String(data.data.id),
+    data.data.attributes as Record<string, unknown>
+  )
 
   return { success: true }
 }
@@ -176,36 +184,16 @@ export async function cancelSubscription() {
   }
 
   await verifyStoredSubscription(user.id, sub.stripeSubscriptionId)
-  const { error } = await lsCancelSubscription(sub.stripeSubscriptionId)
+  const { data, error } = await lsCancelSubscription(sub.stripeSubscriptionId)
   if (error) throw new Error(error.message)
-
-  await prisma.subscription.update({
-    where: { userId: user.id },
-    data: { cancelAtPeriodEnd: true },
-  })
+  if (!data?.data) throw new Error('Lemon Squeezy returned no subscription after cancellation')
+  await applyLSSubscription(
+    user.id,
+    String(data.data.id),
+    data.data.attributes as Record<string, unknown>
+  )
 
   return { success: true }
-}
-
-const LS_STATUS_MAP: Record<
-  string,
-  'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'INCOMPLETE'
-> = {
-  active: 'ACTIVE',
-  on_trial: 'TRIALING',
-  past_due: 'PAST_DUE',
-  unpaid: 'PAST_DUE',
-  cancelled: 'CANCELED',
-  expired: 'CANCELED',
-  paused: 'ACTIVE',
-}
-
-function resolvePlan(variantId: string): 'PRO' | 'ENTERPRISE' | null {
-  const proId = process.env.LEMONSQUEEZY_PRO_VARIANT_ID
-  const entId = process.env.LEMONSQUEEZY_ENTERPRISE_VARIANT_ID
-  if (entId && variantId === entId) return 'ENTERPRISE'
-  if (proId && variantId === proId) return 'PRO'
-  return null
 }
 
 async function assertSubscriptionOwner(
@@ -217,25 +205,24 @@ async function assertSubscriptionOwner(
     where: { id: userId },
     select: { email: true, emailVerified: true },
   })
-  const storeId = process.env.LEMONSQUEEZY_STORE_ID
-  const email = typeof attrs.user_email === 'string' ? attrs.user_email.trim().toLowerCase() : ''
-  if (
-    !storeId ||
-    String(attrs.store_id) !== storeId ||
-    !user?.emailVerified ||
-    !email ||
-    email !== user.email?.trim().toLowerCase()
-  ) {
+  if (!user) {
     throw new Error(
       'Subscription ownership could not be verified. Use your verified billing email.'
     )
   }
   const existing = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId: subId },
-    select: { userId: true },
+    select: { userId: true, stripeCustomerId: true },
   })
   if (existing && existing.userId !== userId)
     throw new Error('Subscription is already linked to another account')
+  try {
+    assertBillingIdentity(attrs, user, existing?.stripeCustomerId)
+  } catch {
+    throw new Error(
+      'Subscription ownership could not be verified. Use your verified billing email.'
+    )
+  }
 }
 
 async function verifyStoredSubscription(userId: string, subId: string) {
@@ -246,23 +233,13 @@ async function verifyStoredSubscription(userId: string, subId: string) {
 
 async function applyLSSubscription(userId: string, subId: string, attrs: Record<string, unknown>) {
   await assertSubscriptionOwner(userId, subId, attrs)
-  const variantId = String(attrs.variant_id ?? '')
-  const plan = resolvePlan(variantId)
-  if (!plan) throw new Error('Unrecognized subscription plan')
-  const status = LS_STATUS_MAP[String(attrs.status ?? '')] ?? 'INCOMPLETE'
-  const renewsAt = attrs.renews_at ? new Date(attrs.renews_at as string) : undefined
-  const endsAt = attrs.ends_at ? new Date(attrs.ends_at as string) : undefined
+  const lifecycle = subscriptionLifecycleUpdate(attrs)
 
   await prisma.subscription.update({
     where: { userId },
     data: {
+      ...lifecycle.data,
       stripeSubscriptionId: subId,
-      stripeCustomerId: String(attrs.customer_id ?? ''),
-      stripePriceId: variantId,
-      ...(plan ? { plan } : {}),
-      status,
-      currentPeriodEnd: renewsAt ?? endsAt,
-      cancelAtPeriodEnd: Boolean(attrs.cancelled),
     },
   })
 }
@@ -302,26 +279,23 @@ export async function syncSubscriptionFromLS() {
     if (!dbUser?.email) return
     const storeId = process.env.LEMONSQUEEZY_STORE_ID ?? ''
 
-    // Try email + store filter first, then email only
-    for (const filter of [{ storeId, userEmail: dbUser.email }, { userEmail: dbUser.email }]) {
-      const { data: list, error: listError } = await listSubscriptions({ filter })
-      if (listError) {
-        console.error('[billing] listSubscriptions error:', listError)
-        continue
-      }
-      const subs = (list?.data ?? []) as Array<{
-        id: string | number
-        attributes: Record<string, unknown>
-      }>
-      if (!subs.length) continue
+    const { data: list, error: listError } = await listSubscriptions({
+      filter: { storeId, userEmail: dbUser.email },
+    })
+    if (listError) throw new Error(listError.message)
+    const subs = (list?.data ?? []) as Array<{
+      id: string | number
+      attributes: Record<string, unknown>
+    }>
+    if (!subs.length) return
 
-      const active =
-        subs.find((s) =>
-          ['active', 'on_trial', 'past_due'].includes(String(s.attributes.status))
-        ) ?? subs[0]
-      await applyLSSubscription(user.id!, String(active.id), active.attributes)
-      return
-    }
+    const active =
+      subs.find((candidate) =>
+        ['active', 'on_trial', 'cancelled', 'past_due'].includes(
+          String(candidate.attributes.status)
+        )
+      ) ?? subs[0]
+    await applyLSSubscription(user.id!, String(active.id), active.attributes)
   } catch (err) {
     console.error('[billing] Failed to sync subscription from Lemon Squeezy:', err)
   }

@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { PLANS, type PlanKey } from '@/lib/lemonsqueezy'
+import { effectiveSubscriptionPlan } from '@/lib/billing-lifecycle'
 
 export type LimitedAction =
   | 'QUERY'
@@ -41,7 +42,7 @@ export async function checkPlanLimits(
 
   // If subscription is past due, canceled, or incomplete — enforce FREE limits.
   // Also check if trial has expired — auto-downgrade to FREE.
-  let effectivePlan: PlanKey = sub.plan as PlanKey
+  let effectivePlan = effectiveSubscriptionPlan(sub) as PlanKey
 
   if (sub.status === 'TRIALING') {
     if (sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
@@ -198,7 +199,7 @@ export async function checkAndRecordQuery(userId: string): Promise<LimitCheckRes
     })
   }
 
-  let effectivePlan: PlanKey = sub.plan as PlanKey
+  let effectivePlan = effectiveSubscriptionPlan(sub) as PlanKey
   if (sub.status === 'TRIALING' && sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
     await prisma.subscription.update({
       where: { userId },

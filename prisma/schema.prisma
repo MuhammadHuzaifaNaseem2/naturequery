@@ -329,6 +329,7 @@ model Subscription {
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
   trialEndsAt          DateTime?
+  providerUpdatedAt    DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -336,6 +337,24 @@ model Subscription {
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
+}
+
+model BillingWebhookEvent {
+  id               String    @id @default(cuid())
+  deduplicationKey String    @unique
+  eventName        String
+  resourceType     String
+  resourceId       String
+  subscriptionId   String?
+  payload           Json
+  status            String    @default("PROCESSING")
+  attempts          Int       @default(1)
+  lastError         String?
+  receivedAt        DateTime  @default(now())
+  processedAt       DateTime?
+
+  @@index([status, receivedAt])
+  @@index([subscriptionId])
 }
 
 model UsageRecord {

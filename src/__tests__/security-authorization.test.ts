@@ -47,9 +47,12 @@ beforeEach(() => {
         id: 'sub',
         attributes: {
           store_id: 'store',
+          customer_id: 'customer',
           user_email: 'a@example.invalid',
           variant_id: 'pro',
           status: 'active',
+          updated_at: '2026-09-14T10:00:00.000Z',
+          renews_at: '2026-10-14T10:00:00.000Z',
         },
       },
     },
@@ -70,6 +73,11 @@ describe('Subscription ownership', () => {
   it('rejects subscriptions already bound to another account', async () => {
     mocks.subscription.mockResolvedValue({ userId: 'user-b' })
     await expect(syncBySubscriptionId('sub')).rejects.toThrow('another account')
+    expect(mocks.update).not.toHaveBeenCalled()
+  })
+  it('rejects a provider customer that differs from the linked customer', async () => {
+    mocks.subscription.mockResolvedValue({ userId: 'user-a', stripeCustomerId: 'other-customer' })
+    await expect(syncBySubscriptionId('sub')).rejects.toThrow('ownership')
     expect(mocks.update).not.toHaveBeenCalled()
   })
   it('accepts matching verified owner and configured plan', async () => {
