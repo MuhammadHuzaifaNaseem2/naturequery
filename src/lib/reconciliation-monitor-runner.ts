@@ -46,7 +46,16 @@ async function executeReport(
   const connection = await prisma.databaseConnection.findFirst({
     where: {
       id: report.connectionId,
-      OR: [{ userId }, { team: { members: { some: { userId, status: 'ACCEPTED' } } } }],
+      OR: [
+        { userId },
+        {
+          team: {
+            members: {
+              some: { userId, status: 'ACCEPTED', role: { in: ['OWNER', 'ADMIN', 'MEMBER'] } },
+            },
+          },
+        },
+      ],
     },
   })
   if (!connection)

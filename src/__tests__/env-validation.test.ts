@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 describe('Environment Validation', () => {
+  afterEach(() => vi.unstubAllEnvs())
   beforeEach(() => {
     vi.resetModules()
     // Set valid defaults
@@ -8,6 +9,12 @@ describe('Environment Validation', () => {
     vi.stubEnv('NEXTAUTH_SECRET', 'real-secret-value')
     vi.stubEnv('ENCRYPTION_KEY', 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2')
     vi.stubEnv('GROQ_API_KEY', 'gsk_test')
+    vi.stubEnv('CRON_SECRET', 'test-cron-secret-with-at-least-32-characters')
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://redis.example.invalid')
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'test-only')
+    vi.stubEnv('RESEND_API_KEY', 'test-only')
+    vi.stubEnv('GROQ_API_KEYS', '')
+    vi.stubEnv('LEMONSQUEEZY_API_KEY', '')
     vi.stubEnv('NODE_ENV', 'development')
   })
 

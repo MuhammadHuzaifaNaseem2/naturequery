@@ -23,11 +23,7 @@ import { prisma } from '@/lib/prisma'
 import { decrypt } from '@/lib/encryption'
 import { type DatabaseType } from '@/lib/db-drivers'
 import { getOrCreateDriver } from '@/lib/driver-pool'
-import {
-  filterSchemaForQuestion,
-  formatSchemaForPrompt,
-  formatSampleRowsForPrompt,
-} from '@/lib/schema-utils'
+import { filterSchemaForQuestion, formatSchemaForPrompt } from '@/lib/schema-utils'
 import { validateSQLSafety } from '@/lib/sql-validator'
 import { getCachedSchema, setCachedSchema } from '@/lib/query-cache'
 import { checkPlanLimits } from '@/lib/plan-limits'
@@ -39,7 +35,7 @@ import { aiChatCompletion, aiChatCompletionStream, type ChatMessage } from '@/li
 // System prompt builder â€” DB-aware + messy data hardened
 // ---------------------------------------------------------------------------
 
-function buildSystemPrompt(dbType: string, schemaDesc: string, sampleRowsDesc: string): string {
+function buildSystemPrompt(dbType: string, schemaDesc: string): string {
   const dialect = ['mysql', 'mariadb', 'planetscale'].includes(dbType)
     ? 'MySQL'
     : dbType === 'sqlite'
@@ -72,7 +68,7 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - Note date formats (e.g. "2024-01-15", "15/01/2024", "Jan 15 2024")
 
 2. Think step by step:
-   a. Identify which tables contain the relevant data based on BOTH column names AND sample values
+   a. Identify which tables contain the relevant data based on schema metadata and the user question
    b. Check the RELATIONSHIPS section for foreign keys to use in JOINs
    c. Plan how to handle messy data (NULLs, mixed types, whitespace, inconsistent values)
    d. Verify every column you reference exists on the correct table
@@ -83,7 +79,7 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - Use ${castFn} when a text column stores numbers
    - Use IS NOT NULL / IS NULL filters when NULLs would skew results
    - For date columns stored as text: NEVER try to cast them directly. Use the row's primary key (integer ID) as a proxy for ordering by "latest" â€” it is always reliable.
-   - Never assume a column is clean â€” check the sample data
+   - Never assume a column is clean â€” do not assume values that were not provided by the user
 
 4. STRING COMPARISONS (CRITICAL) â€” this is the #1 cause of empty results:
    - YOU WILL BE PENALIZED IF YOU DO NOT FOLLOW THIS: NEVER use regular '=' for strings!
@@ -91,7 +87,7 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - YOU MUST ALWAYS, ALWAYS use LOWER(column) = LOWER('value') or ILIKE for ALL string comparisons.
    - Example WRONG: party_type = 'Customer'
    - Example RIGHT: LOWER(party_type) = 'customer'
-   - Even if the sample data implies correct casing, YOU MUST USE LOWER() to catch mixed-case rows!
+   - Even if column names imply correct casing, YOU MUST USE LOWER() to catch mixed-case rows!
 
 5. JOIN strategy & Logic â€” Critical for accuracy:
    - ALWAYS use LEFT JOIN by default unless specifically filtering.
@@ -138,7 +134,7 @@ CRITICAL RULES:
 - Never generate multiple SQL statements in a single response. Always return exactly one SQL query. If the user's question requires data from multiple tables, use UNION ALL, subqueries, or JOINs within a single statement.
 
 Output format:
-[Step-by-step reasoning â€” what the sample data reveals, which tables and columns to use, how to handle data quality issues]
+[Step-by-step reasoning â€” what the schema establishes, which tables and columns to use, how to handle data quality issues]
 
 <sql>
 [Your final ${dialect} SELECT query]
@@ -146,7 +142,7 @@ Output format:
 
 DATABASE SCHEMA:
 ${schemaDesc}
-${sampleRowsDesc}`
+`
 }
 
 // ---------------------------------------------------------------------------
@@ -321,7 +317,7 @@ export async function POST(request: NextRequest) {
   }
 
   const userTeams = await prisma.teamMember.findMany({
-    where: { userId },
+    where: { userId, status: 'ACCEPTED', role: { in: ['OWNER', 'ADMIN', 'MEMBER'] } },
     select: { teamId: true },
   })
   const teamIds = userTeams.map((t) => t.teamId)
@@ -377,30 +373,8 @@ export async function POST(request: NextRequest) {
       const filteredSchema = filterSchemaForQuestion(question + ' ' + contextTerms, schema)
       const schemaDescription = formatSchemaForPrompt(filteredSchema)
 
-      // 4. Fetch sample rows (3 per relevant table) â€” covers ALL filtered tables, not just first 8
-      const sampleRows: { tableName: string; rows: Record<string, unknown>[] }[] = []
-      await Promise.all(
-        filteredSchema.tables.map(async (table) => {
-          try {
-            const result = await driver.executeQuery(`SELECT * FROM ${table.tableName} LIMIT 3`, 3)
-            sampleRows.push({
-              tableName: table.tableName,
-              rows: result.rows as Record<string, unknown>[],
-            })
-          } catch {
-            // Table may have access restrictions â€” skip silently
-            sampleRows.push({ tableName: table.tableName, rows: [] })
-          }
-        })
-      )
-      const sampleRowsDescription = formatSampleRowsForPrompt(sampleRows)
-
-      // 5. Build DB-aware, messy-data-hardened system prompt
-      const baseSystemPrompt = buildSystemPrompt(
-        conn.dbType,
-        schemaDescription,
-        sampleRowsDescription
-      )
+      // Only schema metadata is shared with AI providers.
+      const baseSystemPrompt = buildSystemPrompt(conn.dbType, schemaDescription)
       const hasContext = conversationContext && conversationContext.length > 0
       const systemPrompt = hasContext
         ? baseSystemPrompt +
@@ -743,7 +717,7 @@ Diagnose systematically â€” check EVERY one of these before rewriting:
    - Switch ALL JOINs to LEFT JOIN unless you are 100% certain both sides have data.
 
 3. Overly strict WHERE clause: Date casts on VARCHAR columns, numeric comparisons on text, etc.
-   - Check every filter condition against the sample data.
+   - Check every filter condition against the schema and user question; do not invent data values.
 
 4. Wrong join column: Joining on a column that doesn't actually link the tables.
 

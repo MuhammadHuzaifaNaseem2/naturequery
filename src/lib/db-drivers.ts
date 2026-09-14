@@ -156,8 +156,10 @@ export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver
     async executeQuery(sql: string, maxRows?: number) {
       const limit = maxRows ?? MAX_QUERY_ROWS
       const client = await pool.connect()
+      let discardClient = false
       try {
         // Per-statement timeout enforced at the DB level — kills the query server-side
+        await client.query('BEGIN READ ONLY')
         await client.query(`SET LOCAL statement_timeout = ${DEFAULT_QUERY_TIMEOUT_MS}`)
         const result = await client.query(sql)
         const fields = result.fields.map((f: { name: string }) => f.name)
@@ -169,9 +171,17 @@ export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver
         const totalRowCount = result.rowCount || rows.length
         const truncated = rows.length > limit
         if (truncated) rows = rows.slice(0, limit)
+        await client.query('COMMIT')
         return { rows, fields, rowCount: totalRowCount, truncated }
+      } catch (error) {
+        try {
+          await client.query('ROLLBACK')
+        } catch {
+          discardClient = true
+        }
+        throw error
       } finally {
-        client.release()
+        client.release(discardClient)
       }
     },
 

@@ -127,6 +127,12 @@ export async function createBillingPortalSession() {
   const { data, error } = await getSubscription(sub.stripeSubscriptionId)
   if (error) throw new Error(error.message)
 
+  if (!data?.data) throw new Error('Subscription not found')
+  await assertSubscriptionOwner(
+    user.id,
+    sub.stripeSubscriptionId,
+    data.data.attributes as Record<string, unknown>
+  )
   const portalUrl = data?.data?.attributes?.urls?.customer_portal
   if (!portalUrl) throw new Error('Could not retrieve billing portal URL.')
 
@@ -145,6 +151,7 @@ export async function resumeSubscription() {
     throw new Error('No subscription to resume')
   }
 
+  await verifyStoredSubscription(user.id, sub.stripeSubscriptionId)
   const { error } = await updateSubscription(sub.stripeSubscriptionId, { cancelled: false })
   if (error) throw new Error(error.message)
 
@@ -168,6 +175,7 @@ export async function cancelSubscription() {
     throw new Error('No active subscription to cancel')
   }
 
+  await verifyStoredSubscription(user.id, sub.stripeSubscriptionId)
   const { error } = await lsCancelSubscription(sub.stripeSubscriptionId)
   if (error) throw new Error(error.message)
 
@@ -200,10 +208,48 @@ function resolvePlan(variantId: string): 'PRO' | 'ENTERPRISE' | null {
   return null
 }
 
+async function assertSubscriptionOwner(
+  userId: string,
+  subId: string,
+  attrs: Record<string, unknown>
+) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, emailVerified: true },
+  })
+  const storeId = process.env.LEMONSQUEEZY_STORE_ID
+  const email = typeof attrs.user_email === 'string' ? attrs.user_email.trim().toLowerCase() : ''
+  if (
+    !storeId ||
+    String(attrs.store_id) !== storeId ||
+    !user?.emailVerified ||
+    !email ||
+    email !== user.email?.trim().toLowerCase()
+  ) {
+    throw new Error(
+      'Subscription ownership could not be verified. Use your verified billing email.'
+    )
+  }
+  const existing = await prisma.subscription.findUnique({
+    where: { stripeSubscriptionId: subId },
+    select: { userId: true },
+  })
+  if (existing && existing.userId !== userId)
+    throw new Error('Subscription is already linked to another account')
+}
+
+async function verifyStoredSubscription(userId: string, subId: string) {
+  const { data, error } = await getSubscription(subId)
+  if (error || !data?.data) throw new Error('Could not verify subscription ownership')
+  await assertSubscriptionOwner(userId, subId, data.data.attributes as Record<string, unknown>)
+}
+
 async function applyLSSubscription(userId: string, subId: string, attrs: Record<string, unknown>) {
+  await assertSubscriptionOwner(userId, subId, attrs)
   const variantId = String(attrs.variant_id ?? '')
   const plan = resolvePlan(variantId)
-  const status = LS_STATUS_MAP[String(attrs.status ?? 'active')] ?? 'ACTIVE'
+  if (!plan) throw new Error('Unrecognized subscription plan')
+  const status = LS_STATUS_MAP[String(attrs.status ?? '')] ?? 'INCOMPLETE'
   const renewsAt = attrs.renews_at ? new Date(attrs.renews_at as string) : undefined
   const endsAt = attrs.ends_at ? new Date(attrs.ends_at as string) : undefined
 
@@ -342,6 +388,7 @@ export async function getBillingDetails(): Promise<BillingDetails> {
   if (!sub.stripeSubscriptionId) return empty
 
   try {
+    await verifyStoredSubscription(user.id, sub.stripeSubscriptionId)
     const [subRes, invRes] = await Promise.all([
       getSubscription(sub.stripeSubscriptionId),
       listSubscriptionInvoices({ filter: { subscriptionId: sub.stripeSubscriptionId } }),

@@ -13,39 +13,39 @@ import { prisma } from '@/lib/prisma'
 
 export const PERMISSIONS = {
   // Query permissions
-  'query:execute':    ['OWNER', 'ADMIN', 'MEMBER'],
-  'query:save':       ['OWNER', 'ADMIN', 'MEMBER'],
-  'query:share':      ['OWNER', 'ADMIN', 'MEMBER'],
+  'query:execute': ['OWNER', 'ADMIN', 'MEMBER'],
+  'query:save': ['OWNER', 'ADMIN', 'MEMBER'],
+  'query:share': ['OWNER', 'ADMIN', 'MEMBER'],
   'query:delete_own': ['OWNER', 'ADMIN', 'MEMBER'],
   'query:delete_any': ['OWNER', 'ADMIN'],
-  'query:schedule':   ['OWNER', 'ADMIN', 'MEMBER'],
+  'query:schedule': ['OWNER', 'ADMIN', 'MEMBER'],
 
   // Connection permissions
-  'connection:view':   ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
+  'connection:view': ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
   'connection:create': ['OWNER', 'ADMIN'],
-  'connection:edit':   ['OWNER', 'ADMIN'],
+  'connection:edit': ['OWNER', 'ADMIN'],
   'connection:delete': ['OWNER', 'ADMIN'],
-  'connection:test':   ['OWNER', 'ADMIN'],
+  'connection:test': ['OWNER', 'ADMIN'],
 
   // Dashboard permissions
-  'dashboard:view':   ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
-  'dashboard:edit':   ['OWNER', 'ADMIN', 'MEMBER'],
-  'dashboard:share':  ['OWNER', 'ADMIN'],
+  'dashboard:view': ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
+  'dashboard:edit': ['OWNER', 'ADMIN', 'MEMBER'],
+  'dashboard:share': ['OWNER', 'ADMIN'],
 
   // Export permissions
-  'export:csv':   ['OWNER', 'ADMIN', 'MEMBER'],
+  'export:csv': ['OWNER', 'ADMIN', 'MEMBER'],
   'export:excel': ['OWNER', 'ADMIN', 'MEMBER'],
 
   // Team management
-  'team:view':          ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
-  'team:invite':        ['OWNER', 'ADMIN'],
+  'team:view': ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'],
+  'team:invite': ['OWNER', 'ADMIN'],
   'team:remove_member': ['OWNER', 'ADMIN'],
-  'team:change_role':   ['OWNER'],
-  'team:edit':          ['OWNER', 'ADMIN'],
-  'team:delete':        ['OWNER'],
+  'team:change_role': ['OWNER'],
+  'team:edit': ['OWNER', 'ADMIN'],
+  'team:delete': ['OWNER'],
 
   // Billing (owner only)
-  'billing:view':   ['OWNER'],
+  'billing:view': ['OWNER'],
   'billing:manage': ['OWNER'],
 
   // API keys
@@ -115,10 +115,10 @@ export async function requireTeamPermission(teamId: string, permission: Permissi
 
   const member = await prisma.teamMember.findUnique({
     where: { userId_teamId: { userId, teamId } },
-    select: { role: true, teamId: true },
+    select: { role: true, teamId: true, status: true },
   })
 
-  if (!member) {
+  if (!member || member.status !== 'ACCEPTED') {
     throw new Error('Forbidden: you are not a member of this team')
   }
 

@@ -1012,7 +1012,7 @@ export async function recommendChart(
           { role: 'system', content: CHART_RECOMMEND_SYSTEM_PROMPT },
           {
             role: 'user',
-            content: `QUESTION: "${request.question}"\nSQL: \`${request.sql}\`\nFIELDS: ${request.fields.join(', ')}\nDATA SAMPLE (First 3 rows): ${JSON.stringify(request.sampleRows.slice(0, 3))}`,
+            content: `QUESTION: "${request.question}"\nSQL: \`${request.sql}\`\nFIELDS: ${request.fields.join(', ')}`,
           },
         ],
         max_tokens: 512,

@@ -68,13 +68,21 @@ function friendlyConnectionError(error: unknown): string {
     return `Database not found. Check the database name is correct.`
   if (lower.includes('connection refused') || lower.includes('econnrefused'))
     return 'Connection refused. Check the host and port — make sure the database server is reachable.'
-  if (lower.includes('timeout') || lower.includes('etimedout') || lower.includes('connect timed out'))
+  if (
+    lower.includes('timeout') ||
+    lower.includes('etimedout') ||
+    lower.includes('connect timed out')
+  )
     return 'Connection timed out. The host may be unreachable or blocked by a firewall.'
   if (lower.includes('ssl') || lower.includes('tls'))
     return 'SSL/TLS error. Try toggling the SSL setting for this connection.'
   if (lower.includes('too many connections') || lower.includes('max_connections'))
     return 'Database has too many open connections. Try again in a moment.'
-  if (lower.includes('unknown host') || lower.includes('getaddrinfo') || lower.includes('nodename nor servname'))
+  if (
+    lower.includes('unknown host') ||
+    lower.includes('getaddrinfo') ||
+    lower.includes('nodename nor servname')
+  )
     return 'Host not found. Check the hostname is correct and DNS is resolving.'
 
   return msg || 'Connection failed. Please verify your credentials and try again.'
@@ -110,7 +118,7 @@ async function getOwnedConnection(userId: string, connectionId: string) {
 
   // Check if connection is shared with user's team
   if (conn.teamId) {
-    const isMember = conn.team?.members.some((m) => m.userId === userId)
+    const isMember = conn.team?.members.some((m) => m.userId === userId && m.status === 'ACCEPTED')
     if (isMember) return conn
   }
 
@@ -255,7 +263,7 @@ export async function getUserConnections(): Promise<ConnectionInfo[]> {
   } else {
     // get user teams
     const userTeams = await prisma.teamMember.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, status: 'ACCEPTED' },
       select: { teamId: true },
     })
     const teamIds = userTeams.map((t) => t.teamId)
@@ -481,6 +489,10 @@ export async function executeSQLByConnection(
 
   const conn = await getOwnedConnection(user.id, connectionId)
   if (!conn) return { success: false, error: 'Connection not found' }
+
+  if (conn.teamId && conn.userId !== user.id) {
+    await requireTeamPermission(conn.teamId, 'query:execute')
+  }
 
   let credentials: ReturnType<typeof decryptCredentials>
   try {

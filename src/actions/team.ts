@@ -126,7 +126,11 @@ export async function updateTeam(teamId: string, data: { name?: string; descript
   const membership = await prisma.teamMember.findUnique({
     where: { userId_teamId: { userId: session.user.id, teamId: vTeamId } },
   })
-  if (!membership || !['OWNER', 'ADMIN'].includes(membership.role)) {
+  if (
+    !membership ||
+    membership.status !== 'ACCEPTED' ||
+    !['OWNER', 'ADMIN'].includes(membership.role)
+  ) {
     return { success: false, error: 'Insufficient permissions' }
   }
 
@@ -146,7 +150,7 @@ export async function deleteTeam(teamId: string) {
   const membership = await prisma.teamMember.findUnique({
     where: { userId_teamId: { userId: session.user.id, teamId } },
   })
-  if (!membership || membership.role !== 'OWNER') {
+  if (!membership || membership.status !== 'ACCEPTED' || membership.role !== 'OWNER') {
     return { success: false, error: 'Only the team owner can delete the team' }
   }
 
@@ -192,7 +196,11 @@ export async function inviteTeamMember(
   const membership = await prisma.teamMember.findUnique({
     where: { userId_teamId: { userId: session.user.id, teamId: vTeamId } },
   })
-  if (!membership || !['OWNER', 'ADMIN'].includes(membership.role)) {
+  if (
+    !membership ||
+    membership.status !== 'ACCEPTED' ||
+    !['OWNER', 'ADMIN'].includes(membership.role)
+  ) {
     return { success: false, error: 'Insufficient permissions' }
   }
 
@@ -257,12 +265,20 @@ export async function updateMemberRole(
   const callerMembership = await prisma.teamMember.findUnique({
     where: { userId_teamId: { userId: session.user.id, teamId: vTeamId } },
   })
-  if (!callerMembership || callerMembership.role !== 'OWNER') {
+  if (
+    !callerMembership ||
+    callerMembership.status !== 'ACCEPTED' ||
+    callerMembership.role !== 'OWNER'
+  ) {
     return { success: false, error: 'Only the team owner can change roles' }
   }
 
+  const target = await prisma.teamMember.findUnique({ where: { id: vMemberId } })
+  if (!target || target.teamId !== vTeamId || target.role === 'OWNER') {
+    return { success: false, error: 'Member not found or owner role cannot be changed' }
+  }
   const member = await prisma.teamMember.update({
-    where: { id: vMemberId },
+    where: { id: vMemberId, teamId: vTeamId, role: { not: 'OWNER' } },
     data: { role: vRole },
     include: { user: { select: { id: true, name: true, email: true, image: true } } },
   })
@@ -275,23 +291,24 @@ export async function removeTeamMember(teamId: string, memberId: string) {
   if (!session?.user?.id) return { success: false, error: 'Not authenticated' }
 
   const target = await prisma.teamMember.findUnique({ where: { id: memberId } })
-  if (!target) return { success: false, error: 'Member not found' }
+  if (!target || target.teamId !== teamId) return { success: false, error: 'Member not found' }
+  if (target.role === 'OWNER') return { success: false, error: 'Cannot remove the team owner' }
 
   // Allow self-removal or OWNER/ADMIN removal
   if (target.userId !== session.user.id) {
     const callerMembership = await prisma.teamMember.findUnique({
       where: { userId_teamId: { userId: session.user.id, teamId } },
     })
-    if (!callerMembership || !['OWNER', 'ADMIN'].includes(callerMembership.role)) {
+    if (
+      !callerMembership ||
+      callerMembership.status !== 'ACCEPTED' ||
+      !['OWNER', 'ADMIN'].includes(callerMembership.role)
+    ) {
       return { success: false, error: 'Insufficient permissions' }
-    }
-    // Cannot remove OWNER
-    if (target.role === 'OWNER') {
-      return { success: false, error: 'Cannot remove the team owner' }
     }
   }
 
-  await prisma.teamMember.delete({ where: { id: memberId } })
+  await prisma.teamMember.delete({ where: { id: memberId, teamId, role: { not: 'OWNER' } } })
 
   await prisma.auditLog.create({
     data: {

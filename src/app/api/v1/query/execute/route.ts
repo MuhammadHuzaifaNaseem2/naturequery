@@ -17,9 +17,15 @@ export async function POST(request: NextRequest) {
   const { userId } = authResult
 
   // Stricter per-endpoint limit: execute hits a real database — cap at 20/min
-  const executeLimit = await rateLimitAsync(`api:execute:${userId}`, { maxRequests: 20, windowSeconds: 60 })
+  const executeLimit = await rateLimitAsync(`api:execute:${userId}`, {
+    maxRequests: 20,
+    windowSeconds: 60,
+  })
   if (!executeLimit.allowed) {
-    return apiError(`Execute rate limit exceeded. Max 20 query executions per minute. Retry in ${executeLimit.retryAfterSeconds}s.`, 429)
+    return apiError(
+      `Execute rate limit exceeded. Max 20 query executions per minute. Retry in ${executeLimit.retryAfterSeconds}s.`,
+      429
+    )
   }
 
   let body: unknown
@@ -46,8 +52,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Get connection (must belong to user or their team)
-  const userTeams = await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } })
-  const teamIds = userTeams.map(t => t.teamId)
+  const userTeams = await prisma.teamMember.findMany({
+    where: { userId, status: 'ACCEPTED', role: { in: ['OWNER', 'ADMIN', 'MEMBER'] } },
+    select: { teamId: true },
+  })
+  const teamIds = userTeams.map((t) => t.teamId)
   const conn = await prisma.databaseConnection.findFirst({
     where: {
       id: connectionId,
@@ -62,7 +71,10 @@ export async function POST(request: NextRequest) {
   try {
     decryptedPassword = decrypt(conn.password)
   } catch {
-    return apiError('Could not decrypt connection credentials. Please delete and re-add this connection.', 500)
+    return apiError(
+      'Could not decrypt connection credentials. Please delete and re-add this connection.',
+      500
+    )
   }
 
   const credentials = {
@@ -108,10 +120,7 @@ export async function POST(request: NextRequest) {
       truncated: result.truncated,
     })
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : 'Query execution failed',
-      500
-    )
+    return apiError(error instanceof Error ? error.message : 'Query execution failed', 500)
   }
   // NOTE: No driver.close() — the pool manages the lifecycle
 }

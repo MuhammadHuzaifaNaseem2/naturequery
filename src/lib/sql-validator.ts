@@ -119,6 +119,22 @@ function validateWithPgParser(sql: string): { valid: boolean; error?: string } {
     return { valid: false, error: 'Only a single SQL statement is allowed' }
   }
 
+  // Inspect nested statements as well: WITH can contain DELETE/INSERT/UPDATE.
+  const forbidden = new Set(['insert', 'update', 'delete', 'create table', 'drop table'])
+  function containsWrite(node: unknown): boolean {
+    if (!node || typeof node !== 'object') return false
+    if (Array.isArray(node)) return node.some(containsWrite)
+    const record = node as Record<string, unknown>
+    if (typeof record.type === 'string' && forbidden.has(record.type)) return true
+    if (record.type === 'select' && (record.into || record.for)) return true
+    return Object.values(record).some(containsWrite)
+  }
+  if (containsWrite(statements)) {
+    return {
+      valid: false,
+      error: 'Only read-only SELECT queries are allowed, including inside CTEs.',
+    }
+  }
   const stmt = statements[0]
   if (!ALLOWED_STATEMENT_TYPES.has(stmt.type)) {
     return {
