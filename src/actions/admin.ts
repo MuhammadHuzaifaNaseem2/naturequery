@@ -243,7 +243,7 @@ export async function adminTestAllConnections(): Promise<{
     // Assuming a reasonable number of connections for now.
 
     const testPromises = connections.map(async (conn) => {
-      let result: AdminTestResult = {
+      const result: AdminTestResult = {
         connectionId: conn.id,
         connectionName: conn.name,
         success: false,

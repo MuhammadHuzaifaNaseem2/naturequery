@@ -1,6 +1,7 @@
 'use client'
 
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import Link from 'next/link'
 import { useTranslation } from '@/contexts/LocaleContext'
 
 export default function Error({
@@ -26,10 +27,10 @@ export default function Error({
             <RefreshCw className="w-4 h-4" />
             {t('common.tryAgain')}
           </button>
-          <a href="/" className="btn-secondary">
+          <Link href="/" className="btn-secondary">
             <Home className="w-4 h-4" />
             {t('common.goHome')}
-          </a>
+          </Link>
         </div>
       </div>
     </div>

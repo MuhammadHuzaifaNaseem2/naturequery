@@ -277,7 +277,7 @@ function tokenizeSQL(sql: string): Token[] {
   while (i < sql.length) {
     // Whitespace
     if (/\s/.test(sql[i])) {
-      let start = i
+      const start = i
       while (i < sql.length && /\s/.test(sql[i])) i++
       tokens.push({ type: 'whitespace', value: sql.slice(start, i) })
       continue
@@ -285,7 +285,7 @@ function tokenizeSQL(sql: string): Token[] {
 
     // String literal
     if (sql[i] === "'") {
-      let start = i
+      const start = i
       i++
       while (i < sql.length && sql[i] !== "'") i++
       if (i < sql.length) i++
@@ -295,7 +295,7 @@ function tokenizeSQL(sql: string): Token[] {
 
     // Number
     if (/\d/.test(sql[i])) {
-      let start = i
+      const start = i
       while (i < sql.length && /[\d.]/.test(sql[i])) i++
       tokens.push({ type: 'number', value: sql.slice(start, i) })
       continue
@@ -316,7 +316,7 @@ function tokenizeSQL(sql: string): Token[] {
 
     // Identifier or keyword
     if (/[a-zA-Z_]/.test(sql[i])) {
-      let start = i
+      const start = i
       while (i < sql.length && /[a-zA-Z0-9_.]/.test(sql[i])) i++
       const word = sql.slice(start, i)
       const upper = word.toUpperCase()

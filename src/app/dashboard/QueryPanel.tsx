@@ -1096,7 +1096,7 @@ export function QueryPanel({
             {resultsView === 'performance' && (
               <QueryPerformancePanel
                 sql={generatedSQL}
-                schema={activeConnection?.schema!}
+                schema={activeConnection?.schema ?? { tables: [] }}
                 executionTimeMs={queryResults.executionTime}
                 rowCount={queryResults.rowCount}
               />

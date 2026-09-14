@@ -45,18 +45,16 @@ export function SmartQueryInput({
   const [closedBySelection, setClosedBySelection] = useState(false)
   const [cursorPos, setCursorPos] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
-  const internalRef = useRef<HTMLTextAreaElement>(null)
+  const internalRef = useRef<HTMLTextAreaElement | null>(null)
   const isApplyingRef = useRef(false)
 
   // Merge external ref
-  const setRefs = (el: HTMLTextAreaElement) => {
-    // @ts-ignore
+  const setRefs = (el: HTMLTextAreaElement | null) => {
     internalRef.current = el
     if (typeof inputRef === 'function') {
       inputRef(el)
     } else if (inputRef) {
-      // @ts-ignore
-      inputRef.current = el
+      ;(inputRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el
     }
   }
 

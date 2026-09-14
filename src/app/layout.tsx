@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { AuthProvider } from '@/components/AuthProvider'
@@ -7,18 +6,6 @@ import { LocaleProvider } from '@/contexts/LocaleContext'
 import { getLocale, getTranslations } from '@/lib/i18n'
 import { Toaster } from 'sonner'
 import { Analytics } from '@vercel/analytics/next'
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-geist-sans',
-  display: 'swap',
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: {
@@ -88,11 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getTranslations(locale)
 
   return (
-    <html
-      lang={locale}
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

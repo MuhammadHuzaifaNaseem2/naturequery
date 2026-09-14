@@ -23,22 +23,16 @@ const nextConfig = {
       bodySizeLimit: '5mb',
     },
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
 }
 
 // Only wrap with Sentry if DSN is configured
 module.exports = process.env.NEXT_PUBLIC_SENTRY_DSN
   ? withSentryConfig(nextConfig, {
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-    silent: true,
-    widenClientFileUpload: true,
-    disableLogger: true,
-    automaticVercelMonitors: true,
-  })
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      silent: true,
+      widenClientFileUpload: true,
+      disableLogger: true,
+      automaticVercelMonitors: true,
+    })
   : nextConfig

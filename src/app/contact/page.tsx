@@ -3,18 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { AppLogo } from '@/components/AppLogo'
-import {
-  Mail,
-  MessageSquare,
-  Building2,
-  Clock,
-  ArrowRight,
-  Send,
-  Loader2,
-  CheckCircle2,
-  MapPin,
-  HelpCircle,
-} from 'lucide-react'
+import { Mail, MessageSquare, Building2, Clock, Send, Loader2, CheckCircle2 } from 'lucide-react'
 
 const CONTACT_REASONS = [
   { value: 'general', label: 'General Inquiry' },
@@ -55,17 +44,34 @@ export default function ContactPage() {
     reason: 'general',
     company: '',
     message: '',
+    website: '',
   })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSending(true)
-    // Simulate send — replace with actual API call when ready
-    await new Promise((r) => setTimeout(r, 1500))
-    setSending(false)
-    setSent(true)
+    setError('')
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const result = (await response.json().catch(() => null)) as { error?: string } | null
+      if (!response.ok) throw new Error(result?.error || 'We could not accept your message.')
+      setSent(true)
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'We could not accept your message. Please try again.'
+      )
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -176,15 +182,23 @@ export default function ContactPage() {
               <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="w-8 h-8 text-success" />
               </div>
-              <h2 className="text-2xl font-bold mb-3">Message Sent!</h2>
+              <h2 className="text-2xl font-bold mb-3">Message accepted</h2>
               <p className="text-muted-foreground mb-8">
-                Thanks for reaching out. We&apos;ll get back to you within 24 hours.
+                Our email provider accepted your message for delivery. We&apos;ll reply as soon as
+                possible.
               </p>
               <div className="flex items-center justify-center gap-4">
                 <button
                   onClick={() => {
                     setSent(false)
-                    setForm({ name: '', email: '', reason: 'general', company: '', message: '' })
+                    setForm({
+                      name: '',
+                      email: '',
+                      reason: 'general',
+                      company: '',
+                      message: '',
+                      website: '',
+                    })
                   }}
                   className="btn-secondary text-sm"
                 >
@@ -203,12 +217,30 @@ export default function ContactPage() {
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="hidden" aria-hidden="true">
+                  <label htmlFor="contact-website">Website</label>
+                  <input
+                    id="contact-website"
+                    name="website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={form.website}
+                    onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+                  />
+                </div>
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Full Name *</label>
+                    <label htmlFor="contact-name" className="block text-sm font-medium mb-2">
+                      Full Name *
+                    </label>
                     <input
+                      id="contact-name"
+                      name="name"
                       type="text"
                       required
+                      maxLength={100}
+                      autoComplete="name"
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                       placeholder="Your full name"
@@ -216,10 +248,16 @@ export default function ContactPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Email *</label>
+                    <label htmlFor="contact-email" className="block text-sm font-medium mb-2">
+                      Email *
+                    </label>
                     <input
+                      id="contact-email"
+                      name="email"
                       type="email"
                       required
+                      maxLength={254}
+                      autoComplete="email"
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       placeholder="you@example.com"
@@ -230,8 +268,12 @@ export default function ContactPage() {
 
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Reason</label>
+                    <label htmlFor="contact-reason" className="block text-sm font-medium mb-2">
+                      Reason
+                    </label>
                     <select
+                      id="contact-reason"
+                      name="reason"
                       value={form.reason}
                       onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
                       className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
@@ -244,11 +286,15 @@ export default function ContactPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label htmlFor="contact-company" className="block text-sm font-medium mb-2">
                       Company <span className="text-muted-foreground font-normal">(optional)</span>
                     </label>
                     <input
+                      id="contact-company"
+                      name="company"
                       type="text"
+                      maxLength={120}
+                      autoComplete="organization"
                       value={form.company}
                       onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
                       placeholder="Your company"
@@ -258,9 +304,15 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Message *</label>
+                  <label htmlFor="contact-message" className="block text-sm font-medium mb-2">
+                    Message *
+                  </label>
                   <textarea
+                    id="contact-message"
+                    name="message"
                     required
+                    minLength={10}
+                    maxLength={5000}
                     rows={5}
                     value={form.message}
                     onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
@@ -268,6 +320,19 @@ export default function ContactPage() {
                     className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all resize-none"
                   />
                 </div>
+
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600"
+                  >
+                    {error}{' '}
+                    <a href="mailto:hello@naturequery.app" className="font-medium underline">
+                      Email us directly
+                    </a>
+                    .
+                  </div>
+                )}
 
                 <button
                   type="submit"

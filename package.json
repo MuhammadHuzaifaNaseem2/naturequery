@@ -7,14 +7,14 @@
     "killdev": "npx -y kill-port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "typecheck": "tsc --noEmit",
-    "validate": "npm run typecheck && npm run lint && npm run test",
+    "validate": "npm exec prisma validate && npm run typecheck && npm run lint && npm run test",
     "prepare": "husky"
   },
   "lint-staged": {

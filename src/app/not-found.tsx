@@ -1,6 +1,7 @@
 'use client'
 
 import { FileQuestion, Home } from 'lucide-react'
+import Link from 'next/link'
 import { useTranslation } from '@/contexts/LocaleContext'
 
 export default function NotFound() {
@@ -12,13 +13,11 @@ export default function NotFound() {
           <FileQuestion className="w-8 h-8 text-primary" />
         </div>
         <h1 className="text-2xl font-bold mb-2">{t('pages.notFound.title')}</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          {t('pages.notFound.description')}
-        </p>
-        <a href="/" className="btn-primary">
+        <p className="text-sm text-muted-foreground mb-6">{t('pages.notFound.description')}</p>
+        <Link href="/" className="btn-primary">
           <Home className="w-4 h-4" />
           {t('pages.notFound.backToDashboard')}
-        </a>
+        </Link>
       </div>
     </div>
   )

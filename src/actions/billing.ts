@@ -51,7 +51,7 @@ export async function getUserSubscription() {
 
   const sub = await getOrCreateSubscription(user.id!)
 
-  let effectivePlan = effectiveSubscriptionPlan(sub) as PlanKey
+  const effectivePlan = effectiveSubscriptionPlan(sub) as PlanKey
   let effectiveStatus = sub.status
   if (sub.status === 'TRIALING' && sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
     await prisma.subscription.update({

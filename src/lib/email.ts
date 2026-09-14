@@ -49,9 +49,17 @@ function baseTemplate(content: string) {
 
 // ---------- Send implementation ----------
 
-async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  options: { replyTo?: string; rateLimitKey?: string } = {}
+): Promise<void> {
   // Global rate limit: max 5 emails per minute per recipient (prevents abuse)
-  const rl = await rateLimitAsync(`email:${to}`, { maxRequests: 5, windowSeconds: 60 })
+  const rl = await rateLimitAsync(`email:${options.rateLimitKey || to}`, {
+    maxRequests: 5,
+    windowSeconds: 60,
+  })
   if (!rl.allowed) {
     throw new Error('Too many emails sent to this address. Please try again later.')
   }
@@ -64,7 +72,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({ from, to, subject, html, reply_to: options.replyTo }),
     })
     if (!response.ok) {
       const err = await response.text()
@@ -82,7 +90,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
       secure: process.env.SMTP_PORT === '465',
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
     })
-    await transporter.sendMail({ from, to, subject, html })
+    await transporter.sendMail({ from, to, subject, html, replyTo: options.replyTo })
     return
   }
 
@@ -207,6 +215,46 @@ function escapeHtml(value: unknown): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+const CONTACT_REASON_LABELS = {
+  general: 'General inquiry',
+  sales: 'Sales and enterprise',
+  support: 'Technical support',
+  partnership: 'Partnership',
+  feedback: 'Product feedback',
+} as const
+
+export type ContactReason = keyof typeof CONTACT_REASON_LABELS
+
+export async function sendContactEmail(input: {
+  name: string
+  email: string
+  company?: string
+  reason: ContactReason
+  message: string
+}): Promise<void> {
+  if (!isEmailConfigured()) throw new Error('No email provider configured')
+
+  const recipient = process.env.CONTACT_EMAIL || 'hello@naturequery.app'
+  const reason = CONTACT_REASON_LABELS[input.reason]
+  const company = input.company
+    ? `<p><strong>Company:</strong> ${escapeHtml(input.company)}</p>`
+    : ''
+  const html = baseTemplate(`
+    <p><strong>New NatureQuery contact request</strong></p>
+    <p><strong>Name:</strong> ${escapeHtml(input.name)}</p>
+    <p><strong>Email:</strong> ${escapeHtml(input.email)}</p>
+    ${company}
+    <p><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+    <p><strong>Message:</strong></p>
+    <div style="white-space:pre-wrap; border:1px solid #e4e4e7; border-radius:8px; padding:16px;">${escapeHtml(input.message)}</div>
+  `)
+
+  await sendEmail(recipient, `[NatureQuery contact] ${reason}`, html, {
+    replyTo: input.email,
+    rateLimitKey: `contact:${input.email}`,
+  })
 }
 
 function renderResultTable(result: ScheduleEmailResult): string {
