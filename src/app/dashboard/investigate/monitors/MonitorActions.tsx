@@ -24,8 +24,10 @@ export function MonitorActions({ id, enabled }: { id: string; enabled: boolean }
       toast.error('Difference detected', {
         description: 'NatureQuery created a new investigation and notification.',
       })
+    } else if (response.data.status === 'within_threshold') {
+      toast.warning('Differences found below your alert threshold')
     } else {
-      toast.success('Reports match within the alert threshold')
+      toast.success('Reports match within the comparison tolerance')
     }
     router.refresh()
   }

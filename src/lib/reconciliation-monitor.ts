@@ -1,5 +1,6 @@
+import type { ReconciliationResult } from '@/lib/reconciliation'
 export type MonitorFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY'
-export type MonitorRunStatus = 'never' | 'matched' | 'alert' | 'failed'
+export type MonitorRunStatus = 'never' | 'matched' | 'within_threshold' | 'alert' | 'failed'
 
 export interface MonitorReportDefinition {
   name: string
@@ -80,9 +81,25 @@ export function isMonitorDefinition(value: unknown): value is ReconciliationMoni
     typeof monitor.nextRunAt === 'string' &&
     (monitor.lastStatus === 'never' ||
       monitor.lastStatus === 'matched' ||
+      monitor.lastStatus === 'within_threshold' ||
       monitor.lastStatus === 'alert' ||
       monitor.lastStatus === 'failed') &&
     reportValid(monitor.source) &&
     reportValid(monitor.comparison)
   )
+}
+
+export function reconciliationMonitorStatus(
+  result: ReconciliationResult,
+  threshold: number
+): Exclude<MonitorRunStatus, 'never'> {
+  if (!result.isComplete || !Number.isFinite(threshold) || threshold < 0) return 'failed'
+  if (result.allMatched) return 'matched'
+  // Structural differences (including equal-total duplicates) cannot be suppressed by a money threshold.
+  if (
+    result.items.some((item) => item.status !== 'matched' && item.status !== 'amount_mismatch') ||
+    result.grossDifference > threshold
+  )
+    return 'alert'
+  return 'within_threshold'
 }

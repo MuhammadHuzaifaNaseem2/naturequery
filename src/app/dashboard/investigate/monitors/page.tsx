@@ -8,11 +8,13 @@ import { MonitorActions } from './MonitorActions'
 const STATUS_LABEL: Record<MonitorRunStatus, string> = {
   never: 'Not run yet',
   matched: 'Matched',
+  within_threshold: 'Differences below threshold',
   alert: 'Difference found',
   failed: 'Failed',
 }
 
 const STATUS_STYLE: Record<MonitorRunStatus, string> = {
+  within_threshold: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
   never: 'bg-secondary text-muted-foreground border-border',
   matched: 'bg-success/10 text-success border-success/20',
   alert: 'bg-amber-500/10 text-amber-500 border-amber-500/20',

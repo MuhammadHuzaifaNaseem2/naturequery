@@ -1,4 +1,4 @@
-import type { ReconciliationRow } from '@/lib/reconciliation'
+import { reconcileReports, type ReconciliationRow } from '@/lib/reconciliation'
 
 export type InvestigationCaseStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED'
 
@@ -41,6 +41,7 @@ export interface SavedInvestigation {
 }
 
 export interface SavedInvestigationSummary {
+  needsReview?: boolean
   id: string
   name: string
   status: InvestigationCaseStatus
@@ -74,6 +75,19 @@ export function isInvestigationSnapshot(value: unknown): value is InvestigationS
     return (
       typeof candidate.name === 'string' &&
       Array.isArray(candidate.rows) &&
+      candidate.rows.every(
+        (row) =>
+          row &&
+          typeof row === 'object' &&
+          !Array.isArray(row) &&
+          Object.values(row).every(
+            (value) =>
+              value == null ||
+              typeof value === 'string' ||
+              typeof value === 'boolean' ||
+              (typeof value === 'number' && Number.isFinite(value))
+          )
+      ) &&
       Array.isArray(candidate.fields) &&
       candidate.fields.every((field) => typeof field === 'string')
     )
@@ -116,5 +130,57 @@ export function investigationSummary(
     issueCount: snapshot.issueCount,
     resolvedCount: snapshot.resolvedCount,
     savedAt,
+  }
+}
+
+export const CONFIRMED_CAUSES = [
+  'Duplicate row',
+  'Refund treatment',
+  'Fee / net vs gross',
+  'Filter / scope difference',
+  'Cutoff / timing',
+  'Missing mapping',
+  'Other confirmed cause',
+] as const
+
+export function recomputeInvestigation(snapshot: InvestigationSnapshot): InvestigationSnapshot {
+  const result = reconcileReports({
+    sourceRows: snapshot.source.rows,
+    comparisonRows: snapshot.comparison.rows,
+    sourceKey: snapshot.sourceKey,
+    sourceAmount: snapshot.sourceAmount,
+    comparisonKey: snapshot.comparisonKey,
+    comparisonAmount: snapshot.comparisonAmount,
+    currency: snapshot.currency,
+  })
+  if (!result.isComplete) throw new Error(result.validationErrors.join(' '))
+  const issues = result.items.filter((item) => item.status !== 'matched')
+  const causes: Record<string, string> = Object.create(null)
+  for (const item of issues) {
+    const cause = Object.hasOwn(snapshot.causes, item.key) ? snapshot.causes[item.key] : ''
+    if (CONFIRMED_CAUSES.some((value) => value === cause)) causes[item.key] = cause
+  }
+  const unresolved = issues.filter((item) => !Object.hasOwn(causes, item.key))
+  const unresolvedDifference =
+    unresolved.reduce(
+      (sum, item) => sum + Math.round(Math.abs(item.difference) / result.minorUnit),
+      0
+    ) /
+    (1 / result.minorUnit)
+  return {
+    ...snapshot,
+    causes,
+    sourceTotal: result.sourceTotal,
+    comparisonTotal: result.comparisonTotal,
+    difference: result.difference,
+    unresolvedDifference,
+    issueCount: issues.length,
+    resolvedCount: issues.length - unresolved.length,
+    status:
+      unresolved.length === 0
+        ? 'RESOLVED'
+        : snapshot.status === 'IN_REVIEW' || Object.keys(causes).length > 0
+          ? 'IN_REVIEW'
+          : 'OPEN',
   }
 }

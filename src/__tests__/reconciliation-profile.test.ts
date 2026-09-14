@@ -4,14 +4,14 @@ import { resolveProfileColumns } from '@/lib/reconciliation-profile'
 import { parseXlsxBuffer } from '@/lib/spreadsheet-import'
 
 describe('resolveProfileColumns', () => {
-  it('reuses saved columns and falls back safely when a header changed', () => {
+  it('reuses saved columns and requires remapping when a header changed', () => {
     expect(resolveProfileColumns(['order_id', 'gross', 'net'], 'order_id', 'net')).toEqual({
       key: 'order_id',
       amount: 'net',
     })
     expect(resolveProfileColumns(['reference', 'total'], 'order_id', 'net')).toEqual({
-      key: 'reference',
-      amount: 'total',
+      key: '',
+      amount: '',
     })
   })
 })

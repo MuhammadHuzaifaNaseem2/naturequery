@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import {
   investigationSummary,
+  recomputeInvestigation,
   isInvestigationSnapshot,
   type InvestigationSnapshot,
   type SavedInvestigation,
@@ -39,7 +40,7 @@ function validateSnapshot(input: unknown): InvestigationSnapshot {
     throw new Error('This investigation is too large to save. Compare a smaller date range.')
   }
 
-  return JSON.parse(serialized) as InvestigationSnapshot
+  return recomputeInvestigation(JSON.parse(serialized) as InvestigationSnapshot)
 }
 
 export async function saveInvestigation(input: {
@@ -141,9 +142,24 @@ export async function getSavedInvestigations(): Promise<{
       seen.add(record.resourceId)
       const metadata = record.metadata as { snapshot?: unknown } | null
       if (!isInvestigationSnapshot(metadata?.snapshot)) continue
-      summaries.push(
-        investigationSummary(record.resourceId, record.createdAt.toISOString(), metadata.snapshot)
-      )
+      try {
+        summaries.push(
+          investigationSummary(
+            record.resourceId,
+            record.createdAt.toISOString(),
+            recomputeInvestigation(metadata.snapshot)
+          )
+        )
+      } catch {
+        // Preserve access to old incomplete cases without claiming they are resolved.
+        summaries.push({
+          ...investigationSummary(record.resourceId, record.createdAt.toISOString(), {
+            ...metadata.snapshot,
+            status: 'OPEN',
+          }),
+          needsReview: true,
+        })
+      }
     }
 
     return { success: true, data: summaries }

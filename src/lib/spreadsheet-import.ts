@@ -17,14 +17,23 @@ function cellValue(value: CellValue): string | number | boolean | null {
 }
 
 function uniqueHeaders(worksheet: Worksheet) {
-  const seen = new Map<string, number>()
-  const columnCount = worksheet.actualColumnCount || worksheet.columnCount
-  return Array.from({ length: columnCount }, (_, index) => {
+  const columnCount = worksheet.columnCount
+  const bases = Array.from({ length: columnCount }, (_, index) => {
     const raw = cellValue(worksheet.getRow(1).getCell(index + 1).value)
-    const base = String(raw ?? '').trim() || `Column ${index + 1}`
-    const count = seen.get(base) || 0
-    seen.set(base, count + 1)
-    return count === 0 ? base : `${base} (${count + 1})`
+    return String(raw ?? '').trim() || `Column ${index + 1}`
+  })
+  const reserved = new Set(bases)
+  const used = new Set<string>()
+  return bases.map((base) => {
+    let name = base
+    let suffix = 2
+    while (used.has(name)) {
+      do {
+        name = `${base} (${suffix++})`
+      } while (reserved.has(name) || used.has(name))
+    }
+    used.add(name)
+    return name
   })
 }
 
@@ -35,7 +44,7 @@ export function worksheetToRows(worksheet: Worksheet): {
   const fields = uniqueHeaders(worksheet)
   const rows: ReconciliationRow[] = []
 
-  for (let rowNumber = 2; rowNumber <= worksheet.actualRowCount; rowNumber += 1) {
+  for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
     const worksheetRow = worksheet.getRow(rowNumber)
     const row: ReconciliationRow = {}
     let hasValue = false

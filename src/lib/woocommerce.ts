@@ -1,4 +1,4 @@
-import type { ReconciliationRow } from '@/lib/reconciliation'
+import { parseReconciliationAmount, type ReconciliationRow } from '@/lib/reconciliation'
 
 export const WOOCOMMERCE_ORDER_FIELDS = [
   'order_id',
@@ -31,23 +31,24 @@ export interface WooCommerceOrder {
 }
 
 function finiteAmount(value: unknown) {
-  const amount = Number(value)
-  return Number.isFinite(amount) ? amount : 0
+  return typeof value === 'string' || typeof value === 'number'
+    ? parseReconciliationAmount(value)
+    : null
 }
 
 export function wooCommerceOrdersToRows(orders: WooCommerceOrder[]): ReconciliationRow[] {
   return orders.map((order) => {
     const grossAmount = finiteAmount(order.total)
-    const refundAmount = (order.refunds || []).reduce(
-      (sum, refund) => sum + Math.abs(finiteAmount(refund.total)),
-      0
-    )
+    const refunds = (order.refunds || []).map((refund) => finiteAmount(refund.total))
+    const refundAmount = refunds.some((value) => value === null)
+      ? null
+      : refunds.reduce<number>((sum, value) => sum + Math.abs(value!), 0)
     return {
       order_id: String(order.number || order.id),
       transaction_id: order.transaction_id || '',
       gross_amount: grossAmount,
       refund_amount: refundAmount,
-      net_amount: grossAmount - refundAmount,
+      net_amount: grossAmount === null || refundAmount === null ? null : grossAmount - refundAmount,
       currency: order.currency || '',
       status: order.status || '',
       payment_method: order.payment_method_title || order.payment_method || '',

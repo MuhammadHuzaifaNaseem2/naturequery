@@ -93,7 +93,9 @@ export default async function InvestigationHistoryPage() {
                     <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                       Difference
                     </p>
-                    <p className="font-bold mt-1">{money(item.difference, item.currency)}</p>
+                    <p className="font-bold mt-1">
+                      {item.needsReview ? 'Needs review' : money(item.difference, item.currency)}
+                    </p>
                   </div>
                   <div className="rounded-lg bg-secondary/50 p-3">
                     <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -101,12 +103,14 @@ export default async function InvestigationHistoryPage() {
                     </p>
                     <p
                       className={
-                        item.unresolvedDifference === 0
+                        item.status === 'RESOLVED'
                           ? 'font-bold mt-1 text-success'
                           : 'font-bold mt-1 text-destructive'
                       }
                     >
-                      {money(item.unresolvedDifference, item.currency)}
+                      {item.needsReview
+                        ? 'Needs review'
+                        : money(item.unresolvedDifference, item.currency)}
                     </p>
                   </div>
                 </div>
@@ -118,7 +122,9 @@ export default async function InvestigationHistoryPage() {
                     ) : (
                       <Clock3 className="w-3.5 h-3.5" />
                     )}
-                    {item.resolvedCount} of {item.issueCount} causes confirmed
+                    {item.needsReview
+                      ? 'Correct the saved report data'
+                      : `${item.resolvedCount} of ${item.issueCount} causes confirmed`}
                   </span>
                   <span>{new Date(item.savedAt).toLocaleDateString()}</span>
                 </div>

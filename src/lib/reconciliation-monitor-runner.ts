@@ -13,6 +13,7 @@ import { reconcileReports } from '@/lib/reconciliation'
 import type { InvestigationSnapshot } from '@/lib/investigation-record'
 import {
   isMonitorDefinition,
+  reconciliationMonitorStatus,
   MONITOR_CONFIG_ACTION,
   nextMonitorRun,
   type MonitorReportDefinition,
@@ -80,6 +81,8 @@ async function executeReport(
     dbType
   )
   const result = await driver.executeQuery(ensureLimitClause(report.sql, MAX_QUERY_ROWS, dbType))
+  if (result.truncated || result.rows.length >= MAX_QUERY_ROWS)
+    throw new Error('Monitor results may be truncated. Narrow the query before reconciling.')
   return { rows: result.rows, fields: result.fields }
 }
 
@@ -135,9 +138,13 @@ export async function runSingleReconciliationMonitor(
       sourceAmount: definition.source.amountColumn,
       comparisonKey: definition.comparison.keyColumn,
       comparisonAmount: definition.comparison.amountColumn,
+      currency: definition.currency,
     })
 
-    const shouldAlert = Math.abs(result.difference) > definition.threshold
+    const runStatus = reconciliationMonitorStatus(result, definition.threshold)
+    if (runStatus === 'failed')
+      throw new Error(result.validationErrors.join(' ') || 'Invalid alert threshold')
+    const shouldAlert = runStatus === 'alert'
     let investigationId: string | undefined
     if (shouldAlert) {
       investigationId = randomUUID()
@@ -158,7 +165,7 @@ export async function runSingleReconciliationMonitor(
         sourceTotal: result.sourceTotal,
         comparisonTotal: result.comparisonTotal,
         difference: result.difference,
-        unresolvedDifference: result.difference,
+        unresolvedDifference: result.grossDifference,
         issueCount: result.issueCount,
         resolvedCount: 0,
       }
@@ -174,7 +181,7 @@ export async function runSingleReconciliationMonitor(
           userId,
           type: 'reconciliation_alert',
           title: `Reconciliation alert: ${definition.name}`,
-          message: `${definition.currency} ${Math.abs(result.difference).toFixed(2)} is unexplained across ${result.issueCount} record(s).`,
+          message: `${definition.currency} ${result.grossDifference.toFixed(2)} is unexplained across ${result.issueCount} record(s).`,
           metadata: {
             monitorId: id,
             investigationId,
@@ -188,7 +195,7 @@ export async function runSingleReconciliationMonitor(
       ...definition,
       nextRunAt,
       lastRunAt: now.toISOString(),
-      lastStatus: shouldAlert ? 'alert' : 'matched',
+      lastStatus: runStatus,
       lastDifference: result.difference,
       lastError: undefined,
       lastInvestigationId: investigationId,
@@ -197,7 +204,7 @@ export async function runSingleReconciliationMonitor(
     return {
       monitorId: id,
       name: definition.name,
-      status: shouldAlert ? 'alert' : 'matched',
+      status: runStatus,
       difference: result.difference,
       investigationId,
     }

@@ -32,6 +32,7 @@ import {
 } from '@/lib/investigation-transfer'
 import {
   INVESTIGATION_STATUSES,
+  CONFIRMED_CAUSES,
   type InvestigationCaseStatus,
   type InvestigationSnapshot,
 } from '@/lib/investigation-record'
@@ -71,16 +72,7 @@ const EMPTY_COMPARISON: ReportData = {
   rows: [],
 }
 
-const CAUSES = [
-  'Unresolved',
-  'Duplicate row',
-  'Refund treatment',
-  'Fee / net vs gross',
-  'Filter / scope difference',
-  'Cutoff / timing',
-  'Missing mapping',
-  'Other confirmed cause',
-] as const
+const CAUSES = ['Unresolved', ...CONFIRMED_CAUSES] as const
 
 const STATUS_LABELS: Record<ReconciliationStatus, string> = {
   matched: 'Matched',
@@ -221,8 +213,9 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
         sourceAmount,
         comparisonKey,
         comparisonAmount,
+        currency,
       }),
-    [source, comparison, sourceKey, sourceAmount, comparisonKey, comparisonAmount]
+    [source, comparison, sourceKey, sourceAmount, comparisonKey, comparisonAmount, currency]
   )
 
   const issues = result.items.filter((item) => item.status !== 'matched')
@@ -245,21 +238,25 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
   )
   const resolvedDifference = issues.reduce(
     (sum, item) =>
-      sum + (causes[item.key] && causes[item.key] !== 'Unresolved' ? item.difference : 0),
+      sum + (CONFIRMED_CAUSES.some((cause) => cause === causes[item.key]) ? item.difference : 0),
     0
   )
-  const unresolvedDifference = result.difference - resolvedDifference
-  const resolvedCount = issues.filter(
-    (item) => causes[item.key] && causes[item.key] !== 'Unresolved'
+  const unresolvedDifference =
+    issues
+      .filter((item) => !CONFIRMED_CAUSES.some((cause) => cause === causes[item.key]))
+      .reduce((sum, item) => sum + Math.round(Math.abs(item.difference) / result.minorUnit), 0) /
+    (1 / result.minorUnit)
+  const resolvedCount = issues.filter((item) =>
+    CONFIRMED_CAUSES.some((cause) => cause === causes[item.key])
   ).length
 
   useEffect(() => {
-    if (issues.length > 0 && resolvedCount === issues.length && caseStatus !== 'RESOLVED') {
+    if (result.isComplete && resolvedCount === issues.length && caseStatus !== 'RESOLVED') {
       setCaseStatus('RESOLVED')
-    } else if (resolvedCount < issues.length && caseStatus === 'RESOLVED') {
+    } else if ((!result.isComplete || resolvedCount < issues.length) && caseStatus === 'RESOLVED') {
       setCaseStatus(resolvedCount > 0 ? 'IN_REVIEW' : 'OPEN')
     }
-  }, [caseStatus, issues.length, resolvedCount])
+  }, [caseStatus, issues.length, resolvedCount, result.isComplete])
 
   const money = (value: number) => {
     try {
@@ -451,6 +448,10 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
   }
 
   const saveCurrentInvestigation = async () => {
+    if (!result.isComplete) {
+      toast.error('Correct the report validation errors before saving')
+      return
+    }
     if (!investigationName.trim()) {
       toast.error('Give this investigation a name')
       return
@@ -494,7 +495,11 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
   }
 
   const canCreateMonitor = Boolean(
-    source.sql && source.connectionId && comparison.sql && comparison.connectionId
+    result.isComplete &&
+    source.sql &&
+    source.connectionId &&
+    comparison.sql &&
+    comparison.connectionId
   )
 
   const createMonitor = async () => {
@@ -539,9 +544,10 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
   }
 
   const exportInvestigation = () => {
+    if (!result.isComplete) return
     const rows = [
       ['record_id', 'report_a', 'report_b', 'difference', 'status', 'confirmed_cause'],
-      ...issues.map((item) => [
+      ...result.items.map((item) => [
         item.key,
         item.sourceAmount,
         item.comparisonAmount,
@@ -601,14 +607,14 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
               </button>
               <button
                 onClick={exportInvestigation}
-                disabled={issues.length === 0}
+                disabled={!result.isComplete}
                 className="btn-gradient text-sm disabled:opacity-50"
               >
                 <Download className="w-4 h-4" /> Export evidence
               </button>
               <button
                 onClick={saveCurrentInvestigation}
-                disabled={isSaving}
+                disabled={isSaving || !result.isComplete}
                 className="btn-gradient text-sm disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />{' '}
@@ -635,7 +641,14 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
                 className="input w-full text-sm font-normal text-foreground"
               >
                 {INVESTIGATION_STATUSES.map((status) => (
-                  <option key={status.value} value={status.value}>
+                  <option
+                    key={status.value}
+                    value={status.value}
+                    disabled={
+                      status.value === 'RESOLVED' &&
+                      (!result.isComplete || resolvedCount < issues.length)
+                    }
+                  >
                     {status.label}
                   </option>
                 ))}
@@ -774,7 +787,10 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
               <input
                 value={currency}
                 maxLength={3}
-                onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+                onChange={(event) => {
+                  setCurrency(event.target.value.toUpperCase())
+                  setCauses({})
+                }}
                 className="input w-full text-sm font-normal text-foreground uppercase"
               />
             </label>
@@ -790,8 +806,14 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
           report={source}
           keyColumn={sourceKey}
           amountColumn={sourceAmount}
-          onKeyChange={setSourceKey}
-          onAmountChange={setSourceAmount}
+          onKeyChange={(value) => {
+            setSourceKey(value)
+            setCauses({})
+          }}
+          onAmountChange={(value) => {
+            setSourceAmount(value)
+            setCauses({})
+          }}
           onUpload={() => sourceInput.current?.click()}
         />
         <ReportCard
@@ -799,8 +821,14 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
           report={comparison}
           keyColumn={comparisonKey}
           amountColumn={comparisonAmount}
-          onKeyChange={setComparisonKey}
-          onAmountChange={setComparisonAmount}
+          onKeyChange={(value) => {
+            setComparisonKey(value)
+            setCauses({})
+          }}
+          onAmountChange={(value) => {
+            setComparisonAmount(value)
+            setCauses({})
+          }}
           onUpload={() => comparisonInput.current?.click()}
         />
         <input
@@ -830,37 +858,46 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
       <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
         <SummaryCard
           label="Report A total"
-          value={money(result.sourceTotal)}
+          value={result.isComplete ? money(result.sourceTotal) : 'Not available'}
           detail={source.name}
         />
         <SummaryCard
           label="Report B total"
-          value={money(result.comparisonTotal)}
+          value={result.isComplete ? money(result.comparisonTotal) : 'Not available'}
           detail={comparison.name}
         />
         <SummaryCard
           label="Original difference"
-          value={money(result.difference)}
+          value={result.isComplete ? money(result.difference) : 'Not available'}
           detail="Report A minus Report B"
-          tone={Math.abs(result.difference) > 0.01 ? 'warning' : 'success'}
+          tone={result.allMatched ? 'success' : 'warning'}
         />
         <SummaryCard
           label="Still unexplained"
-          value={money(unresolvedDifference)}
-          detail={`${resolvedCount} of ${issues.length} issues classified`}
-          tone={Math.abs(unresolvedDifference) > 0.01 ? 'danger' : 'success'}
+          value={result.isComplete ? money(unresolvedDifference) : 'Needs review'}
+          detail={`${resolvedCount} of ${issues.length} issues classified - absolute differences`}
+          tone={result.isComplete && resolvedCount === issues.length ? 'success' : 'danger'}
         />
       </section>
 
-      {(result.invalidSourceRows > 0 || result.invalidComparisonRows > 0) && (
-        <div className="flex gap-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm">
-          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-          <p>
-            {result.invalidSourceRows} row(s) from Report A and {result.invalidComparisonRows}{' '}
-            row(s) from Report B were skipped because their ID or amount was empty or invalid.
-          </p>
+      {!result.isComplete && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm"
+        >
+          <p className="font-semibold">Comparison incomplete</p>
+          <ul className="list-disc pl-5">
+            {result.validationErrors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
         </div>
       )}
+      <p className="text-xs text-muted-foreground">
+        Currency columns named currency or currency_code are checked automatically. Reports without
+        a currency column use the currency selected above; confirm both exports use it. Opposite
+        differences do not cancel in Still unexplained.
+      </p>
 
       <section className="card overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-5 border-b border-border">
@@ -876,12 +913,20 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
           </div>
         </div>
 
-        {issues.length === 0 ? (
+        {!result.isComplete ? (
+          <div className="p-12 text-center">
+            <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+            <h3 className="font-semibold">Correct the report data to compare</h3>
+            <p className="text-sm text-muted-foreground">
+              No match or resolution is confirmed while validation errors remain.
+            </p>
+          </div>
+        ) : issues.length === 0 ? (
           <div className="p-12 text-center">
             <CheckCircle2 className="w-10 h-10 text-success mx-auto mb-3" />
             <h3 className="font-semibold">No differences found</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Every valid identifier and amount matches within one cent.
+              Every identifier and amount matches within {money(result.minorUnit)}.
             </p>
           </div>
         ) : (
@@ -1028,6 +1073,9 @@ function ReportCard({
             onChange={(event) => onKeyChange(event.target.value)}
             className="input w-full text-sm font-normal text-foreground"
           >
+            <option value="" disabled>
+              Select a column
+            </option>
             {report.fields.map((field) => (
               <option key={field}>{field}</option>
             ))}
@@ -1040,6 +1088,9 @@ function ReportCard({
             onChange={(event) => onAmountChange(event.target.value)}
             className="input w-full text-sm font-normal text-foreground"
           >
+            <option value="" disabled>
+              Select a column
+            </option>
             {report.fields.map((field) => (
               <option key={field}>{field}</option>
             ))}

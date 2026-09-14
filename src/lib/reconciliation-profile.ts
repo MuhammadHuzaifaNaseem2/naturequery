@@ -41,9 +41,8 @@ export function resolveProfileColumns(
   preferredKey: string,
   preferredAmount: string
 ) {
-  const key = fields.includes(preferredKey) ? preferredKey : fields[0] || ''
-  const amount = fields.includes(preferredAmount)
-    ? preferredAmount
-    : fields.find((field) => field !== key) || fields[0] || ''
+  // A missing saved column requires an explicit remap, never a guessed money column.
+  const key = fields.includes(preferredKey) ? preferredKey : ''
+  const amount = fields.includes(preferredAmount) ? preferredAmount : ''
   return { key, amount }
 }
