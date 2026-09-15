@@ -51,6 +51,7 @@ beforeEach(() => {
           user_email: 'a@example.invalid',
           variant_id: 'pro',
           status: 'active',
+          created_at: '2026-09-14T09:00:00.000Z',
           updated_at: '2026-09-14T10:00:00.000Z',
           renews_at: '2026-10-14T10:00:00.000Z',
         },
@@ -85,7 +86,10 @@ describe('Subscription ownership', () => {
     expect(mocks.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: 'user-a' },
-        data: expect.objectContaining({ plan: 'PRO' }),
+        data: expect.objectContaining({
+          plan: 'PRO',
+          currentPeriodStart: new Date('2026-09-14T09:00:00.000Z'),
+        }),
       })
     )
   })
