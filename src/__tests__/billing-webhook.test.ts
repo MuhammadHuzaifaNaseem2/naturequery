@@ -45,6 +45,7 @@ function subscriptionAttributes(overrides: Record<string, unknown> = {}) {
     user_email: 'owner@example.com',
     variant_id: 'variant-pro',
     status: 'active',
+    created_at: '2026-09-14T09:00:00.000Z',
     updated_at: '2026-09-14T10:00:00.000Z',
     renews_at: '2026-10-14T10:00:00.000Z',
     ends_at: null,
@@ -136,6 +137,7 @@ describe('Lemon Squeezy webhook processing', () => {
         data: expect.objectContaining({
           plan: 'PRO',
           status: 'CANCELED',
+          currentPeriodStart: new Date('2026-09-14T09:00:00.000Z'),
           currentPeriodEnd: new Date('2026-10-14T10:00:00.000Z'),
         }),
       })

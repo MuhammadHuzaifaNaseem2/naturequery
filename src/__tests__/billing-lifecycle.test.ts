@@ -15,6 +15,7 @@ function attributes(overrides: Record<string, unknown> = {}) {
     user_email: 'owner@example.com',
     variant_id: 'variant-pro',
     status: 'active',
+    created_at: '2026-09-14T09:00:00.000Z',
     updated_at: '2026-09-14T10:00:00.000Z',
     renews_at: '2026-10-14T10:00:00.000Z',
     ends_at: null,
@@ -65,6 +66,12 @@ describe('billing event identity', () => {
 })
 
 describe('subscription lifecycle mapping', () => {
+  it('stores the provider subscription creation time as the period start', () => {
+    expect(subscriptionLifecycleUpdate(attributes()).data).toMatchObject({
+      currentPeriodStart: new Date('2026-09-14T09:00:00.000Z'),
+    })
+  })
+
   it('keeps paid access through the cancellation grace period', () => {
     const result = subscriptionLifecycleUpdate(
       attributes({
@@ -107,6 +114,9 @@ describe('subscription lifecycle mapping', () => {
     )
     expect(() => subscriptionLifecycleUpdate(attributes({ updated_at: 'not-a-date' }))).toThrow(
       'Invalid updated_at'
+    )
+    expect(() => subscriptionLifecycleUpdate(attributes({ created_at: undefined }))).toThrow(
+      'Missing created_at'
     )
   })
 })

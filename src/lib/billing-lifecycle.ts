@@ -122,6 +122,7 @@ export function subscriptionLifecycleUpdate(
   if (!plan) throw new Error('Webhook contains an unrecognized subscription variant')
 
   const providerStatus = String(attributes.status ?? '')
+  const currentPeriodStart = requiredDate(attributes.created_at, 'created_at')
   const providerUpdatedAt = requiredDate(attributes.updated_at, 'updated_at')
   const renewsAt = optionalDate(attributes.renews_at)
   const endsAt = optionalDate(attributes.ends_at)
@@ -170,6 +171,7 @@ export function subscriptionLifecycleUpdate(
       status,
       stripeCustomerId: String(attributes.customer_id ?? ''),
       stripePriceId: variantId,
+      currentPeriodStart,
       currentPeriodEnd,
       cancelAtPeriodEnd,
       trialEndsAt,
