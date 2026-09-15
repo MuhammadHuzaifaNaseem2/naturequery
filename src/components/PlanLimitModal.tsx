@@ -23,7 +23,7 @@ export function PlanLimitModal({
     setIsLoading(true)
     try {
       const { url } = await createCheckoutSession('PRO')
-      if (url) window.open(url, '_blank', 'noopener,noreferrer')
+      if (url) window.location.assign(url)
     } catch {
       window.location.href = '/pricing'
     } finally {
