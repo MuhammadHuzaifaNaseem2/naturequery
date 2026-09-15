@@ -164,6 +164,7 @@ async function applySubscription(
           | 'INCOMPLETE',
         stripeCustomerId: String(attributes.customer_id),
         stripePriceId: String(attributes.variant_id),
+        currentPeriodStart: lifecycle.data.currentPeriodStart as Date,
         currentPeriodEnd: lifecycle.data.currentPeriodEnd as Date | null,
         cancelAtPeriodEnd: Boolean(lifecycle.data.cancelAtPeriodEnd),
         trialEndsAt: lifecycle.data.trialEndsAt as Date | null,

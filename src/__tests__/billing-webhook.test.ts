@@ -147,6 +147,27 @@ describe('Lemon Squeezy webhook processing', () => {
     )
   })
 
+  it('stores the provider start time when linking a subscription for the first time', async () => {
+    mocks.subscriptionFind.mockResolvedValue(null)
+    mocks.userFind.mockResolvedValue({
+      id: 'user-1',
+      email: 'owner@example.com',
+      emailVerified: new Date(),
+    })
+    mocks.subscriptionUpsert.mockResolvedValue({})
+
+    const response = await POST(signedRequest(payload('subscription_created')) as never)
+
+    expect(response.status).toBe(200)
+    expect(mocks.subscriptionUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          currentPeriodStart: new Date('2026-09-14T09:00:00.000Z'),
+        }),
+      })
+    )
+  })
+
   it('uses the invoice subscription_id and refreshes canonical state for payment events', async () => {
     mocks.getSubscription.mockResolvedValue({
       data: {
