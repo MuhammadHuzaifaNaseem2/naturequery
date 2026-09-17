@@ -15,6 +15,7 @@ export interface SavedConnection {
   isDemo?: boolean
   teamId?: string | null
   teamName?: string
+  source?: 'cloud' | 'desktop' | 'demo'
 }
 
 export interface ChartRecommendation {

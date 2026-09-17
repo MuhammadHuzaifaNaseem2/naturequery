@@ -59,7 +59,7 @@ function createPostgresDriver(creds) {
     database: creds.database,
     user: creds.user,
     password: creds.password,
-    ssl: isLocal(creds.host) ? false : { rejectUnauthorized: false },
+    ssl: isLocal(creds.host) ? false : { rejectUnauthorized: true },
     max: 5,
     connectionTimeoutMillis: 10000,
   })
@@ -110,7 +110,7 @@ function createMysqlDriver(creds) {
         user: creds.user,
         password: creds.password,
         connectTimeout: 10000,
-        ssl: isLocal(creds.host) ? undefined : { rejectUnauthorized: false },
+        ssl: isLocal(creds.host) ? undefined : { rejectUnauthorized: true },
       })
     }
     return conn
@@ -166,7 +166,7 @@ function createSqlServerDriver(creds) {
         connectionTimeout: 10000,
         options: {
           encrypt: !isLocal(creds.host),
-          trustServerCertificate: true,
+          trustServerCertificate: isLocal(creds.host),
         },
       }).connect()
     }

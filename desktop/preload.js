@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('naturequery', {
   // Saved local connections. Passwords stay in the main process — the UI only
   // ever works with a connection id and metadata.
   localdb: {
+    openManager: () => ipcRenderer.invoke('localdb:open-manager'),
     list: () => ipcRenderer.invoke('localdb:list'),
     save: (conn) => ipcRenderer.invoke('localdb:save', conn),
     remove: (id) => ipcRenderer.invoke('localdb:remove', id),

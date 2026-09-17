@@ -9,7 +9,9 @@
 // LIMIT/TOP clause so a huge table cannot be pulled down by accident.
 
 const DANGEROUS_KEYWORDS =
-  /\b(DROP|ALTER|TRUNCATE|DELETE|INSERT|UPDATE|CREATE|GRANT|REVOKE|EXEC(?:UTE)?|LOAD\s+DATA|INTO\s+(?:OUT|DUMP)FILE|CALL|MERGE|REPLACE\s+INTO|RENAME|SET\s+(?:GLOBAL|SESSION)|SHUTDOWN|KILL)\b/i
+  /\b(DROP|ALTER|TRUNCATE|DELETE|INSERT|UPDATE|CREATE|GRANT|REVOKE|EXEC(?:UTE)?|LOAD\s+DATA|INTO\s+(?:OUT|DUMP)FILE|CALL|MERGE|REPLACE\s+INTO|RENAME|SET\s+(?:GLOBAL|SESSION)|SHUTDOWN|KILL|COPY|VACUUM|ANALYZE|LOCK|UNLOCK)\b/i
+
+const DANGEROUS_READ_MODIFIERS = /\b(INTO|FOR\s+(?:UPDATE|SHARE))\b/i
 
 const SAFE_STARTERS = ['SELECT', 'WITH', 'EXPLAIN', 'SHOW', 'DESCRIBE', 'DESC', 'PRAGMA']
 
@@ -39,6 +41,14 @@ function validateReadOnly(sql) {
   // Block destructive keywords
   if (DANGEROUS_KEYWORDS.test(stripped)) {
     const matched = (stripped.match(DANGEROUS_KEYWORDS) || [])[0] || 'a forbidden keyword'
+    return {
+      valid: false,
+      error: `Only read-only queries are allowed. Found: ${String(matched).toUpperCase().trim()}. NatureQuery never modifies your data.`,
+    }
+  }
+
+  if (DANGEROUS_READ_MODIFIERS.test(stripped)) {
+    const matched = (stripped.match(DANGEROUS_READ_MODIFIERS) || [])[0]
     return {
       valid: false,
       error: `Only read-only queries are allowed. Found: ${String(matched).toUpperCase().trim()}. NatureQuery never modifies your data.`,

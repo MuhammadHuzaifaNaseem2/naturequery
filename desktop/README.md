@@ -9,7 +9,9 @@ databases that are open to the public internet. Most business owners keep
 their database on their own PC or inside a private office network. The
 desktop app runs **on the user's machine**, so it can connect to those
 local and internal databases the website can never reach. Credentials and
-data stay on the user's computer.
+query results stay on the user's computer. Table and column names are sent to
+NatureQuery only when the user asks AI to generate SQL; AI Insights sends the
+displayed result only after the user chooses that feature.
 
 This project is completely separate from the web app. Building or running it
 cannot affect the live website.
@@ -21,6 +23,12 @@ cannot affect the live website.
   background process does the connecting, reusing the same database logic the
   web app already uses on the server (`src/lib/db-drivers.ts`).
 - The UI never touches a database directly; it asks through a secure bridge.
+- Saved local connections appear in the main dashboard under **On this
+  computer**. Their IDs are namespaced so they cannot be confused with cloud
+  connections.
+- IPC requests are accepted only from the configured NatureQuery origin and
+  bundled local screens. Ad-hoc credential APIs are restricted to bundled
+  screens.
 
 ## Run it (development)
 
@@ -54,10 +62,9 @@ Output appears in `desktop/dist/`.
 1. **Done:** Electron shell + local database bridge.
 2. **Done:** Multi-database engine (PostgreSQL, MySQL, MariaDB, SQL Server).
 3. **Done:** Read-only SQL safety in the engine.
-4. **Done (4a):** Load the real NatureQuery product in the desktop window.
-   **Next (4b):** A desktop-local connection manager that keeps credentials on
-   the user's machine, and routes those connections' queries through the
-   bridge so local databases work inside the real UI.
+4. **Done:** Load the real NatureQuery product, surface desktop-local
+   connections in its dashboard, and route their schema and query operations
+   through the local bridge.
 5. **Done:** Branded installer (NSIS) with the app icon, and auto-update via
    GitHub Releases (`electron-updater`). See `RELEASE.md`. Remaining polish:
    code signing to remove the Windows SmartScreen warning.
@@ -69,5 +76,7 @@ Output appears in `desktop/dist/`.
 | ----------------------- | ------------------------------------------------------ |
 | `main.js`               | Background process: window + local database bridge     |
 | `preload.js`            | Secure bridge exposed to the UI (`window.naturequery`) |
-| `renderer/welcome.html` | Proof-of-concept local-connection screen               |
+| `renderer/local.html`   | Saved local-connection manager                          |
+| `renderer/welcome.html` | Proof-of-concept raw connection screen                  |
+| `engine/sql-safety.cjs` | Read-only validation and result-size limits             |
 | `package.json`          | App config + installer (electron-builder) settings     |

@@ -361,6 +361,17 @@ export function QueryPanel({
             </button>
           </div>
 
+          {activeConnection?.source === 'desktop' ? (
+            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
+              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+              <p>
+                Queries run on this computer. Credentials and result rows stay local; table and
+                column names are sent securely when you ask NatureQuery to generate SQL. Choosing
+                AI Insights sends the displayed result for analysis.
+              </p>
+            </div>
+          ) : null}
+
           {/* AI Input Mode */}
           {inputMode === 'ai' && (
             <>

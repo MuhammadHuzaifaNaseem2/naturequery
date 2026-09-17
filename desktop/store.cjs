@@ -35,8 +35,7 @@ function encryptPassword(pw) {
   if (safeStorage && safeStorage.isEncryptionAvailable()) {
     return { method: 'os', value: safeStorage.encryptString(pw).toString('base64') }
   }
-  // Fallback only when OS encryption is unavailable. Not secure; obfuscation.
-  return { method: 'plain', value: Buffer.from(pw, 'utf8').toString('base64') }
+  throw new Error('Secure operating-system credential storage is unavailable')
 }
 
 function decryptPassword(rec) {
@@ -48,7 +47,7 @@ function decryptPassword(rec) {
       return ''
     }
   }
-  return Buffer.from(rec.value, 'base64').toString('utf8')
+  throw new Error('This saved password is not securely encrypted. Re-add the connection.')
 }
 
 // The shape the UI is allowed to see — note: no password.

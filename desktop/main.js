@@ -10,6 +10,7 @@
 
 const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron')
 const path = require('path')
+const { fileURLToPath } = require('url')
 
 // Auto-update from GitHub Releases. Only meaningful in the packaged installer;
 // guarded so it never runs (or errors) during local development.
@@ -23,6 +24,14 @@ try {
 // The hosted web app. The desktop window loads the real NatureQuery product,
 // so users get every feature with no duplication.
 const WEB_APP_URL = process.env.NATUREQUERY_URL || 'https://naturequery.app'
+const configuredWebApp = new URL(WEB_APP_URL)
+const ALLOWED_WEB_ORIGINS = new Set([configuredWebApp.origin])
+if (configuredWebApp.hostname === 'naturequery.app') {
+  ALLOWED_WEB_ORIGINS.add('https://www.naturequery.app')
+} else if (configuredWebApp.hostname === 'www.naturequery.app') {
+  ALLOWED_WEB_ORIGINS.add('https://naturequery.app')
+}
+const RENDERER_DIR = path.resolve(__dirname, 'renderer')
 
 // Set NATUREQUERY_LOAD=test to open the local-database test screen on start.
 const LOAD_TARGET = process.env.NATUREQUERY_LOAD || 'app'
@@ -55,6 +64,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
     },
   })
 
@@ -69,12 +80,17 @@ function createWindow() {
   // Open external links (e.g. docs, pricing) in the user's real browser,
   // not inside the app window.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http')) {
-      shell.openExternal(url)
-      return { action: 'deny' }
-    }
-    return { action: 'allow' }
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url)
+    return { action: 'deny' }
   })
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isTrustedUrl(url)) return
+    event.preventDefault()
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url)
+  })
+
+  mainWindow.webContents.on('will-attach-webview', (event) => event.preventDefault())
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -124,6 +140,56 @@ function buildMenu() {
 
 const { createDriver } = require('./engine/db-drivers.cjs')
 
+function isTrustedUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl)
+    const isLoopback = ['localhost', '127.0.0.1', '::1'].includes(url.hostname)
+    if (
+      ALLOWED_WEB_ORIGINS.has(url.origin) &&
+      (url.protocol === 'https:' || (isLoopback && url.protocol === 'http:'))
+    ) {
+      return true
+    }
+    if (url.protocol !== 'file:') return false
+    const filePath = path.resolve(fileURLToPath(url))
+    return filePath === RENDERER_DIR || filePath.startsWith(`${RENDERER_DIR}${path.sep}`)
+  } catch {
+    return false
+  }
+}
+
+function assertTrustedSender(event, localOnly = false) {
+  const senderUrl = event.senderFrame?.url || event.sender?.getURL?.() || ''
+  if (!isTrustedUrl(senderUrl)) throw new Error('Untrusted desktop request')
+  if (localOnly && !senderUrl.startsWith('file:')) throw new Error('This action is local-only')
+}
+
+function validateConnectionId(id) {
+  if (typeof id !== 'string' || id.length < 1 || id.length > 128) {
+    throw new Error('Invalid connection id')
+  }
+}
+
+function validateSql(sql) {
+  if (typeof sql !== 'string' || sql.length < 1 || sql.length > 100000) {
+    throw new Error('Invalid SQL query')
+  }
+}
+
+function validateCredentials(creds) {
+  if (!creds || typeof creds !== 'object') throw new Error('Invalid connection details')
+  for (const field of ['host', 'database', 'user', 'dbType']) {
+    if (typeof creds[field] !== 'string' || !creds[field].trim() || creds[field].length > 255) {
+      throw new Error(`Invalid ${field}`)
+    }
+  }
+  const port = Number(creds.port)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid port')
+  if (typeof creds.password !== 'string' || creds.password.length > 4096) {
+    throw new Error('Invalid password')
+  }
+}
+
 // Turn raw errors into friendly messages. A missing database package means
 // that database type is not bundled in the desktop app yet.
 function friendlyError(err) {
@@ -145,8 +211,10 @@ async function withDriver(creds, fn) {
 }
 
 // Test that we can reach and authenticate against the database.
-ipcMain.handle('db:test', async (_event, creds) => {
+ipcMain.handle('db:test', async (event, creds) => {
   try {
+    assertTrustedSender(event, true)
+    validateCredentials(creds)
     await withDriver(creds, (d) => d.testConnection())
     return { ok: true }
   } catch (err) {
@@ -155,8 +223,11 @@ ipcMain.handle('db:test', async (_event, creds) => {
 })
 
 // Run a query and return the rows (capped to a safe maximum in the engine).
-ipcMain.handle('db:query', async (_event, creds, sql) => {
+ipcMain.handle('db:query', async (event, creds, sql) => {
   try {
+    assertTrustedSender(event, true)
+    validateCredentials(creds)
+    validateSql(sql)
     const result = await withDriver(creds, (d) => d.executeQuery(sql))
     return { ok: true, ...result }
   } catch (err) {
@@ -165,8 +236,10 @@ ipcMain.handle('db:query', async (_event, creds, sql) => {
 })
 
 // Read the database structure (tables and columns) for the AI prompt.
-ipcMain.handle('db:schema', async (_event, creds) => {
+ipcMain.handle('db:schema', async (event, creds) => {
   try {
+    assertTrustedSender(event, true)
+    validateCredentials(creds)
     const schema = await withDriver(creds, (d) => d.fetchSchema())
     return { ok: true, schema }
   } catch (err) {
@@ -181,9 +254,25 @@ ipcMain.handle('db:schema', async (_event, creds) => {
 
 const store = require('./store.cjs')
 
-ipcMain.handle('localdb:list', () => store.list())
-ipcMain.handle('localdb:save', (_event, input) => store.save(input))
-ipcMain.handle('localdb:remove', (_event, id) => store.remove(id))
+ipcMain.handle('localdb:open-manager', (event) => {
+  assertTrustedSender(event)
+  loadLocalDatabases()
+  return { ok: true }
+})
+ipcMain.handle('localdb:list', (event) => {
+  assertTrustedSender(event)
+  return store.list()
+})
+ipcMain.handle('localdb:save', (event, input) => {
+  assertTrustedSender(event)
+  validateCredentials(input)
+  return store.save(input)
+})
+ipcMain.handle('localdb:remove', (event, id) => {
+  assertTrustedSender(event)
+  validateConnectionId(id)
+  return store.remove(id)
+})
 
 async function withSavedConnection(id, fn) {
   const creds = store.credsFor(id)
@@ -196,17 +285,24 @@ async function withSavedConnection(id, fn) {
   }
 }
 
-ipcMain.handle('localdb:test', async (_event, id) => {
+ipcMain.handle('localdb:test', async (event, id) => {
+  assertTrustedSender(event)
+  validateConnectionId(id)
   const res = await withSavedConnection(id, (d) => d.testConnection())
   return res.ok ? { ok: true } : res
 })
 
-ipcMain.handle('localdb:schema', async (_event, id) => {
+ipcMain.handle('localdb:schema', async (event, id) => {
+  assertTrustedSender(event)
+  validateConnectionId(id)
   const res = await withSavedConnection(id, (d) => d.fetchSchema())
   return res.ok ? { ok: true, schema: res.value } : res
 })
 
-ipcMain.handle('localdb:query', async (_event, id, sql) => {
+ipcMain.handle('localdb:query', async (event, id, sql) => {
+  assertTrustedSender(event)
+  validateConnectionId(id)
+  validateSql(sql)
   const res = await withSavedConnection(id, (d) => d.executeQuery(sql))
   return res.ok ? { ok: true, ...res.value } : res
 })
