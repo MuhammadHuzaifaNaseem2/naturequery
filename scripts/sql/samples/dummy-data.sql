@@ -1,4 +1,4 @@
--- ReportFlow Test Database
+-- NatureQuery test database
 -- E-commerce dummy data for PostgreSQL
 
 -- Drop existing tables

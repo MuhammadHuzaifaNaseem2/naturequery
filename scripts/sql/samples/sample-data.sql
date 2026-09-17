@@ -1,4 +1,4 @@
--- Sample data for ReportFlow testing
+-- Sample data for NatureQuery testing
 -- Run this in pgAdmin: Tools > Query Tool, paste this, click Execute (F5)
 
 -- Create customers table

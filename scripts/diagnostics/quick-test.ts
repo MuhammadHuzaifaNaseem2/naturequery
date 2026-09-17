@@ -1,5 +1,5 @@
 // Quick test to verify email validation is working
-import { validateEmailDomain } from './src/lib/email-validator'
+import { validateEmailDomain } from '../../src/lib/email-validator'
 
 async function quickTest() {
   console.log('Testing email validation...\n')

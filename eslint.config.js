@@ -12,6 +12,8 @@ module.exports = [
       'src/generated/**',
       'data/**',
       'desktop/**',
+      '.local-artifacts/**',
+      'scratch/**',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
