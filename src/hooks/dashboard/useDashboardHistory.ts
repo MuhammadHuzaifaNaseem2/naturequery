@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import type { QueryHistoryItem, SavedQueryItem } from '@/actions/queries'
 import {
+  addHistoryEntry,
   saveQuery as saveQueryAction,
   deleteSavedQuery as deleteSavedQueryAction,
   toggleFavorite as toggleFavoriteAction,
@@ -39,6 +40,64 @@ export function useDashboardHistory(
   const [queryHistoryTotal, setQueryHistoryTotal] = useState(() => readCachedCounts().history)
   const [savedQueries, setSavedQueries] = useState<SavedQueryItem[]>([])
   const [cachedSavedCount, setCachedSavedCount] = useState(() => readCachedCounts().saved)
+  const historyRef = useRef({ items: [] as QueryHistoryItem[], total: queryHistoryTotal })
+  const historyMutationRef = useRef(0)
+  const historyLoadRef = useRef(0)
+  const pendingHistoryWritesRef = useRef(0)
+  const deferredHistoryRefreshRef = useRef(false)
+
+  const commitHistory = useCallback((items: QueryHistoryItem[], total: number) => {
+    historyRef.current = { items, total }
+    setQueryHistory(items)
+    setQueryHistoryTotal(total)
+  }, [])
+
+  const refreshHistory: (isCurrent?: () => boolean) => Promise<boolean> = useCallback(
+    async (isCurrent) => {
+      if (isCurrent && !isCurrent()) return false
+      if (pendingHistoryWritesRef.current > 0) {
+        deferredHistoryRefreshRef.current = true
+        return false
+      }
+
+      const mutation = historyMutationRef.current
+      const request = ++historyLoadRef.current
+      try {
+        const result = await getQueryHistory({ pageSize: 50 })
+        if (isCurrent && !isCurrent()) return false
+        if (request !== historyLoadRef.current) return false
+        if (mutation !== historyMutationRef.current || pendingHistoryWritesRef.current > 0) {
+          // A write overlapped this read. Re-fetch after it settles instead of
+          // trusting a total and page computed at different points in time.
+          if (pendingHistoryWritesRef.current > 0) deferredHistoryRefreshRef.current = true
+          else void refreshHistory(isCurrent)
+          return false
+        }
+        if (!result.success || !result.data) return false
+        commitHistory(result.data.items, result.data.total)
+        return true
+      } catch {
+        return false
+      }
+    },
+    [commitHistory]
+  )
+
+  const beginHistoryWrite = useCallback(() => {
+    // Concurrent writes may commit in a different order than their responses.
+    if (pendingHistoryWritesRef.current > 0) deferredHistoryRefreshRef.current = true
+    historyMutationRef.current += 1
+    pendingHistoryWritesRef.current += 1
+  }, [])
+
+  const finishHistoryWrite = useCallback(() => {
+    pendingHistoryWritesRef.current -= 1
+    historyMutationRef.current += 1
+    if (pendingHistoryWritesRef.current === 0 && deferredHistoryRefreshRef.current) {
+      deferredHistoryRefreshRef.current = false
+      void refreshHistory()
+    }
+  }, [refreshHistory])
 
   // Persist counts whenever they change so the next load is flicker-free
   useEffect(() => {
@@ -52,6 +111,32 @@ export function useDashboardHistory(
     // Once real saved data arrives, stop using the stale cached count
     setCachedSavedCount(savedQueries.length)
   }, [queryHistoryTotal, savedQueries.length])
+
+  // Update the list and its authoritative total together after persistence.
+  // The list may contain only the first page, so its length is not the total.
+  const handleRecordHistoryEntry = useCallback(
+    async (input: Parameters<typeof addHistoryEntry>[0]): Promise<boolean> => {
+      beginHistoryWrite()
+      try {
+        const result = await addHistoryEntry(input)
+        if (!result.success || !result.data) return false
+
+        const entry = result.data
+        const { items, total } = historyRef.current
+        if (!items.some((item) => item.id === entry.id)) {
+          commitHistory([entry, ...items], total + 1)
+        }
+        return true
+      } catch {
+        // History persistence is non-blocking; a network failure must not turn
+        // a successful database query into an unhandled rejection.
+        return false
+      } finally {
+        finishHistoryWrite()
+      }
+    },
+    [beginHistoryWrite, commitHistory, finishHistoryWrite]
+  )
 
   // Handle saving a query
   const handleSaveQuery = useCallback(
@@ -116,56 +201,60 @@ export function useDashboardHistory(
 
   // Handle clearing all history
   const handleClearHistory = useCallback(async () => {
-    const result = await clearQueryHistoryAction()
-    if (result.success) {
-      setQueryHistory([])
-      setQueryHistoryTotal(0)
-      toast.success('History cleared')
+    beginHistoryWrite()
+    try {
+      const result = await clearQueryHistoryAction()
+      if (result.success) {
+        commitHistory([], 0)
+        toast.success('History cleared')
+      }
+    } finally {
+      finishHistoryWrite()
     }
-  }, [])
+  }, [beginHistoryWrite, commitHistory, finishHistoryWrite])
 
   // Handle deleting a single history entry
-  const handleDeleteHistoryEntry = useCallback(async (id: string) => {
-    // Optimistic update — remove from list AND decrement the true server total immediately
-    setQueryHistory((prev) => prev.filter((h) => h.id !== id))
-    setQueryHistoryTotal((prev) => Math.max(0, prev - 1))
+  const handleDeleteHistoryEntry = useCallback(
+    async (id: string) => {
+      // Optimistic update — remove from list AND decrement the true server total immediately
+      const removed = historyRef.current.items.find((item) => item.id === id)
+      beginHistoryWrite()
+      commitHistory(
+        historyRef.current.items.filter((item) => item.id !== id),
+        Math.max(0, historyRef.current.total - 1)
+      )
 
-    const result = await deleteHistoryEntry(id)
-    if (result.success) {
-      toast.success('History entry deleted')
-      // Background sync: pull updated list + authoritative total from server
-      getQueryHistory({ pageSize: 50 })
-        .then((res) => {
-          if (res.success && res.data) {
-            setQueryHistory(res.data.items)
-            setQueryHistoryTotal(res.data.total)
-          }
-        })
-        .catch(() => {
-          // Background sync failed — optimistic state is still approximately correct
-        })
-    } else {
-      // Revert: re-fetch to restore correct state
-      getQueryHistory({ pageSize: 50 })
-        .then((res) => {
-          if (res.success && res.data) {
-            setQueryHistory(res.data.items)
-            setQueryHistoryTotal(res.data.total)
-          }
-        })
-        .catch(() => {})
-      toast.error('Failed to delete entry', { description: result.error })
-    }
-  }, [])
+      try {
+        const result = await deleteHistoryEntry(id).catch(() => ({
+          success: false,
+          error: 'Could not delete entry',
+        }))
+        if (result.success) {
+          toast.success('History entry deleted')
+        } else {
+          // Restore the optimistic count even if the background refresh fails.
+          const { items, total } = historyRef.current
+          const restoredItems =
+            removed && !items.some((item) => item.id === id) ? [removed, ...items] : items
+          commitHistory(restoredItems, total + 1)
+          toast.error('Failed to delete entry', { description: result.error })
+        }
+      } finally {
+        deferredHistoryRefreshRef.current = true
+        finishHistoryWrite()
+      }
+    },
+    [beginHistoryWrite, commitHistory, finishHistoryWrite]
+  )
 
   return {
     queryHistory,
-    setQueryHistory,
     queryHistoryTotal,
-    setQueryHistoryTotal,
     savedQueries,
     setSavedQueries,
     cachedSavedCount,
+    refreshHistory,
+    handleRecordHistoryEntry,
     handleSaveQuery,
     handleDeleteSavedQuery,
     handleToggleFavorite,

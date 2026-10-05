@@ -15,8 +15,6 @@ import { analyzeResults, InsightResult } from '@/actions/insights'
 import type { QueryHistoryItem, SavedQueryItem } from '@/actions/queries'
 import { useTranslation } from '@/contexts/LocaleContext'
 import {
-  addHistoryEntry,
-  getQueryHistory,
   clearQueryHistory as clearQueryHistoryAction,
   deleteHistoryEntry,
   saveQuery as saveQueryAction,
@@ -173,12 +171,12 @@ export function useDashboard() {
   // Extract History State & Logic
   const {
     queryHistory,
-    setQueryHistory,
     queryHistoryTotal,
-    setQueryHistoryTotal,
     savedQueries,
     setSavedQueries,
     cachedSavedCount,
+    refreshHistory,
+    handleRecordHistoryEntry,
     handleSaveQuery,
     handleDeleteSavedQuery,
     handleToggleFavorite,
@@ -407,17 +405,13 @@ export function useDashboard() {
 
       // Load from DB
       try {
-        const [historyResult, savedResult] = await Promise.all([
-          getQueryHistory({ pageSize: 50 }),
+        const [, savedResult] = await Promise.all([
+          refreshHistory(() => !cancelled),
           getSavedQueries({ pageSize: 100 }),
         ])
 
         if (cancelled) return
 
-        if (historyResult.success && historyResult.data) {
-          setQueryHistory(historyResult.data.items)
-          setQueryHistoryTotal(historyResult.data.total)
-        }
         if (savedResult.success && savedResult.data) {
           setSavedQueries(savedResult.data.items)
         }
@@ -462,7 +456,7 @@ export function useDashboard() {
     return () => {
       cancelled = true
     }
-  }, [userId, getStorageKey])
+  }, [userId, getStorageKey, refreshHistory])
 
   // Save active connection ID to localStorage
   useEffect(() => {
@@ -753,7 +747,7 @@ export function useDashboard() {
         conversationRef.current.set(connId, history)
         setConversationLength(history.length)
 
-        addHistoryEntry({
+        void handleRecordHistoryEntry({
           question,
           sql,
           connectionId: activeConnection.id,
@@ -761,8 +755,6 @@ export function useDashboard() {
           rowCount: result.data.rowCount,
           executionTimeMs,
           status: 'success',
-        }).then((res) => {
-          if (res.success && res.data) setQueryHistory((prev) => [res.data!, ...prev])
         })
       } else {
         const errMsg = result.error || 'Failed to execute query'
@@ -782,7 +774,7 @@ export function useDashboard() {
         }
       }
     },
-    [activeConnection, setShowPlanLimit]
+    [activeConnection, handleRecordHistoryEntry, setShowPlanLimit]
   )
 
   // Handle generating SQL from natural language
@@ -901,7 +893,7 @@ export function useDashboard() {
         setConversationLength(demoHistory.length)
 
         // Record demo history via server action (fire-and-forget)
-        addHistoryEntry({
+        void handleRecordHistoryEntry({
           question: nlQuery,
           sql: sqlToRun,
           connectionId: 'demo',
@@ -909,10 +901,6 @@ export function useDashboard() {
           rowCount: results.rowCount,
           executionTimeMs: results.executionTime,
           status: 'success',
-        }).then((res) => {
-          if (res.success && res.data) {
-            setQueryHistory((prev) => [res.data!, ...prev])
-          }
         })
         return
       }
@@ -955,7 +943,7 @@ export function useDashboard() {
         setConversationLength(history.length)
 
         // Record success history via server action (fire-and-forget)
-        addHistoryEntry({
+        void handleRecordHistoryEntry({
           question: nlQuery,
           sql: sqlToRun,
           connectionId: activeConnection.id,
@@ -963,10 +951,6 @@ export function useDashboard() {
           rowCount: result.data.rowCount,
           executionTimeMs,
           status: 'success',
-        }).then((res) => {
-          if (res.success && res.data) {
-            setQueryHistory((prev) => [res.data!, ...prev])
-          }
         })
       } else {
         const errMsg = result.error || 'Failed to execute query'
@@ -981,7 +965,7 @@ export function useDashboard() {
         }
 
         // Record error history via server action (fire-and-forget)
-        addHistoryEntry({
+        void handleRecordHistoryEntry({
           question: nlQuery,
           sql: sqlToRun,
           connectionId: activeConnection.id,
@@ -989,14 +973,10 @@ export function useDashboard() {
           executionTimeMs,
           status: 'error',
           errorMessage: errMsg,
-        }).then((res) => {
-          if (res.success && res.data) {
-            setQueryHistory((prev) => [res.data!, ...prev])
-          }
         })
       }
     },
-    [activeConnection, generatedSQL, nlQuery, setShowPlanLimit]
+    [activeConnection, generatedSQL, handleRecordHistoryEntry, nlQuery, setShowPlanLimit]
   )
 
   const handleFixSQL = useCallback(async () => {
