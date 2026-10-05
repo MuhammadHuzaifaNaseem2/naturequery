@@ -11,6 +11,9 @@ import { verifyTOTPCode, verifyBackupCode } from './totp'
 import { auditLogin, auditLogout } from './audit-immutable'
 import { sendLoginNotificationEmail } from './email'
 import { CredentialsSignin } from 'next-auth'
+import { preferRequestAuthOriginInPreview } from './preview-auth-origin'
+
+preferRequestAuthOriginInPreview(process.env)
 
 class CustomAuthError extends CredentialsSignin {
   constructor(code: string) {
