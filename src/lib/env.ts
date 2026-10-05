@@ -105,7 +105,10 @@ export function validateEnv() {
   }
 
   // ── NEXTAUTH_URL ────────────────────────────────────────────────────────────
-  if (isProduction && !process.env.NEXTAUTH_URL) {
+  // Auth.js v5 can infer a Vercel Preview's host from the request. Requiring a
+  // fixed URL there encourages previews to reuse the production domain, which
+  // sends sign-in callbacks away from the preview deployment.
+  if (isProduction && process.env.VERCEL_ENV !== 'preview' && !process.env.NEXTAUTH_URL) {
     throw new Error(
       'CRITICAL: NEXTAUTH_URL must be set in production (e.g., https://yourdomain.com)'
     )

@@ -65,4 +65,26 @@ describe('Environment Validation', () => {
     const warnings = validateEnv()
     expect(warnings.some((w) => w.includes('mock mode'))).toBe(true)
   })
+
+  it('allows Vercel Preview to infer its own auth URL', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('NEXTAUTH_URL', '')
+    vi.stubEnv('NEXTAUTH_SECRET', 'test-nextauth-secret-that-is-at-least-32-characters')
+    vi.stubEnv('EMAIL_FROM', 'NatureQuery <hello@naturequery.app>')
+
+    const { validateEnv } = await import('@/lib/env')
+    expect(() => validateEnv()).not.toThrow()
+  })
+
+  it('still requires an auth URL in Production', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    vi.stubEnv('NEXTAUTH_URL', '')
+    vi.stubEnv('NEXTAUTH_SECRET', 'test-nextauth-secret-that-is-at-least-32-characters')
+    vi.stubEnv('EMAIL_FROM', 'NatureQuery <hello@naturequery.app>')
+
+    const { validateEnv } = await import('@/lib/env')
+    expect(() => validateEnv()).toThrow('NEXTAUTH_URL must be set in production')
+  })
 })

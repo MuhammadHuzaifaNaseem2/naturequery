@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState, useRef } from 'react'
-import { signIn } from 'next-auth/react'
+import { getProviders, signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { AppLogo } from '@/components/AppLogo'
 import Link from 'next/link'
@@ -14,6 +14,7 @@ import { AuthLayout } from '@/components/AuthLayout'
 import { useOAuthProviders } from '@/hooks/useOAuthProviders'
 import { preFlightCheck } from '@/actions/auth'
 import { requestEmailVerification } from '@/actions/auth-email'
+import { sameOriginAuthUrl } from '@/lib/same-origin-auth-url'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -42,6 +43,31 @@ function LoginForm() {
   const [backupCode, setBackupCode] = useState('')
   const codeInputsRef = useRef<(HTMLInputElement | null)[]>([])
 
+  const authConfigurationError =
+    'Sign-in was blocked because authentication points to a different site.'
+
+  const providerUsesThisSite = async (provider: 'credentials' | 'google' | 'github') => {
+    const providers = await getProviders()
+    const providerUrl =
+      provider === 'credentials'
+        ? providers?.credentials?.callbackUrl
+        : providers?.[provider]?.signinUrl
+    if (!providerUrl || !sameOriginAuthUrl(providerUrl, window.location.origin)) {
+      setError(authConfigurationError)
+      return false
+    }
+    return true
+  }
+
+  const redirectAfterSignIn = (resultUrl?: string | null) => {
+    const destination = sameOriginAuthUrl(resultUrl || callbackUrl, window.location.origin)
+    if (!destination) {
+      setError(authConfigurationError)
+      return
+    }
+    window.location.href = destination
+  }
+
   const {
     register,
     handleSubmit,
@@ -55,6 +81,8 @@ function LoginForm() {
     setError(null)
 
     try {
+      if (!(await providerUsesThisSite('credentials'))) return
+
       // Step 1: Pre-flight check — validate credentials & detect 2FA before calling NextAuth
       // NextAuth v5 (Auth.js) swallows error strings so we can't rely on result.error for 2FA detection
       const preflight = await preFlightCheck(data.email, data.password)
@@ -88,10 +116,8 @@ function LoginForm() {
 
       if (result?.error) {
         setError('Invalid email or password')
-      } else if (result?.url) {
-        window.location.href = result.url
       } else {
-        window.location.href = callbackUrl
+        redirectAfterSignIn(result?.url)
       }
     } catch (err) {
       setError('An error occurred. Please try again.')
@@ -117,6 +143,8 @@ function LoginForm() {
     setError(null)
 
     try {
+      if (!(await providerUsesThisSite('credentials'))) return
+
       const result = await signIn('credentials', {
         email: savedCredentials.email,
         password: savedCredentials.password,
@@ -129,10 +157,8 @@ function LoginForm() {
         setError('Invalid 2FA code. Please try again.')
         setTwoFactorCode(['', '', '', '', '', ''])
         codeInputsRef.current[0]?.focus()
-      } else if (result?.url) {
-        window.location.href = result.url
       } else {
-        window.location.href = callbackUrl
+        redirectAfterSignIn(result?.url)
       }
     } catch (err) {
       setError('An error occurred. Please try again.')
@@ -175,7 +201,15 @@ function LoginForm() {
 
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     setIsLoading(true)
-    await signIn(provider, { callbackUrl })
+    setError(null)
+    try {
+      if (!(await providerUsesThisSite(provider))) return
+      await signIn(provider, { callbackUrl })
+    } catch {
+      setError('Sign-in is temporarily unavailable. Please try again later.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // 2FA Challenge Screen
