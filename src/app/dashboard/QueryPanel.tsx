@@ -366,8 +366,8 @@ export function QueryPanel({
               <ShieldAlert className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
               <p>
                 Queries run on this computer. Credentials and result rows stay local; table and
-                column names are sent securely when you ask NatureQuery to generate SQL. Choosing
-                AI Insights sends the displayed result for analysis.
+                column names are sent securely when you ask NatureQuery to generate SQL. Choosing AI
+                Insights sends the displayed result for analysis.
               </p>
             </div>
           ) : null}
@@ -925,7 +925,7 @@ export function QueryPanel({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap -mx-1 px-1 overflow-x-auto">
+              <div className="flex items-center gap-1 flex-wrap -mx-1 px-1">
                 {/* View Toggle */}
                 <button
                   onClick={() => setResultsView('table')}
@@ -1040,6 +1040,9 @@ export function QueryPanel({
                   <button
                     onClick={() => onToggleExportMenu(!showExportMenu)}
                     disabled={isExporting}
+                    aria-label="Export results"
+                    aria-expanded={showExportMenu}
+                    aria-controls="results-export-options"
                     className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                   >
                     {isExporting ? (
@@ -1049,7 +1052,10 @@ export function QueryPanel({
                     )}
                   </button>
                   {showExportMenu && (
-                    <div className="absolute top-full right-0 mt-1 w-40 bg-card border border-border rounded-lg shadow-lg py-1 z-10 animate-scaleIn">
+                    <div
+                      id="results-export-options"
+                      className="absolute top-full right-0 mt-1 w-40 bg-card border border-border rounded-lg shadow-lg py-1 z-20 animate-scaleIn"
+                    >
                       <button
                         onClick={() => onExport('excel')}
                         className="w-full px-3 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2"

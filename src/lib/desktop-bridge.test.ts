@@ -21,6 +21,14 @@ beforeEach(() => {
 })
 
 describe('desktop bridge', () => {
+  it('keeps a connection when native removal is canceled', async () => {
+    localdb.remove.mockResolvedValue({ ok: true, canceled: true })
+    await expect(removeDesktopConnection('desktop:local-1')).resolves.toEqual({
+      success: false,
+      canceled: true,
+    })
+  })
+
   it('maps safe local metadata into dashboard connections', async () => {
     localdb.list.mockResolvedValue([
       {
@@ -90,10 +98,7 @@ describe('desktop bridge', () => {
 
     const query = await executeDesktopSQL('desktop:local-1', 'SELECT COUNT(*) AS total FROM orders')
     expect(query.success).toBe(true)
-    expect(localdb.query).toHaveBeenCalledWith(
-      'local-1',
-      'SELECT COUNT(*) AS total FROM orders'
-    )
+    expect(localdb.query).toHaveBeenCalledWith('local-1', 'SELECT COUNT(*) AS total FROM orders')
 
     await expect(removeDesktopConnection('desktop:local-1')).resolves.toEqual({ success: true })
     await expect(executeDesktopSQL('cloud-1', 'SELECT 1')).rejects.toThrow(

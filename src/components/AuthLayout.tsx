@@ -2,6 +2,8 @@
 
 import { AppLogo } from '@/components/AppLogo'
 import { Sparkles, BarChart3, Database, Zap, Shield, Users } from 'lucide-react'
+import { useOAuthProviders } from '@/hooks/useOAuthProviders'
+import styles from './AuthLayout.module.css'
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -17,6 +19,58 @@ const features = [
 ]
 
 export function AuthLayout({ children }: AuthLayoutProps) {
+  const { isDesktop } = useOAuthProviders()
+
+  if (isDesktop) {
+    return (
+      <main className={styles.desktop}>
+        <div className={styles.shell}>
+          <aside className={styles.intro}>
+            <div className={styles.brand}>
+              <AppLogo size="lg" showText={false} />
+              <span>
+                NatureQuery<small>DESKTOP WORKSPACE</small>
+              </span>
+            </div>
+            <div className={styles.introContent}>
+              <span className={styles.overline}>CONNECTED WORKSPACE / 01</span>
+              <h2>Pick up where your questions left off.</h2>
+              <p>
+                Sign in to ask in plain English, inspect the SQL, and turn your results into a next
+                step.
+              </p>
+              <div className={styles.workflow} role="group" aria-label="NatureQuery workflow">
+                <div>
+                  <span>01</span> Connect your data
+                </div>
+                <div>
+                  <span>02</span> Ask a question
+                </div>
+                <div>
+                  <span>03</span> Work with the answer
+                </div>
+              </div>
+            </div>
+            <p className={styles.localNote}>
+              Your local SQL workspace is available without signing in.
+            </p>
+          </aside>
+          <section className={styles.formArea} aria-label="Account access">
+            <div className={styles.formTop}>
+              <span>ACCOUNT ACCESS</span>
+              <span>SECURE SIGN-IN</span>
+            </div>
+            <div className={styles.formContainer}>{children}</div>
+            <p className={styles.formFoot}>
+              NatureQuery Desktop · Your work stays on this computer until you choose to use online
+              AI features.
+            </p>
+          </section>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Product Showcase (hidden on mobile) */}

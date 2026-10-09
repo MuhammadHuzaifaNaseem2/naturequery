@@ -1,11 +1,18 @@
 'use client'
 
-// Reads NEXT_PUBLIC_ env vars synchronously — no network fetch, no delay.
-// Values are baked in at build time (or at dev-server start after restart).
+import { useSyncExternalStore } from 'react'
+import { isNatureQueryDesktop } from '@/lib/desktop-bridge'
+
+// The preload bridge is fixed for the document lifetime. Match server HTML during hydration.
+const subscribe = () => () => {}
+const getServerSnapshot = () => false
 
 export function useOAuthProviders() {
+  const isDesktop = useSyncExternalStore(subscribe, isNatureQueryDesktop, getServerSnapshot)
   return {
-    google: process.env.NEXT_PUBLIC_GOOGLE_ENABLED === 'true',
-    github: process.env.NEXT_PUBLIC_GITHUB_ENABLED === 'true',
+    isDesktop,
+    // Browser OAuth cannot hand its session back to the desktop app yet.
+    google: !isDesktop && process.env.NEXT_PUBLIC_GOOGLE_ENABLED === 'true',
+    github: !isDesktop && process.env.NEXT_PUBLIC_GITHUB_ENABLED === 'true',
   }
 }

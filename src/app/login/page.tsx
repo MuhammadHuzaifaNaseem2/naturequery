@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { AuthLayout } from '@/components/AuthLayout'
 import { useOAuthProviders } from '@/hooks/useOAuthProviders'
+import { isNatureQueryDesktop } from '@/lib/desktop-bridge'
 import { preFlightCheck } from '@/actions/auth'
 import { requestEmailVerification } from '@/actions/auth-email'
 
@@ -21,6 +22,19 @@ const loginSchema = z.object({
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
+
+const SIGN_IN_TIMEOUT = 20000
+const SIGN_IN_TIMEOUT_MESSAGE = 'Sign-in is taking too long. Check your connection and try again.'
+
+function withSignInTimeout<T>(operation: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>
+  return Promise.race([
+    operation,
+    new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => reject(new Error(SIGN_IN_TIMEOUT_MESSAGE)), SIGN_IN_TIMEOUT)
+    }),
+  ]).finally(() => clearTimeout(timer))
+}
 
 function LoginForm() {
   const { t } = useTranslation()
@@ -57,7 +71,7 @@ function LoginForm() {
     try {
       // Step 1: Pre-flight check — validate credentials & detect 2FA before calling NextAuth
       // NextAuth v5 (Auth.js) swallows error strings so we can't rely on result.error for 2FA detection
-      const preflight = await preFlightCheck(data.email, data.password)
+      const preflight = await withSignInTimeout(preFlightCheck(data.email, data.password))
 
       if (preflight.error) {
         setError(preflight.error)
@@ -79,12 +93,14 @@ function LoginForm() {
       }
 
       // Step 2: No 2FA, proceed with full NextAuth sign-in
-      const result = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-        callbackUrl,
-      })
+      const result = await withSignInTimeout(
+        signIn('credentials', {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+          callbackUrl,
+        })
+      )
 
       if (result?.error) {
         setError('Invalid email or password')
@@ -94,7 +110,11 @@ function LoginForm() {
         window.location.href = callbackUrl
       }
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError(
+        err instanceof Error && err.message === SIGN_IN_TIMEOUT_MESSAGE
+          ? err.message
+          : 'An error occurred. Please try again.'
+      )
     } finally {
       setIsLoading(false)
     }
@@ -117,13 +137,15 @@ function LoginForm() {
     setError(null)
 
     try {
-      const result = await signIn('credentials', {
-        email: savedCredentials.email,
-        password: savedCredentials.password,
-        twoFactorCode: code,
-        redirect: false,
-        callbackUrl,
-      })
+      const result = await withSignInTimeout(
+        signIn('credentials', {
+          email: savedCredentials.email,
+          password: savedCredentials.password,
+          twoFactorCode: code,
+          redirect: false,
+          callbackUrl,
+        })
+      )
 
       if (result?.error) {
         setError('Invalid 2FA code. Please try again.')
@@ -135,7 +157,11 @@ function LoginForm() {
         window.location.href = callbackUrl
       }
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError(
+        err instanceof Error && err.message === SIGN_IN_TIMEOUT_MESSAGE
+          ? err.message
+          : 'An error occurred. Please try again.'
+      )
     } finally {
       setIsLoading(false)
     }
@@ -174,8 +200,23 @@ function LoginForm() {
   }
 
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
+    if (isNatureQueryDesktop()) {
+      setError('Use email and password to sign in to NatureQuery Desktop.')
+      return
+    }
     setIsLoading(true)
-    await signIn(provider, { callbackUrl })
+    setError(null)
+    try {
+      await withSignInTimeout(signIn(provider, { callbackUrl }))
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message === SIGN_IN_TIMEOUT_MESSAGE
+          ? err.message
+          : 'Could not start sign-in. Please try again.'
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // 2FA Challenge Screen
@@ -294,6 +335,23 @@ function LoginForm() {
         <p className="text-sm text-muted-foreground mt-1">{t('auth.login.subtitle')}</p>
       </div>
 
+      {oauthProviders.isDesktop && (
+        <div className="mb-6 rounded-xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
+          <p>Use your NatureQuery email and password.</p>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-primary">
+              Signed up with Google or GitHub?
+            </summary>
+            <p className="mt-2">
+              <Link href="/forgot-password" className="text-primary underline">
+                Request a password-reset email
+              </Link>{' '}
+              for the same account email to set a password for desktop sign-in.
+            </p>
+          </details>
+        </div>
+      )}
+
       {/* Error Message */}
       {error && (
         <div className="mb-6 p-3 bg-destructive/10 border border-destructive/30 rounded-xl flex items-start gap-2 animate-slideUp">
@@ -362,8 +420,8 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              tabIndex={-1}
               suppressHydrationWarning
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

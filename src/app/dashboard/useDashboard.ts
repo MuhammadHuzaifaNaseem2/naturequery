@@ -273,7 +273,9 @@ export function useDashboard() {
         const fallbackConnId =
           (savedActive && mapped.some((connection) => connection.id === savedActive)
             ? savedActive
-            : null) || mapped[0]?.id || null
+            : null) ||
+          mapped[0]?.id ||
+          null
 
         // Load and execute dashboard widgets now that we know available connections
         fetch('/api/dashboard/widgets')
@@ -715,6 +717,7 @@ export function useDashboard() {
       const result = isDesktopConnectionId(connectionId)
         ? await removeDesktopConnection(connectionId)
         : await deleteConnectionAction(connectionId)
+      if ('canceled' in result && result.canceled) return
       if (!result.success) {
         setError(result.error || 'Failed to delete connection')
         toast.error('Failed to delete connection')

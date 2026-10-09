@@ -33,11 +33,9 @@ interface NatureQueryDesktopBridge {
   localdb: {
     openManager: () => Promise<{ ok: boolean; error?: string }>
     list: () => Promise<DesktopConnectionMetadata[]>
-    remove: (id: string) => Promise<{ ok: boolean; error?: string }>
+    remove: (id: string) => Promise<{ ok: boolean; canceled?: boolean; error?: string }>
     test: (id: string) => Promise<{ ok: boolean; error?: string }>
-    schema: (
-      id: string
-    ) => Promise<{ ok: boolean; schema?: DesktopSchemaTable[]; error?: string }>
+    schema: (id: string) => Promise<{ ok: boolean; schema?: DesktopSchemaTable[]; error?: string }>
     query: (
       id: string,
       sql: string

@@ -98,10 +98,11 @@ export async function executeDesktopSQL(
 
 export async function removeDesktopConnection(
   connectionId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; canceled?: boolean; error?: string }> {
   const localdb = bridge()
   if (!localdb) return { success: false, error: 'Desktop database bridge is unavailable' }
 
   const result = await localdb.remove(rawDesktopConnectionId(connectionId))
+  if (result.canceled) return { success: false, canceled: true }
   return result.ok ? { success: true } : { success: false, error: result.error }
 }

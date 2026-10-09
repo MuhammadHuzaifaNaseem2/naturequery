@@ -273,8 +273,13 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
       </div>
 
       {/* Table Container */}
-      <div className="flex flex-col overflow-hidden max-h-[500px]">
-        <div className="overflow-x-auto overflow-y-auto flex-1">
+      <div
+        className={clsx(
+          'flex flex-col overflow-hidden',
+          paginatedRows.length > 10 && 'max-h-[500px]'
+        )}
+      >
+        <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
           <table className="w-full text-sm">
             <thead className="bg-secondary sticky top-0 z-10 shadow-sm">
               <tr>
@@ -436,7 +441,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
 
         {/* Pagination Footer */}
         {sortedRows.length > 0 && (
-          <div className="bg-secondary/50 px-3 sm:px-4 py-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="shrink-0 bg-secondary/50 px-3 sm:px-4 py-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             {/* Page size selector */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="hidden sm:inline">Rows per page:</span>
