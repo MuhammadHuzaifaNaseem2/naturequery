@@ -7,6 +7,7 @@ import { checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limit
 import { validateSQLSafety, ensureLimitClause } from '@/lib/sql-validator'
 import { rateLimitAsync } from '@/lib/rate-limit'
 import { auditQueryExecuted } from '@/lib/audit-immutable'
+import type * as SharedTypes from '@/types/database'
 
 export interface DBCredentials {
   name?: string
@@ -19,29 +20,13 @@ export interface DBCredentials {
   teamId?: string
 }
 
-export interface ColumnDefinition {
-  name: string
-  type: string
-  nullable: boolean
-  defaultValue: string | null
-  isPrimaryKey: boolean
-}
-
-export interface ForeignKey {
-  column: string
-  referencedTable: string
-  referencedColumn: string
-}
-
-export interface TableSchema {
-  tableName: string
-  columns: ColumnDefinition[]
-  foreignKeys?: ForeignKey[]
-}
-
-export interface DatabaseSchema {
-  tables: TableSchema[]
-}
+// Pure shapes live in @/types/database so client components can import them
+// without referencing this server module.
+export type ColumnDefinition = SharedTypes.ColumnDefinition
+export type ForeignKey = SharedTypes.ForeignKey
+export type TableSchema = SharedTypes.TableSchema
+export type DatabaseSchema = SharedTypes.DatabaseSchema
+export type QueryResultRow = SharedTypes.QueryResultRow
 
 export interface FetchSchemaResult {
   success: boolean
@@ -53,10 +38,6 @@ export interface TestConnectionResult {
   success: boolean
   message?: string
   error?: string
-}
-
-export interface QueryResultRow {
-  [key: string]: unknown
 }
 
 export interface ExecuteSQLResult {

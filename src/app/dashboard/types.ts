@@ -1,4 +1,4 @@
-import { DatabaseSchema, QueryResultRow } from '@/actions/db'
+import type { DatabaseSchema, QueryResultRow } from '@/types/database'
 
 export interface SavedConnection {
   id: string

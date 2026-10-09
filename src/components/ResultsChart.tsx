@@ -36,8 +36,8 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import { QueryResultRow } from '@/actions/db'
-import { ChartRecommendation } from '@/app/dashboard/types'
+import type { QueryResultRow } from '@/types/database'
+import type { ChartRecommendation } from '@/app/dashboard/types'
 
 type ChartType = 'bar' | 'line' | 'pie' | 'area' | 'scatter'
 
@@ -52,14 +52,14 @@ interface ResultsChartProps {
 // Professional color palettes
 const COLOR_PALETTES = {
   default: [
-    'hsl(217, 91%, 60%)',   // blue
-    'hsl(142, 71%, 45%)',   // green
-    'hsl(38, 92%, 50%)',    // amber
-    'hsl(346, 77%, 50%)',   // rose
-    'hsl(262, 83%, 58%)',   // violet
-    'hsl(199, 89%, 48%)',   // cyan
-    'hsl(24, 95%, 53%)',    // orange
-    'hsl(173, 58%, 39%)',   // teal
+    'hsl(217, 91%, 60%)', // blue
+    'hsl(142, 71%, 45%)', // green
+    'hsl(38, 92%, 50%)', // amber
+    'hsl(346, 77%, 50%)', // rose
+    'hsl(262, 83%, 58%)', // violet
+    'hsl(199, 89%, 48%)', // cyan
+    'hsl(24, 95%, 53%)', // orange
+    'hsl(173, 58%, 39%)', // teal
   ],
   ocean: [
     'hsl(200, 100%, 50%)',
@@ -133,7 +133,13 @@ function analyzeFields(rows: QueryResultRow[], fields: string[]) {
   return { numericFields, labelFields }
 }
 
-export function ResultsChart({ rows, fields, compact = false, height, recommendation }: ResultsChartProps) {
+export function ResultsChart({
+  rows,
+  fields,
+  compact = false,
+  height,
+  recommendation,
+}: ResultsChartProps) {
   const [chartType, setChartType] = useState<ChartType>('bar')
   const [palette, setPalette] = useState<PaletteName>('default')
   const [showSettings, setShowSettings] = useState(false)
@@ -157,16 +163,19 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
   )
   const [selectedLabelField, setSelectedLabelField] = useState<string>(defaultLabelField)
 
-
   // Limit data points for readability; coerce BigInt to number for recharts
-  const chartData = useMemo(() => rows.slice(0, 100).map(row => {
-    const normalized: QueryResultRow = {}
-    for (const key of Object.keys(row)) {
-      const val = row[key]
-      normalized[key] = typeof val === 'bigint' ? Number(val) : val
-    }
-    return normalized
-  }), [rows])
+  const chartData = useMemo(
+    () =>
+      rows.slice(0, 100).map((row) => {
+        const normalized: QueryResultRow = {}
+        for (const key of Object.keys(row)) {
+          const val = row[key]
+          normalized[key] = typeof val === 'bigint' ? Number(val) : val
+        }
+        return normalized
+      }),
+    [rows]
+  )
 
   // Export chart as PNG
   const exportChart = useCallback(async (format: 'png' | 'svg') => {
@@ -229,8 +238,12 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
         const val = rows[0][fields[0]]
         return (
           <div className="flex flex-col items-center justify-center gap-2" style={{ height: h }}>
-            <p className="text-5xl font-bold text-foreground">{String(typeof val === 'bigint' ? Number(val) : val ?? '—')}</p>
-            <p className="text-xs text-muted-foreground capitalize">{fields[0].replace(/_/g, ' ')}</p>
+            <p className="text-5xl font-bold text-foreground">
+              {String(typeof val === 'bigint' ? Number(val) : (val ?? '—'))}
+            </p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {fields[0].replace(/_/g, ' ')}
+            </p>
           </div>
         )
       }
@@ -240,13 +253,24 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
           <table className="w-full">
             <thead className="sticky top-0 bg-card">
               <tr className="border-b border-border">
-                {fields.map(f => <th key={f} className="text-left py-1.5 px-2 text-muted-foreground font-medium capitalize">{f.replace(/_/g, ' ')}</th>)}
+                {fields.map((f) => (
+                  <th
+                    key={f}
+                    className="text-left py-1.5 px-2 text-muted-foreground font-medium capitalize"
+                  >
+                    {f.replace(/_/g, ' ')}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {rows.slice(0, 50).map((row, i) => (
                 <tr key={i} className="border-b border-border/40 hover:bg-muted/20">
-                  {fields.map(f => <td key={f} className="py-1.5 px-2 truncate max-w-[140px]">{String(typeof row[f] === 'bigint' ? Number(row[f]) : row[f] ?? '—')}</td>)}
+                  {fields.map((f) => (
+                    <td key={f} className="py-1.5 px-2 truncate max-w-[140px]">
+                      {String(typeof row[f] === 'bigint' ? Number(row[f]) : (row[f] ?? '—'))}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -257,9 +281,7 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <BarChart3 className="w-10 h-10 text-muted-foreground/30 mb-3" />
-        <p className="text-sm text-muted-foreground">
-          No numeric columns found to chart.
-        </p>
+        <p className="text-sm text-muted-foreground">No numeric columns found to chart.</p>
         <p className="text-xs text-muted-foreground/70 mt-1">
           Charts require at least one numeric column.
         </p>
@@ -269,9 +291,7 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
 
   const toggleValue = (field: string) => {
     setSelectedValues((prev) =>
-      prev.includes(field)
-        ? prev.filter((f) => f !== field)
-        : [...prev, field]
+      prev.includes(field) ? prev.filter((f) => f !== field) : [...prev, field]
     )
   }
 
@@ -293,79 +313,82 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
     <div className={containerClass}>
       {/* Fullscreen backdrop */}
       {isFullscreen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={toggleFullscreen}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={toggleFullscreen} />
       )}
 
       {/* Controls — hidden in compact/widget mode */}
-      <div className={clsx('flex items-center justify-between flex-wrap gap-3 relative z-50', compact && 'hidden')}>
+      <div
+        className={clsx(
+          'flex items-center justify-between flex-wrap gap-3 relative z-50',
+          compact && 'hidden'
+        )}
+      >
         <div className="flex items-center gap-3">
           {/* Chart type selector */}
           <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
             <button
-              onClick={() => { setChartType('bar') }}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-              chartType === 'bar'
-                ? 'bg-card text-foreground shadow-sm scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            )}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            Bar
-          </button>
-          <button
-            onClick={() => setChartType('line')}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-              chartType === 'line'
-                ? 'bg-card text-foreground shadow-sm scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            )}
-          >
-            <TrendingUp className="w-3.5 h-3.5" />
-            Line
-          </button>
-          <button
-            onClick={() => setChartType('area')}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-              chartType === 'area'
-                ? 'bg-card text-foreground shadow-sm scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            )}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            Area
-          </button>
-          <button
-            onClick={() => setChartType('pie')}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-              chartType === 'pie'
-                ? 'bg-card text-foreground shadow-sm scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            )}
-          >
-            <PieChartIcon className="w-3.5 h-3.5" />
-            Pie
-          </button>
-          <button
-            onClick={() => setChartType('scatter')}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-              chartType === 'scatter'
-                ? 'bg-card text-foreground shadow-sm scale-105'
-                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-            )}
-          >
-            <Circle className="w-3.5 h-3.5" />
-            Scatter
-          </button>
-        </div>
-
+              onClick={() => {
+                setChartType('bar')
+              }}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
+                chartType === 'bar'
+                  ? 'bg-card text-foreground shadow-sm scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              )}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              Bar
+            </button>
+            <button
+              onClick={() => setChartType('line')}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
+                chartType === 'line'
+                  ? 'bg-card text-foreground shadow-sm scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              )}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              Line
+            </button>
+            <button
+              onClick={() => setChartType('area')}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
+                chartType === 'area'
+                  ? 'bg-card text-foreground shadow-sm scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              )}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Area
+            </button>
+            <button
+              onClick={() => setChartType('pie')}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
+                chartType === 'pie'
+                  ? 'bg-card text-foreground shadow-sm scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              )}
+            >
+              <PieChartIcon className="w-3.5 h-3.5" />
+              Pie
+            </button>
+            <button
+              onClick={() => setChartType('scatter')}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
+                chartType === 'scatter'
+                  ? 'bg-card text-foreground shadow-sm scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              )}
+            >
+              <Circle className="w-3.5 h-3.5" />
+              Scatter
+            </button>
+          </div>
         </div>
 
         {/* Action buttons */}
@@ -374,7 +397,9 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
             onClick={() => setShowSettings(!showSettings)}
             className={clsx(
               'p-2 rounded-lg transition-colors',
-              showSettings ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+              showSettings
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
             )}
             title="Chart Settings"
           >
@@ -451,9 +476,7 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
 
           {/* X-Axis Field (Label) */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">
-              X-Axis (Label Field)
-            </label>
+            <label className="text-xs text-muted-foreground mb-2 block">X-Axis (Label Field)</label>
             <div className="flex flex-wrap gap-1.5">
               {labelFields.map((field) => (
                 <button
@@ -506,7 +529,11 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
                   ? 'border-primary/50 bg-primary/10 text-primary scale-105'
                   : 'border-border text-muted-foreground hover:border-primary/30 hover:scale-[1.02]'
               )}
-              style={activeValues.includes(field) ? { borderColor: CHART_COLORS[i % CHART_COLORS.length] } : undefined}
+              style={
+                activeValues.includes(field)
+                  ? { borderColor: CHART_COLORS[i % CHART_COLORS.length] }
+                  : undefined
+              }
             >
               {field}
             </button>
@@ -517,7 +544,10 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
       {/* Chart */}
       <div
         ref={chartRef}
-        className={clsx('w-full transition-all duration-300', !compact && !height && (isFullscreen ? 'h-[calc(100%-140px)]' : 'h-80'))}
+        className={clsx(
+          'w-full transition-all duration-300',
+          !compact && !height && (isFullscreen ? 'h-[calc(100%-140px)]' : 'h-80')
+        )}
         style={compact || height ? { height: height ?? 196 } : undefined}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -526,8 +556,16 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
               <defs>
                 {activeValues.map((field, i) => (
                   <linearGradient key={field} id={`gradient-${i}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.9} />
-                    <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.6} />
+                    <stop
+                      offset="0%"
+                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
+                      stopOpacity={0.9}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
+                      stopOpacity={0.6}
+                    />
                   </linearGradient>
                 ))}
               </defs>
@@ -554,7 +592,9 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
                 cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
               />
               <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-              {showBrush && <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />}
+              {showBrush && (
+                <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />
+              )}
               {activeValues.map((field, i) => (
                 <Bar
                   key={field}
@@ -590,7 +630,9 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
                 }}
               />
               <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-              {showBrush && <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />}
+              {showBrush && (
+                <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />
+              )}
               {activeValues.map((field, i) => (
                 <Line
                   key={field}
@@ -598,7 +640,12 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
                   dataKey={field}
                   stroke={CHART_COLORS[i % CHART_COLORS.length]}
                   strokeWidth={2.5}
-                  dot={{ r: 4, fill: CHART_COLORS[i % CHART_COLORS.length], strokeWidth: 2, stroke: 'white' }}
+                  dot={{
+                    r: 4,
+                    fill: CHART_COLORS[i % CHART_COLORS.length],
+                    strokeWidth: 2,
+                    stroke: 'white',
+                  }}
                   activeDot={{ r: 6, strokeWidth: 2, stroke: 'white' }}
                   animationDuration={1000}
                   animationEasing="ease-out"
@@ -610,8 +657,16 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
               <defs>
                 {activeValues.map((field, i) => (
                   <linearGradient key={field} id={`area-gradient-${i}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.5} />
-                    <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.05} />
+                    <stop
+                      offset="0%"
+                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
+                      stopOpacity={0.5}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
+                      stopOpacity={0.05}
+                    />
                   </linearGradient>
                 ))}
               </defs>
@@ -637,7 +692,9 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
                 }}
               />
               <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-              {showBrush && <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />}
+              {showBrush && (
+                <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />
+              )}
               {activeValues.map((field, i) => (
                 <Area
                   key={field}
@@ -693,8 +750,16 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
               <defs>
                 {chartData.slice(0, 10).map((_, i) => (
                   <linearGradient key={i} id={`pie-gradient-${i}`} x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={1} />
-                    <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.7} />
+                    <stop
+                      offset="0%"
+                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
+                      stopOpacity={1}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
+                      stopOpacity={0.7}
+                    />
                   </linearGradient>
                 ))}
               </defs>
@@ -715,12 +780,7 @@ export function ResultsChart({ rows, fields, compact = false, height, recommenda
                 animationEasing="ease-out"
               >
                 {chartData.slice(0, 10).map((_, i) => (
-                  <Cell
-                    key={i}
-                    fill={`url(#pie-gradient-${i})`}
-                    stroke="white"
-                    strokeWidth={2}
-                  />
+                  <Cell key={i} fill={`url(#pie-gradient-${i})`} stroke="white" strokeWidth={2} />
                 ))}
               </Pie>
               <Tooltip

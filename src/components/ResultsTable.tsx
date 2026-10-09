@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import { QueryResultRow } from '@/actions/db'
+import type { QueryResultRow } from '@/types/database'
 import { formatCellValue } from '@/lib/format-cell-value'
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 250]
