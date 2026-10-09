@@ -15,6 +15,7 @@ import { useOAuthProviders } from '@/hooks/useOAuthProviders'
 import { isNatureQueryDesktop } from '@/lib/desktop-bridge'
 import { preFlightCheck } from '@/actions/auth'
 import { requestEmailVerification } from '@/actions/auth-email'
+import { safeCallbackUrl } from '@/lib/safe-redirect'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -40,7 +41,7 @@ function LoginForm() {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
   const oauthProviders = useOAuthProviders()
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const callbackUrl = safeCallbackUrl(searchParams.get('callbackUrl'))
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

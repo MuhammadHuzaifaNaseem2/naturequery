@@ -54,6 +54,8 @@ model User {
   queryFeedback       QueryFeedback[]
   notifications       Notification[]
   onboardingChecklist OnboardingChecklist?
+  desktopAuthCodes    DesktopAuthCode[]
+  desktopSessions     DesktopSession[]
 
   // Onboarding
   onboardingCompleted Boolean @default(false)
@@ -276,6 +278,51 @@ model QueryHistory {
 }
 
 // ============================================
+// Desktop App Sign-in
+// ============================================
+
+/// One-time code created when a signed-in user approves NatureQuery Desktop in
+/// the browser. Exchanged once, together with the PKCE verifier, for a session.
+model DesktopAuthCode {
+  id            String    @id @default(cuid())
+  codeHash      String    @unique // SHA-256 of the code
+  codeChallenge String // PKCE S256 challenge from the desktop app
+  userId        String
+  deviceName    String?
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// A signed-in copy of NatureQuery Desktop. Tokens are stored as SHA-256 hashes.
+model DesktopSession {
+  id                       String    @id @default(cuid())
+  userId                   String
+  accessTokenHash          String    @unique
+  accessExpiresAt          DateTime
+  refreshTokenHash         String    @unique
+  // The refresh token before the last rotation; seeing it again means it was stolen.
+  previousRefreshTokenHash String?   @unique
+  refreshExpiresAt         DateTime
+  refreshedAt              DateTime?
+  deviceName               String?
+  platform                 String?
+  appVersion               String?
+  createdAt                DateTime  @default(now())
+  lastUsedAt               DateTime  @default(now())
+  revokedAt                DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
 // API Key Models
 // ============================================
 
@@ -346,12 +393,12 @@ model BillingWebhookEvent {
   resourceType     String
   resourceId       String
   subscriptionId   String?
-  payload           Json
-  status            String    @default("PROCESSING")
-  attempts          Int       @default(1)
-  lastError         String?
-  receivedAt        DateTime  @default(now())
-  processedAt       DateTime?
+  payload          Json
+  status           String    @default("PROCESSING")
+  attempts         Int       @default(1)
+  lastError        String?
+  receivedAt       DateTime  @default(now())
+  processedAt      DateTime?
 
   @@index([status, receivedAt])
   @@index([subscriptionId])

@@ -20,12 +20,17 @@ import {
 import TwoFactorSetup from '@/components/TwoFactorSetup'
 import { signOut } from 'next-auth/react'
 import { useTranslation } from '@/contexts/LocaleContext'
+import { DesktopSessions, type DesktopSessionView } from './DesktopSessions'
 
 interface SecurityClientProps {
   initialTwoFactorEnabled: boolean
+  desktopSessions: DesktopSessionView[]
 }
 
-export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClientProps) {
+export default function SecurityClient({
+  initialTwoFactorEnabled,
+  desktopSessions,
+}: SecurityClientProps) {
   const { t } = useTranslation()
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(initialTwoFactorEnabled)
   const [showSetupModal, setShowSetupModal] = useState(false)
@@ -367,6 +372,8 @@ export default function SecurityClient({ initialTwoFactorEnabled }: SecurityClie
             </div>
           </div>
         </div>
+
+        <DesktopSessions initial={desktopSessions} />
 
         {/* Danger Zone */}
         <div className="glass-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 border border-destructive/20">

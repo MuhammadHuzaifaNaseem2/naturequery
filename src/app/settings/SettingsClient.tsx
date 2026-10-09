@@ -14,14 +14,19 @@ import { AuditLogViewer } from './AuditLogViewer'
 import { BillingSettings } from './BillingSettings'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import SecurityClient from './security/SecurityClient'
+import type { DesktopSessionView } from './security/DesktopSessions'
 
 type SettingsTab = 'profile' | 'billing' | 'teams' | 'api-keys' | 'audit' | 'security' | 'language'
 
 interface SettingsClientProps {
   initialTwoFactorEnabled: boolean
+  desktopSessions: DesktopSessionView[]
 }
 
-export default function SettingsClient({ initialTwoFactorEnabled }: SettingsClientProps) {
+export default function SettingsClient({
+  initialTwoFactorEnabled,
+  desktopSessions,
+}: SettingsClientProps) {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -115,7 +120,10 @@ export default function SettingsClient({ initialTwoFactorEnabled }: SettingsClie
           )}
           {activeTab === 'teams' && session?.user?.id && <TeamSettings userId={session.user.id} />}
           {activeTab === 'security' && (
-            <SecurityClient initialTwoFactorEnabled={initialTwoFactorEnabled} />
+            <SecurityClient
+              initialTwoFactorEnabled={initialTwoFactorEnabled}
+              desktopSessions={desktopSessions}
+            />
           )}
           {activeTab === 'language' && (
             <div className="bg-card border border-border rounded-xl p-6">

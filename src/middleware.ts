@@ -77,7 +77,8 @@ export function middleware(req: NextRequest) {
 
   if (!hasSession) {
     const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('callbackUrl', pathname)
+    // Keep the query string, e.g. the desktop app's sign-in request.
+    loginUrl.searchParams.set('callbackUrl', `${pathname}${req.nextUrl.search}`)
     return applySecurityHeaders(NextResponse.redirect(loginUrl))
   }
 
