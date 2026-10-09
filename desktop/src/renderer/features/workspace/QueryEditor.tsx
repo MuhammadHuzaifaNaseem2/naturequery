@@ -14,6 +14,7 @@ import { SQLEditor } from '@web/components/SQLEditor'
 import { DB_TYPE_INFO, usesSql } from '@shared/db-types'
 import { Button, IconButton, Kbd, Segmented, modKey } from '../../components/ui'
 import { formatSql, editorMode } from '../../lib/sql'
+import { jsonQueryLanguage } from '../../lib/json-query'
 import { isDarkTheme } from '../../lib/theme'
 import {
   cancelTab,
@@ -60,6 +61,15 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
           }
         : undefined,
     [schema]
+  )
+
+  const dialect = connection ? DB_TYPE_INFO[connection.type].dialect : undefined
+  const language = useMemo(
+    () =>
+      dialect === 'mongodb' || dialect === 'firestore'
+        ? jsonQueryLanguage(dialect, schema)
+        : undefined,
+    [dialect, schema]
   )
 
   if (!connection) return null
@@ -175,12 +185,15 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
           onExecute={onExecute}
           schema={completionSchema}
           dbType={editorMode(connection.type)}
+          language={language}
           isDark={dark}
           height="100%"
           placeholder={
             sqlBased
               ? `Write a ${DB_TYPE_INFO[connection.type].label} query.\n\nPress ${modKey()}+Enter to run, ${modKey()}+Space for suggestions.`
-              : 'Write a query as JSON, for example:\n{ "collection": "orders", "pipeline": [{ "$limit": 50 }] }'
+              : dialect === 'firestore'
+                ? 'Write a query as JSON, for example:\n{ "collection": "orders", "where": [["status", "==", "paid"]], "limit": 50 }'
+                : 'Write a query as JSON, for example:\n{ "collection": "orders", "pipeline": [{ "$limit": 50 }] }'
           }
         />
       </div>

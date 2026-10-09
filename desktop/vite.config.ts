@@ -16,6 +16,7 @@ const SHARED_PACKAGES = [
   'clsx',
   '@codemirror/autocomplete',
   '@codemirror/commands',
+  '@codemirror/lang-json',
   '@codemirror/lang-sql',
   '@codemirror/language',
   '@codemirror/lint',

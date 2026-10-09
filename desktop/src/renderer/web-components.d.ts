@@ -55,5 +55,6 @@ declare module '@web/components/SQLEditor' {
     readOnly?: boolean
     height?: string
     className?: string
+    language?: import('@codemirror/state').Extension
   }>
 }

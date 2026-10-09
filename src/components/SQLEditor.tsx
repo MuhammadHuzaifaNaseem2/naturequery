@@ -14,7 +14,7 @@ import {
   crosshairCursor,
   tooltips,
 } from '@codemirror/view'
-import { EditorState, Compartment } from '@codemirror/state'
+import { EditorState, Compartment, type Extension } from '@codemirror/state'
 import { sql, PostgreSQL, MySQL, SQLite, MSSQL, type SQLDialect } from '@codemirror/lang-sql'
 import {
   autocompletion,
@@ -251,6 +251,8 @@ interface SQLEditorProps {
   readOnly?: boolean
   height?: string
   className?: string
+  /** Replaces the SQL language support, for example with JSON for document databases. */
+  language?: Extension
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -266,6 +268,7 @@ export function SQLEditor({
   readOnly = false,
   height = '280px',
   className = '',
+  language,
 }: SQLEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -275,12 +278,13 @@ export function SQLEditor({
 
   // Build SQL extension with schema autocompletion
   const sqlExtension = useMemo(() => {
+    if (language) return language
     return sql({
       dialect: getDialect(dbType),
       schema: schemaToCompletionSpec(schema),
       upperCaseKeywords: true,
     })
-  }, [schema, dbType])
+  }, [schema, dbType, language])
 
   // Pick theme based on dark mode
   const themeExtensions = useMemo(() => {

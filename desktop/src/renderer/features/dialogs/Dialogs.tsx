@@ -68,7 +68,7 @@ function WelcomeDialog() {
             {
               icon: <DatabaseZap className="h-5 w-5" />,
               title: 'Connect to the databases you already use',
-              text: 'PostgreSQL, MySQL, SQL Server, SQLite and more, on this computer, your network or the cloud.',
+              text: 'PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, BigQuery, MongoDB and 11 more, on this computer, your network or the cloud.',
             },
             {
               icon: <MessagesSquare className="h-5 w-5" />,

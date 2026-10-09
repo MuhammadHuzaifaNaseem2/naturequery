@@ -58,7 +58,8 @@ export function emptyDraft(type: DbType): ConnectionDraft {
   return {
     type,
     name: '',
-    host: type === 'neon' || type === 'planetscale' ? '' : 'localhost',
+    // Cloud services have their own address fields; only servers default to this computer.
+    host: !info.network || type === 'neon' || type === 'planetscale' ? '' : 'localhost',
     port: info.defaultPort ? String(info.defaultPort) : '',
     database: '',
     user: '',
@@ -155,15 +156,44 @@ function optional(value: string): string | undefined {
   return trimmed ? trimmed : undefined
 }
 
+function hostOf(url: string): string | undefined {
+  try {
+    return new URL(url.trim()).hostname || undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function suggestName(draft: ConnectionDraft): string {
-  const label = DB_TYPE_INFO[draft.type].label
-  if (draft.type === 'sqlite') return draft.sqlitePath.split(/[\\/]/).pop() || label
-  const where =
-    optional(draft.database) ??
-    optional(draft.host) ??
-    optional(draft.projectId) ??
-    optional(draft.snowflakeAccount)
-  return where ? `${label} · ${where}` : label
+  const info = DB_TYPE_INFO[draft.type]
+  if (draft.type === 'sqlite') return draft.sqlitePath.split(/[\\/]/).pop() || info.label
+  let where: string | undefined
+  switch (info.family) {
+    case 'snowflake':
+      where = optional(draft.database) ?? optional(draft.snowflakeAccount)
+      break
+    case 'bigquery':
+    case 'firestore':
+      where = optional(draft.projectId)
+      break
+    case 'dynamodb':
+      where = optional(draft.region)
+      break
+    case 'libsql':
+      where = hostOf(draft.tursoUrl)
+      break
+    case 'mongodb':
+      where =
+        optional(draft.database) ??
+        (draft.mongoUseUri ? hostOf(draft.mongoUri) : optional(draft.host))
+      break
+    case 'cassandra':
+      where = optional(draft.keyspace) ?? optional(draft.host)
+      break
+    default:
+      where = optional(draft.database) ?? optional(draft.host)
+  }
+  return where ? `${info.label} · ${where}` : info.label
 }
 
 /** Builds the save/test request. Empty secret fields keep saved values. */

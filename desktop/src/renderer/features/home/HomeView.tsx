@@ -90,7 +90,7 @@ export function HomeView() {
             icon={<DatabaseZap className="h-5 w-5" />}
             tone="bg-primary/15 text-primary"
             title="Connect a database"
-            description="PostgreSQL, MySQL, SQL Server, SQLite and more, on this computer, your office network or the cloud."
+            description="PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, BigQuery, MongoDB and 11 more, on this computer, your office network or the cloud."
             action="Add a connection"
             onClick={() => openDialog({ kind: 'connection' })}
           />
