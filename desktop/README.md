@@ -4,6 +4,12 @@ A native desktop app for asking databases questions in plain English or SQL.
 It connects directly from the user's computer, so it reaches databases on the
 same machine or a private office network that the web app cannot reach.
 
+Supported databases (18): PostgreSQL, MySQL, MariaDB, SQL Server, Oracle,
+SQLite, MongoDB, ClickHouse, Snowflake, BigQuery, Redshift, CockroachDB, Neon,
+PlanetScale, Turso/libSQL, DynamoDB, Firestore and Cassandra.
+
+For people using the app, see [docs/USER-GUIDE.md](docs/USER-GUIDE.md).
+
 ## Architecture
 
 | Process         | Code           | Role                                                                                                          |
@@ -29,8 +35,21 @@ Security model:
   read-only database accounts.
 - Logs (`%APPDATA%\NatureQuery\logs`) are scrubbed of passwords and tokens.
 
+Sign-in and AI:
+
+- "Sign in" opens `naturequery.app/desktop/authorize` in the browser (OAuth 2.0
+  authorization code flow with PKCE). After the user approves, the page opens
+  `naturequery://auth?code=...&state=...`; Windows starts a second copy of the
+  app, which hands the link to the running one and exits. The code can also be
+  pasted by hand.
+- Tokens are sealed like passwords (`account.json`). Access tokens last an hour
+  and refresh tokens rotate on every use. Requests use Chromium's network stack,
+  so system proxies and company certificates work.
+- AI requests (`/api/desktop/ai/*`) send the question and table and column
+  names, never result rows unless the user allows it for summaries.
+
 Data stored on the user's computer, in `%APPDATA%\NatureQuery`:
-`connections.json` (secrets sealed), `settings.json`, `window-state.json`,
+`connections.json` (secrets sealed), `account.json` (sign-in, sealed), `settings.json`, `window-state.json`,
 `workspace.db` (query history and saved queries, SQLite) and `logs/`.
 Connections saved by desktop 0.1 to 0.2 are imported on first start.
 
@@ -48,6 +67,8 @@ Useful environment variables for development builds (ignored when packaged):
 
 - `NATUREQUERY_USER_DATA`: use a separate profile folder.
 - `NATUREQUERY_API_URL`: point AI and sign-in at a local web app, for example `http://localhost:3000`.
+- `NQ_OPEN_EXTERNAL_LOG`: write sign-in pages to this file instead of opening a browser (automated tests).
+- `NQ_REGISTER_PROTOCOL=1`: register `naturequery://` for the development build (otherwise only installed builds do).
 
 ## Test
 

@@ -1,77 +1,128 @@
-# NatureQuery Desktop release checklist
+# Releasing NatureQuery Desktop
 
-The 0.2.3 Windows x64 build is a local release candidate. Nothing in this guide's
-build commands publishes a release. Public distribution requires a separate,
-explicit release decision after the checks below.
+Nothing in this guide publishes anything unless you run the commands marked
+**publishes**. Building, testing and signing all happen on your computer.
 
-## Build without publishing
+## 1. Before you build
+
+The desktop app needs these parts of the website to be live at
+`https://naturequery.app`:
+
+- The desktop sign-in page (`/desktop/authorize`) and the `/api/desktop/*` routes.
+- The database tables from the migration `20261009120000_desktop_sign_in`.
+
+Deploy the website first (preview, then production), and apply the migration to
+the production database with `npx prisma migrate deploy` before you send an
+installer to anyone. Without them, everything works except sign-in and AI.
+
+## 2. Test
 
 Run from `desktop/`:
 
 ```powershell
 npm ci
+npm run typecheck
 npm test
-npm run build:win
 ```
 
-`build:win` runs `electron-builder --win --x64 --publish never`. Expected output
-in `desktop/dist/`:
+Then run both integration batches against disposable databases, as described in
+[test/integration/README.md](test/integration/README.md). Snowflake, BigQuery and
+Firestore have no local test server: check each against a real account before a
+release.
 
-- `NatureQuery-0.2.3-win-x64-Setup.exe`: per-user NSIS installer.
-- The corresponding `.blockmap` and `latest.yml`: update support files.
-- `win-unpacked/`: packaged application for local smoke testing.
+## 3. Build the installer
 
-The installer is configured to create Desktop and Start-menu shortcuts and run
-the app after installation. Test installation and uninstallation in a disposable
-Windows account or VM; running the unpacked app is not an installation test.
-The build uses `build/icon.png` for the application and `build/icon.ico` for the
-installer and uninstaller.
+```powershell
+npm run dist:win
+```
 
-## Checks before public launch
+Output in `desktop/release/`:
 
-- Run unit tests and the opt-in disposable PostgreSQL integration test described
-  in [README.md](README.md). Record the results and the exact commit being built.
-- Smoke-test the packaged app on Windows: sample presets, connection validation,
-  save/reopen/edit/remove, schema loading, read query, blocked write query,
-  truncation, CSV export/cancel, offline recovery, keyboard navigation, and restart.
-- Qualify MySQL, MariaDB, and SQL Server against real disposable databases.
-  PostgreSQL coverage does not establish support quality for those engines.
-- Review and deploy the required hosted-web desktop integration separately,
-  then verify email/password sign-in, local-connection discovery, SQL generation,
-  execution, and explicit AI Insights use from the packaged app. Local source
-  changes alone do not update the hosted workspace.
-- Keep OAuth unavailable in the desktop UI until a secure external-browser
-  callback/session handoff is implemented and tested. Do not advertise it as
-  working in this candidate.
-- Configure Windows code signing and verify the signer and installer integrity.
-  This candidate is not signed. Signing identifies the publisher; it does not
-  guarantee that Windows SmartScreen reputation warnings disappear. Resolve
-  distribution trust before broad release rather than asking users to bypass warnings.
-- Prepare a public release, matching installer/update metadata, release notes,
-  checksum, supported-platform notice, privacy explanation, and support path.
-  Verify upgrade and rollback/recovery behavior using a controlled test release.
-- Obtain the product owner's approval before publishing or adding a public download.
+| File                                               | Purpose                                                |
+| -------------------------------------------------- | ------------------------------------------------------ |
+| `NatureQuery-<version>-win-x64-Setup.exe`          | Per-user installer. No administrator rights needed.    |
+| `NatureQuery-<version>-win-x64-Setup.exe.blockmap` | Lets updates download only what changed.               |
+| `latest.yml`                                       | Tells installed copies that this version exists.       |
+| `win-unpacked/`                                    | The packaged app, for a quick look without installing. |
 
-macOS DMG and Linux AppImage build scripts exist, both with `--publish never`.
-They are untested release targets here. macOS signing/notarization and Linux
-secure-storage behavior require separate qualification; do not list them as shipped.
+The package is hardened with Electron fuses (see `build.electronFuses` in
+`package.json`): it ignores `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and inspector
+flags, and loads code only from its integrity-checked `app.asar`.
 
-## How updates work in this candidate
+To test without touching your own NatureQuery profile, start the packaged app
+with a separate profile folder:
 
-- Checks run only when the user chooses **Check for updates** in a packaged app.
-  Development builds explain that updates are unavailable. There is no launch-time
-  update check.
-- The configured source is GitHub Releases for
-  `MuhammadHuzaifaNaseem2/naturequery`. Configuration is not evidence that a
-  public release or working update channel exists.
-- A newer version prompts the user before download. Declining leaves the current
-  version running. Automatic downloads and installation on quit are disabled.
-- After a download, choosing **Check for updates** again offers **Restart and
-  install** or **Later**. The user should finish running queries before restarting.
-- An unavailable release service leaves the app usable and reports an actionable
-  retry message. Test this flow with signed, published artifacts before claiming
-  verified update support.
+```powershell
+.\release\win-unpacked\NatureQuery.exe --user-data-dir="$env:TEMP\nq-qa-profile"
+```
 
-`release:win` is a publishing script, unlike `build:win`. Do not run it during
-local QA. Publishing credentials must not be placed in source files, documentation,
-or committed configuration.
+Test installing, upgrading and uninstalling on a clean Windows machine (Windows
+Sandbox or a virtual machine), not on your everyday PC.
+
+## 4. Sign the installer
+
+Unsigned apps show "Windows protected your PC" with "Unknown publisher", and
+antivirus programs are much more likely to quarantine them. Sign every release
+with the same certificate so its reputation builds up over time.
+
+Recommended for an individual developer outside the USA and Canada: an
+individual (natural person) code signing certificate with cloud signing, for
+example **Certum Standard Code Signing in the Cloud** (SimplySign) or
+**SSL.com Individual Validation** with eSigner. Microsoft's own Artifact
+Signing service is limited to individuals in the USA and Canada, and EV
+certificates no longer skip SmartScreen (since 2024) and require a registered
+company.
+
+With Certum SimplySign, the certificate appears in Windows as a virtual smart
+card while SimplySign Desktop is connected. Find its thumbprint, then build:
+
+```powershell
+Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Format-List Subject, Thumbprint
+npx electron-builder --win --x64 --publish never `
+  -c.win.signtoolOptions.certificateSha1=<THUMBPRINT> `
+  -c.win.signtoolOptions.rfc3161TimeStampServer=http://time.certum.pl
+```
+
+Check the result:
+
+```powershell
+Get-AuthenticodeSignature .\release\NatureQuery-*-Setup.exe | Format-List Status, SignerCertificate
+```
+
+`Status` must be `Valid`. After the first signed release, add the certificate's
+publisher name as `build.win.signtoolOptions.publisherName` in `package.json`, so
+the updater only installs updates signed by you.
+
+## 5. Antivirus false positives
+
+New installers, signed or not, are sometimes flagged by antivirus programs.
+Before sharing a release, submit the installer for analysis so it is cleared:
+
+- Microsoft Defender: https://www.microsoft.com/wdsi/filesubmission
+- Avast and AVG: https://www.avast.com/false-positive-file-form.php
+
+If a customer's antivirus blocks the app, ask their IT team to allow
+`%LOCALAPPDATA%\Programs\NatureQuery` and send you the detection name.
+
+## 6. Publish a release (publishes)
+
+1. Raise `version` in `desktop/package.json` (installed copies only update to a
+   higher version).
+2. Commit, then sign in to GitHub as the repository owner:
+   `gh auth switch --user MuhammadHuzaifaNaseem2`.
+3. Build and upload to a **draft** GitHub release:
+   `$env:GH_TOKEN = gh auth token; npm run release:win`
+4. Open the draft on GitHub, add release notes (they appear in the app), and
+   publish it. Installed copies see it within a few hours, or right away from
+   **Settings, Updates, Check now**.
+
+The updater checks GitHub releases of `MuhammadHuzaifaNaseem2/naturequery`
+(`build.publish` in `package.json`). It never downloads without the user's
+agreement, and installs when the user restarts the app.
+
+## 7. Platforms
+
+Windows x64 is the supported platform. `npm run dist:mac` and
+`npm run dist:linux` exist but are untested: macOS needs Apple signing and
+notarization, and Linux secure storage needs its own testing before either can
+be offered.
