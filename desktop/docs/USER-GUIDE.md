@@ -210,8 +210,10 @@ paid plans have no monthly limit. The account menu shows how many you have left.
 
 - **Ask**: your question, your recent follow-up questions with the queries they
   produced, the database type, and the names and types of your tables and
-  columns, with their keys and relationships. Never the data in them.
-- **Fix with AI**: the query and the database's error message.
+  columns, with their keys, relationships and approximate row counts. Never the
+  data in them.
+- **Fix with AI**: the query, the database's error message, and the same table
+  and column names.
 - **Explain**: the query.
 - **Summarize**: the question, the query, the column names and the row count.
   Result rows are included only if you turn on **Let AI summaries use result
