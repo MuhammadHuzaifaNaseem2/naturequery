@@ -4,11 +4,13 @@ import {
   clipboard,
   dialog,
   nativeTheme,
+  net,
   safeStorage,
   session,
   shell,
 } from 'electron'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { IPC, EVENTS, type FileKind } from '@shared/ipc'
 import { DB_TYPE_INFO } from '@shared/db-types'
@@ -18,9 +20,13 @@ import type {
   ConnectionConfig,
   ConnectionInfo,
   ConnectionSecrets,
+  Envelope,
   ExportRequest,
   QueryRequest,
+  SchemaSnapshot,
 } from '@shared/types'
+import { createAccount } from './account'
+import { createAi } from './ai'
 import { createConnectionStore } from './connections'
 import { createEngineHost } from './engine-host'
 import { EXPORT_FILTERS, writeExport } from './exporter'
@@ -31,13 +37,19 @@ import { registerAppScheme, serveRenderer, isTrustedAppUrl } from './protocol'
 import { createSecretBox } from './secure-store'
 import { createSettingsStore } from './settings'
 import {
+  accountPathSchema,
+  authCodeSchema,
   clipboardTextSchema,
   connectionIdSchema,
   connectionInputSchema,
+  explainRequestSchema,
   exportRequestSchema,
   externalUrlSchema,
   fileKindSchema,
+  fixRequestSchema,
+  generateRequestSchema,
   historyQuerySchema,
+  insightsRequestSchema,
   parseInput,
   queryIdSchema,
   queryRequestSchema,
@@ -63,6 +75,42 @@ if (process.platform === 'win32') app.setAppUserModelId('app.naturequery.desktop
 registerAppScheme()
 
 let mainWindow: BrowserWindow | null = null
+
+// ─── naturequery:// links (browser sign-in) ─────────────────────────
+const PROTOCOL = 'naturequery'
+const queuedLinks: string[] = []
+let openLink: ((url: string) => void) | null = null
+
+function linkFromArgs(argv: string[]): string | undefined {
+  return argv.find((arg) => arg.toLowerCase().startsWith(`${PROTOCOL}://`))
+}
+
+function routeLink(url: string) {
+  if (openLink) openLink(url)
+  else queuedLinks.push(url)
+}
+
+/** Opens a page of the NatureQuery website in the browser. */
+function openSite(url: string) {
+  const target = new URL(url)
+  if (target.origin !== new URL(API_BASE_URL).origin) {
+    throw new NqError('VALIDATION', 'This link was blocked.')
+  }
+  // Automated tests of development builds record the page instead of opening a browser.
+  if (!app.isPackaged && process.env.NQ_OPEN_EXTERNAL_LOG) {
+    fs.appendFileSync(process.env.NQ_OPEN_EXTERNAL_LOG, `${target.toString()}\n`)
+    return
+  }
+  return shell.openExternal(target.toString())
+}
+
+function unwrap<T>(envelope: Envelope<T>): T {
+  if (envelope.ok) return envelope.value
+  throw new NqError(envelope.error.code, envelope.error.message, {
+    hint: envelope.error.hint,
+    detail: envelope.error.detail,
+  })
+}
 
 function focusWindow() {
   if (!mainWindow) return
@@ -145,6 +193,55 @@ async function start() {
     return connections.resolve(id)
   }
 
+  // The installer registers naturequery:// too; this repairs it if another app took it over.
+  if (app.isPackaged) {
+    app.setAsDefaultProtocolClient(PROTOCOL)
+  } else if (process.env.NQ_REGISTER_PROTOCOL === '1') {
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])])
+  }
+
+  const account = createAccount({
+    apiBaseUrl: API_BASE_URL,
+    file: paths.account(),
+    box,
+    // Chromium's network stack uses the system proxy and the Windows certificate store.
+    fetch: (url, init) => net.fetch(url, init),
+    openExternal: openSite,
+    emit: (state) => send(EVENTS.authChanged, state),
+    device: { name: os.hostname(), platform: process.platform, appVersion: app.getVersion() },
+    log: {
+      info: (message) => logger.info(message),
+      warn: (message, error) => logger.warn(message, error),
+    },
+  })
+  openLink = (url) => {
+    focusWindow()
+    void account.handleCallback(url).catch((error) => logger.error('Sign-in link failed', error))
+  }
+  for (const url of queuedLinks.splice(0)) openLink(url)
+  if (account.isSignedIn()) {
+    account.refreshProfile().catch((error) => logger.warn('Could not refresh the account', error))
+  }
+
+  // Schemas used for AI questions, kept from the last time each was loaded.
+  const schemaCache = new Map<string, SchemaSnapshot>()
+  async function schemaOf(connectionId: string): Promise<SchemaSnapshot> {
+    const cached = schemaCache.get(connectionId)
+    if (cached) return cached
+    const { config, secrets } = resolveConnection(connectionId)
+    const snapshot = unwrap(
+      await engine.request({ kind: 'schema', config, secrets, timeoutMs: 120_000 }, 150_000)
+    )
+    schemaCache.set(connectionId, snapshot)
+    return snapshot
+  }
+  const ai = createAi({
+    account,
+    typeOf: (connectionId) => resolveConnection(connectionId).config.type,
+    schemaOf,
+    shareRows: () => settings.get().shareSampleRowsForCharts,
+  })
+
   const ipc = createIpc({ getWindow: () => mainWindow, devServerUrl })
   const { handle } = ipc
 
@@ -181,6 +278,7 @@ async function start() {
   handle(IPC.connectionsList, () => connections.list())
   handle(IPC.connectionsSave, async (input) => {
     const saved = connections.save(parseInput(connectionInputSchema, input))
+    schemaCache.delete(saved.id)
     await engine.request({ kind: 'release', connectionId: saved.id }, 10_000)
     send(EVENTS.connectionsChanged)
     return saved
@@ -188,6 +286,7 @@ async function start() {
   handle(IPC.connectionsRemove, async (id) => {
     const connectionId = parseInput(connectionIdSchema, id)
     connections.remove(connectionId)
+    schemaCache.delete(connectionId)
     await engine.request({ kind: 'release', connectionId }, 10_000)
     send(EVENTS.connectionsChanged)
   })
@@ -229,10 +328,14 @@ async function start() {
 
   // ── Database ─────────────────────────────────────────────────────────
   handle(IPC.dbSchema, async (id) => {
-    const { config, secrets } = resolveConnection(parseInput(connectionIdSchema, id))
-    return passThrough(
-      await engine.request({ kind: 'schema', config, secrets, timeoutMs: 120_000 }, 150_000)
+    const connectionId = parseInput(connectionIdSchema, id)
+    const { config, secrets } = resolveConnection(connectionId)
+    const envelope = await engine.request(
+      { kind: 'schema', config, secrets, timeoutMs: 120_000 },
+      150_000
     )
+    if (envelope.ok) schemaCache.set(connectionId, envelope.value)
+    return passThrough(envelope)
   })
   handle(IPC.dbQuery, async (raw) => {
     const request: QueryRequest = parseInput(queryRequestSchema, raw)
@@ -320,22 +423,19 @@ async function start() {
     clipboard.writeText(parseInput(clipboardTextSchema, text))
   })
 
-  // ── Account and AI (connected in the next milestone) ─────────────────
-  const signedOut = () => {
-    throw new NqError('SIGNED_OUT', 'Sign in to NatureQuery to use AI features.', {
-      hint: 'Your local SQL workspace keeps working without an account.',
-    })
-  }
-  handle(IPC.authState, () => ({ status: 'signed-out' }))
-  handle(IPC.authSignIn, signedOut)
-  handle(IPC.authSubmitCode, signedOut)
-  handle(IPC.authCancel, () => undefined)
-  handle(IPC.authSignOut, () => undefined)
-  handle(IPC.authOpenAccount, () => openExternalSafely(`${API_BASE_URL}/settings`))
-  handle(IPC.aiGenerate, signedOut)
-  handle(IPC.aiFix, signedOut)
-  handle(IPC.aiExplain, signedOut)
-  handle(IPC.aiInsights, signedOut)
+  // ── Account and AI ───────────────────────────────────────────────────
+  handle(IPC.authState, () => account.state())
+  handle(IPC.authSignIn, () => account.signIn())
+  handle(IPC.authSubmitCode, (code) => account.submitCode(parseInput(authCodeSchema, code)))
+  handle(IPC.authCancel, () => account.cancel())
+  handle(IPC.authSignOut, () => account.signOut())
+  handle(IPC.authOpenAccount, (page) =>
+    openSite(`${API_BASE_URL}${parseInput(accountPathSchema, page ?? undefined) ?? '/settings'}`)
+  )
+  handle(IPC.aiGenerate, (request) => ai.generate(parseInput(generateRequestSchema, request)))
+  handle(IPC.aiFix, (request) => ai.fix(parseInput(fixRequestSchema, request)))
+  handle(IPC.aiExplain, (request) => ai.explain(parseInput(explainRequestSchema, request)))
+  handle(IPC.aiInsights, (request) => ai.insights(parseInput(insightsRequestSchema, request)))
 
   // ── Updates (connected with release packaging) ───────────────────────
   const updatesDisabled = () => ({
@@ -390,7 +490,18 @@ async function start() {
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => focusWindow())
+  const initialLink = linkFromArgs(process.argv)
+  if (initialLink) routeLink(initialLink)
+  app.on('second-instance', (_event, argv) => {
+    focusWindow()
+    const link = linkFromArgs(argv)
+    if (link) routeLink(link)
+  })
+  // macOS delivers links through open-url, possibly before the app is ready.
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    routeLink(url)
+  })
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
   })

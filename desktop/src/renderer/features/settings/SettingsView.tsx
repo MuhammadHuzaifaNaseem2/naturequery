@@ -12,7 +12,7 @@ import {
 import { Button, Field, Select, Switch } from '../../components/ui'
 import { formatCount } from '../../lib/format'
 import { api } from '../../lib/nq'
-import { startSignIn } from '../../layout/AccountBadge'
+import { startSignIn } from '../../store/assistant'
 import { updateSettings, useApp } from '../../store/app-store'
 
 const THEMES: { value: ThemeName; label: string; swatch: [string, string, string] }[] = [
@@ -189,12 +189,13 @@ export function SettingsView() {
           <Switch
             checked={settings.shareSampleRowsForCharts}
             onChange={(shareSampleRowsForCharts) => change({ shareSampleRowsForCharts })}
-            label="Use AI to pick charts"
-            description="Sends up to five result rows to NatureQuery to suggest the best chart. Off by default."
+            label="Let AI summaries use result rows"
+            description="When you choose Summarize, up to 50 result rows are sent so the summary can mention real values. Off by default."
           />
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            When you ask a question, NatureQuery receives your question and the names of your tables
-            and columns. Result rows stay on this computer unless you choose AI insights.
+            When you ask a question, NatureQuery receives your question and the names and types of
+            your tables and columns, never your data. Database passwords and query results stay on
+            this computer unless you turn on the option above.
           </p>
         </Section>
 

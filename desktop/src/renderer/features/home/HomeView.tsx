@@ -4,7 +4,7 @@ import type { HistoryEntry } from '@shared/types'
 import { DbIcon } from '../../components/brand'
 import { formatRelativeTime, truncate } from '../../lib/format'
 import { api } from '../../lib/nq'
-import { startSignIn } from '../../layout/AccountBadge'
+import { startSignIn } from '../../store/assistant'
 import {
   connectionLabel,
   findConnection,

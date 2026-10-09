@@ -1,20 +1,33 @@
 import { useCallback, useMemo, useRef } from 'react'
-import { Bookmark, PanelLeft, Play, Square, WandSparkles } from 'lucide-react'
+import {
+  Bookmark,
+  BookOpenText,
+  Code2,
+  PanelLeft,
+  Play,
+  Sparkles,
+  Square,
+  Undo2,
+  WandSparkles,
+} from 'lucide-react'
 import { SQLEditor } from '@web/components/SQLEditor'
 import { DB_TYPE_INFO, usesSql } from '@shared/db-types'
-import { Button, IconButton, Kbd, modKey } from '../../components/ui'
+import { Button, IconButton, Kbd, Segmented, modKey } from '../../components/ui'
 import { formatSql, editorMode } from '../../lib/sql'
 import { isDarkTheme } from '../../lib/theme'
 import {
   cancelTab,
   openDialog,
   runTab,
+  setTabMode,
   setTabSql,
   toggleSchemaPanel,
   useApp,
   useConnection,
   type QueryTab,
 } from '../../store/app-store'
+import { explainTab, undoAiChange } from '../../store/assistant'
+import { AskBar } from './AskBar'
 
 export function QueryEditor({ tab }: { tab: QueryTab }) {
   const connection = useConnection(tab.connectionId)
@@ -52,6 +65,7 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
   if (!connection) return null
   const running = tab.status === 'running'
   const sqlBased = usesSql(connection.type)
+  const changedByAi = !!tab.aiChange && tab.sql === tab.aiChange.after
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -63,6 +77,27 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
         >
           <PanelLeft className="h-4 w-4" />
         </IconButton>
+        <div className="mx-1 h-4 w-px bg-border" />
+        <Segmented
+          size="sm"
+          label="Query mode"
+          value={tab.mode}
+          onChange={(mode) => setTabMode(tab.id, mode)}
+          options={[
+            {
+              value: 'ask',
+              label: 'Ask',
+              icon: <Sparkles className="h-3.5 w-3.5" />,
+              title: 'Ask a question in plain English',
+            },
+            {
+              value: 'sql',
+              label: sqlBased ? 'SQL' : 'Query',
+              icon: <Code2 className="h-3.5 w-3.5" />,
+              title: 'Write the query yourself',
+            },
+          ]}
+        />
         <div className="mx-1 h-4 w-px bg-border" />
         {running ? (
           <Button
@@ -89,6 +124,27 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
           <Kbd>Enter</Kbd>
         </span>
         <div className="ml-auto flex items-center gap-1">
+          {changedByAi && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<Undo2 className="h-3.5 w-3.5" />}
+              onClick={() => undoAiChange(tab.id)}
+              title="Put back the query from before the AI fixed it"
+            >
+              Undo AI fix
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<BookOpenText className="h-3.5 w-3.5" />}
+            onClick={() => void explainTab(tab.id)}
+            disabled={!tab.sql.trim() || tab.explanation?.status === 'loading'}
+            title="Explain this query in plain English"
+          >
+            Explain
+          </Button>
           <Button
             size="sm"
             variant="ghost"
@@ -110,6 +166,7 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
           </Button>
         </div>
       </div>
+      {tab.mode === 'ask' && <AskBar tab={tab} />}
       <div className="nq-editor-fill min-h-0 flex-1" style={{ fontSize }}>
         <SQLEditor
           key={tab.id}

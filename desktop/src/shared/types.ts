@@ -327,8 +327,9 @@ export interface PlanUsage {
 }
 
 export type AuthState =
-  | { status: 'signed-out' }
-  | { status: 'pending'; startedAt: string }
+  /** `error` explains why a sign-in attempt ended, when it did not succeed. */
+  | { status: 'signed-out'; error?: string }
+  | { status: 'pending'; startedAt: string; authorizeUrl: string }
   | { status: 'signed-in'; user: AccountUser; plan?: PlanUsage }
 
 export interface ConversationTurn {
@@ -343,10 +344,12 @@ export interface GenerateRequest {
   conversation?: ConversationTurn[]
 }
 
-export interface GenerateResult {
-  sql: string
-  plan?: PlanUsage
-}
+export type GenerateResult =
+  | { kind: 'query'; sql: string; plan?: PlanUsage }
+  /** The AI needs more detail before it can write a query. */
+  | { kind: 'clarify'; message: string }
+  /** The request asked to change data, which NatureQuery never does. */
+  | { kind: 'refused'; message: string }
 
 export interface FixRequest {
   connectionId: string
@@ -364,7 +367,13 @@ export interface InsightsRequest {
   question: string
   sql: string
   columns: string[]
+  /** Sent to the AI only when the user allows sharing result rows. */
   rows: unknown[][]
+  rowCount: number
+}
+
+export interface ExplainResult {
+  explanation: string
 }
 
 export interface InsightsResult {

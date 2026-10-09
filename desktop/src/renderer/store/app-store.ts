@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { toast } from 'sonner'
 import {
   DEFAULT_SETTINGS,
   type AppError,
@@ -17,13 +18,30 @@ import { applyThemeClass, currentChrome, resolveTheme, type ResolvedTheme } from
 
 export type View = 'home' | 'workspace' | 'history' | 'saved' | 'settings'
 
+/** The plain-English assistant's state in a tab. */
+export interface AssistantState {
+  status: 'idle' | 'thinking' | 'fixing'
+  /** A clarifying question from the AI, or why it declined. */
+  notice?: { kind: 'clarify' | 'refused'; message: string }
+  error?: AppError
+}
+
+/** An AI answer shown above the results: loading, ready or failed. */
+export type AiPanel<T> =
+  | { status: 'loading' }
+  | ({ status: 'ready' } & T)
+  | { status: 'error'; error: AppError }
+
 export interface QueryTab {
   id: string
   connectionId: string
   title: string
   mode: 'sql' | 'ask'
   sql: string
+  /** Text in the question box. */
   question: string
+  /** The question that produced the current query, if any. */
+  lastQuestion?: string
   conversation: ConversationTurn[]
   status: 'idle' | 'running' | 'success' | 'error' | 'canceled'
   queryId?: string
@@ -32,6 +50,11 @@ export interface QueryTab {
   error?: AppError
   resultView: 'table' | 'chart'
   savedQueryId?: string
+  assistant: AssistantState
+  explanation?: AiPanel<{ text: string; forSql: string }>
+  insights?: AiPanel<{ summary: string; highlights: string[]; usedRows: boolean }>
+  /** The query before the AI changed it, so the change can be undone. */
+  aiChange?: { before: string; after: string }
 }
 
 export interface SchemaState {
@@ -46,6 +69,7 @@ export type DialogState =
   | { kind: 'shortcuts' }
   | { kind: 'save-query'; tabId: string }
   | { kind: 'confirm-remove-connection'; connection: ConnectionInfo }
+  | { kind: 'sign-in' }
   | null
 
 interface AppState {
@@ -118,7 +142,14 @@ export function useActiveTab(): QueryTab | undefined {
   return useApp((state) => state.tabs.find((tab) => tab.id === state.activeTabId))
 }
 
-function updateTab(id: string, patch: Partial<QueryTab> | ((tab: QueryTab) => Partial<QueryTab>)) {
+export function findTab(id: string): QueryTab | undefined {
+  return get().tabs.find((tab) => tab.id === id)
+}
+
+export function updateTab(
+  id: string,
+  patch: Partial<QueryTab> | ((tab: QueryTab) => Partial<QueryTab>)
+) {
   set((state) => ({
     tabs: state.tabs.map((tab) =>
       tab.id === id ? { ...tab, ...(typeof patch === 'function' ? patch(tab) : patch) } : tab
@@ -141,12 +172,24 @@ export async function initialize(): Promise<void> {
   systemDark.addEventListener('change', () => applyTheme(get().settings.theme))
   restoreTabs()
   api.connections.onChanged(() => void refreshConnections())
-  api.auth.onChanged((state) => set({ auth: state }))
+  api.auth.onChanged(onAuthChanged)
   set({
     ready: true,
     dialog: settings.onboardingCompleted ? null : { kind: 'welcome' },
     view: get().tabs.length ? 'workspace' : 'home',
   })
+}
+
+function onAuthChanged(state: AuthState) {
+  const previous = get().auth
+  set({ auth: state })
+  if (state.status === 'signed-in' && previous.status !== 'signed-in') {
+    toast.success(`Signed in as ${state.user.email}`, {
+      description: 'You can now ask questions in plain English.',
+    })
+    if (get().dialog?.kind === 'sign-in') set({ dialog: null })
+  }
+  if (state.status === 'signed-out' && state.error) toast.error(state.error)
 }
 
 export function applyTheme(theme: ThemeName) {
@@ -219,6 +262,7 @@ function defaultSql(connectionId: string): string {
   if (connectionId === 'sample') {
     return 'SELECT month, orders, revenue\nFROM monthly_revenue\nORDER BY month DESC\nLIMIT 12;'
   }
+  if (connection.type === 'firestore') return '{\n  "collection": "",\n  "limit": 50\n}'
   if (!usesSql(connection.type)) {
     return '{\n  "collection": "",\n  "pipeline": [{ "$limit": 50 }]\n}'
   }
@@ -252,6 +296,7 @@ export function openTab(
     status: 'idle',
     resultView: 'table',
     savedQueryId: options.savedQueryId,
+    assistant: { status: 'idle' },
   }
   set((state) => ({ tabs: [...state.tabs, tab], activeTabId: tab.id, view: 'workspace' }))
   void loadSchema(connectionId)
@@ -357,7 +402,7 @@ export async function cancelTab(id: string) {
 }
 
 let persistTimer: ReturnType<typeof setTimeout> | undefined
-function persistTabs() {
+export function persistTabs() {
   clearTimeout(persistTimer)
   persistTimer = setTimeout(() => {
     const { tabs, activeTabId } = get()
@@ -402,6 +447,7 @@ function restoreTabs() {
         status: 'idle',
         resultView: 'table',
         savedQueryId: tab.savedQueryId,
+        assistant: { status: 'idle' },
       }))
     const activeTabId = tabs.some((tab) => tab.id === saved.activeTabId)
       ? saved.activeTabId

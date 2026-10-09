@@ -190,6 +190,59 @@ export const fileKindSchema = z.enum([
   'private-key',
 ])
 export const externalUrlSchema = z.string().url().max(2048)
+
+// ─── Account and AI ──────────────────────────────────────────────────
+
+export const authCodeSchema = z
+  .string()
+  .trim()
+  .min(1, 'Paste the sign-in code from your browser.')
+  .max(200, 'That is not a NatureQuery sign-in code.')
+
+/** Website pages the app may open for account management. */
+export const accountPathSchema = z
+  .enum(['/settings', '/settings/billing', '/settings/security', '/pricing'])
+  .optional()
+
+const conversationSchema = z
+  .array(
+    z.object({
+      question: z.string().max(2000),
+      sql: z.string().max(100_000),
+      rowCount: z.number().int().min(0).optional(),
+    })
+  )
+  .max(20)
+
+export const generateRequestSchema = z.object({
+  connectionId: connectionIdSchema,
+  question: z
+    .string()
+    .trim()
+    .min(1, 'Ask a question first.')
+    .max(2000, 'Questions can be up to 2,000 characters.'),
+  conversation: conversationSchema.optional(),
+})
+
+export const fixRequestSchema = z.object({
+  connectionId: connectionIdSchema,
+  question: z.string().max(2000),
+  failedSql: z.string().trim().min(1, 'There is no query to fix.').max(100_000),
+  errorMessage: z.string().trim().min(1).max(20_000),
+})
+
+export const explainRequestSchema = z.object({
+  connectionId: connectionIdSchema,
+  sql: z.string().trim().min(1, 'Write a query first.').max(100_000),
+})
+
+export const insightsRequestSchema = z.object({
+  question: z.string().max(2000),
+  sql: z.string().max(100_000),
+  columns: z.array(z.string().max(512)).max(1000),
+  rows: z.array(z.array(z.unknown()).max(1000)).max(1000),
+  rowCount: z.number().int().min(0),
+})
 export const clipboardTextSchema = z.string().max(20_000_000)
 
 /** Parses IPC input and turns schema failures into a readable validation error. */

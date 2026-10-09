@@ -2,15 +2,8 @@ import { LogIn, LogOut, Sparkles, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Menu } from '../components/ui'
 import { api } from '../lib/nq'
-import { useApp } from '../store/app-store'
-
-export async function startSignIn() {
-  try {
-    await api.auth.signIn()
-  } catch (error) {
-    toast.error((error as Error).message, { description: (error as { hint?: string }).hint })
-  }
-}
+import { openDialog, useApp } from '../store/app-store'
+import { startSignIn } from '../store/assistant'
 
 export function AccountBadge() {
   const auth = useApp((state) => state.auth)
@@ -19,8 +12,9 @@ export function AccountBadge() {
     return (
       <button
         type="button"
-        onClick={() => void startSignIn()}
-        disabled={auth.status === 'pending'}
+        onClick={() =>
+          auth.status === 'pending' ? openDialog({ kind: 'sign-in' }) : void startSignIn()
+        }
         className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground disabled:opacity-60"
       >
         <Sparkles className="h-4 w-4 text-primary" />

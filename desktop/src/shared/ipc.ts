@@ -5,6 +5,7 @@ import type {
   ConnectionInput,
   Envelope,
   ExplainRequest,
+  ExplainResult,
   ExportOutcome,
   ExportRequest,
   FixRequest,
@@ -144,7 +145,7 @@ export interface NqBridge {
   ai: {
     generate: Call<[request: GenerateRequest], GenerateResult>
     fix: Call<[request: FixRequest], GenerateResult>
-    explain: Call<[request: ExplainRequest], { explanation: string }>
+    explain: Call<[request: ExplainRequest], ExplainResult>
     insights: Call<[request: InsightsRequest], InsightsResult>
   }
   updates: {
