@@ -40,7 +40,7 @@ import type { DatabaseSchema } from '@/types/database'
 
 // ── Custom light theme (matches NatureQuery design system) ────────────
 
-const naturQueryLightTheme = EditorView.theme(
+const natureQueryLightTheme = EditorView.theme(
   {
     '&': {
       fontSize: '13.5px',
@@ -132,7 +132,7 @@ const naturQueryLightTheme = EditorView.theme(
   { dark: false }
 )
 
-const naturQueryLightHighlight = HighlightStyle.define([
+const natureQueryLightHighlight = HighlightStyle.define([
   { tag: tags.keyword, color: '#7c3aed', fontWeight: '600' }, // purple - SELECT, FROM, WHERE
   { tag: tags.operator, color: '#7c3aed' }, // purple - =, <, >
   { tag: tags.definitionKeyword, color: '#7c3aed', fontWeight: '600' },
@@ -152,7 +152,7 @@ const naturQueryLightHighlight = HighlightStyle.define([
 
 // ── Custom dark theme overrides ──────────────────────────────────────
 
-const naturQueryDarkTheme = EditorView.theme(
+const natureQueryDarkTheme = EditorView.theme(
   {
     '&': {
       fontSize: '13.5px',
@@ -289,8 +289,8 @@ export function SQLEditor({
   // Pick theme based on dark mode
   const themeExtensions = useMemo(() => {
     return isDark
-      ? [oneDark, naturQueryDarkTheme]
-      : [syntaxHighlighting(naturQueryLightHighlight), naturQueryLightTheme]
+      ? [oneDark, natureQueryDarkTheme]
+      : [syntaxHighlighting(natureQueryLightHighlight), natureQueryLightTheme]
   }, [isDark])
 
   // Ctrl+Enter to execute
