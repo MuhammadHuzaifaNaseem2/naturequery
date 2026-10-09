@@ -142,6 +142,8 @@ function WelcomeDialog() {
 
 const SHORTCUTS: [string, string[]][] = [
   ['Run the query', [modKey(), 'Enter']],
+  ['Ask the question (in Ask mode)', ['Enter']],
+  ['New line in a question', ['Shift', 'Enter']],
   ['Cancel a running query', [modKey(), '.']],
   ['Suggestions in the editor', [modKey(), 'Space']],
   ['New query tab', [modKey(), 'T']],

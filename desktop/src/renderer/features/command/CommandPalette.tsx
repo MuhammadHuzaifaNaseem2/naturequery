@@ -2,13 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { clsx } from 'clsx'
 import {
   Bookmark,
+  BookOpenText,
   DatabaseZap,
   History,
   Home,
   Keyboard,
+  LogIn,
+  LogOut,
   Plus,
   Search,
   Settings,
+  Sparkles,
   SquareTerminal,
   Table2,
 } from 'lucide-react'
@@ -21,11 +25,13 @@ import {
   openConnection,
   openDialog,
   openTab,
+  setTabMode,
   setView,
   togglePalette,
   useActiveTab,
   useApp,
 } from '../../store/app-store'
+import { explainTab, startSignIn } from '../../store/assistant'
 
 interface Item {
   id: string
@@ -40,6 +46,7 @@ export function CommandPalette() {
   const open = useApp((state) => state.paletteOpen)
   const connections = useApp((state) => state.connections)
   const sample = useApp((state) => state.sample)
+  const signedIn = useApp((state) => state.auth.status === 'signed-in')
   const activeTab = useActiveTab()
   const schema = useApp((state) =>
     activeTab ? state.schemas[activeTab.connectionId]?.snapshot : undefined
@@ -83,6 +90,27 @@ export function CommandPalette() {
         run: close(() => openTab(activeTab?.connectionId ?? connections[0]?.id ?? 'sample')),
       },
       {
+        id: 'ask',
+        group: 'Actions',
+        label: 'Ask a question in plain English',
+        icon: <Sparkles className="h-4 w-4" />,
+        run: close(() => {
+          if (activeTab) setTabMode(activeTab.id, 'ask')
+          else openTab(connections[0]?.id ?? 'sample', { mode: 'ask' })
+        }),
+      },
+      ...(activeTab?.sql.trim()
+        ? [
+            {
+              id: 'explain',
+              group: 'Actions',
+              label: 'Explain this query',
+              icon: <BookOpenText className="h-4 w-4" />,
+              run: close(() => void explainTab(activeTab.id)),
+            },
+          ]
+        : []),
+      {
         id: 'home',
         group: 'Actions',
         label: 'Go to Home',
@@ -117,6 +145,21 @@ export function CommandPalette() {
         icon: <Keyboard className="h-4 w-4" />,
         run: close(() => openDialog({ kind: 'shortcuts' })),
       },
+      signedIn
+        ? {
+            id: 'sign-out',
+            group: 'Actions',
+            label: 'Sign out of NatureQuery',
+            icon: <LogOut className="h-4 w-4" />,
+            run: close(() => void api.auth.signOut().catch(() => {})),
+          }
+        : {
+            id: 'sign-in',
+            group: 'Actions',
+            label: 'Sign in to use AI',
+            icon: <LogIn className="h-4 w-4" />,
+            run: close(() => void startSignIn()),
+          },
       ...[...connections, ...(sample ? [sample] : [])].map((connection) => ({
         id: `connection-${connection.id}`,
         group: 'Connections',
@@ -163,7 +206,7 @@ export function CommandPalette() {
       }
     }
     return all
-  }, [connections, sample, saved, activeTab, schema])
+  }, [connections, sample, saved, activeTab, schema, signedIn])
 
   const term = query.trim().toLowerCase()
   const visible = useMemo(() => {
