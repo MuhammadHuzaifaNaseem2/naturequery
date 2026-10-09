@@ -1,0 +1,65 @@
+# Disposable databases for NatureQuery Desktop integration tests.
+#   docker compose -f test/integration/docker-compose.yml up -d --wait
+#   npm run test:integration
+#   docker compose -f test/integration/docker-compose.yml down -v
+# Credentials are throwaway test values. Never point the tests at a real database.
+
+name: nq-desktop-it
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: nq_admin
+      POSTGRES_PASSWORD: nq_admin_pw
+      POSTGRES_DB: acme
+    ports: ['55432:5432']
+    volumes: ['./seed/postgres.sql:/docker-entrypoint-initdb.d/seed.sql:ro']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nq_admin -d acme']
+      interval: 3s
+      retries: 30
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: nq_root_pw
+      MYSQL_DATABASE: acme
+      MYSQL_USER: nq_reader
+      MYSQL_PASSWORD: nq_reader_pw
+    ports: ['53306:3306']
+    volumes: ['./seed/mysql.sql:/docker-entrypoint-initdb.d/seed.sql:ro']
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-pnq_root_pw']
+      interval: 3s
+      retries: 60
+
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: nq_root_pw
+      MARIADB_DATABASE: acme
+      MARIADB_USER: nq_reader
+      MARIADB_PASSWORD: nq_reader_pw
+    ports: ['53307:3306']
+    volumes: ['./seed/mysql.sql:/docker-entrypoint-initdb.d/seed.sql:ro']
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 3s
+      retries: 60
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: Nq_Test_Pw_2026!
+      MSSQL_PID: Developer
+    ports: ['51433:1433']
+    healthcheck:
+      test: ['CMD-SHELL', "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Nq_Test_Pw_2026!' -Q 'SELECT 1' || exit 1"]
+      interval: 5s
+      retries: 40
+
+  ssh:
+    build: ./ssh
+    ports: ['52222:22']

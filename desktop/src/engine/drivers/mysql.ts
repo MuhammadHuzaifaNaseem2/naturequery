@@ -81,7 +81,8 @@ export const createMysqlDriver: DriverFactory = (config, secrets, context) => {
       multipleStatements: false,
       dateStrings: true,
       supportBigNumbers: true,
-      bigNumberStrings: true,
+      // Numbers that fit exactly stay numbers; larger ones arrive as text.
+      bigNumberStrings: false,
       charset: 'utf8mb4',
       connectAttributes: { program_name: APP_NAME },
     }

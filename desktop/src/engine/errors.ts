@@ -183,8 +183,10 @@ export function describeError(error: unknown, context: ErrorContext): AppError {
     )
   }
   if (
-    code === '57014' ||
-    /statement timeout|max_execution_time|max_statement_time|exceeded timeout/i.test(text)
+    ['57014', 'ER_QUERY_TIMEOUT', '3024', 'PROTOCOL_SEQUENCE_TIMEOUT'].includes(code) ||
+    /statement timeout|max_execution_time|max_statement_time|maximum statement execution time|exceeded timeout|Query inactivity timeout/i.test(
+      text
+    )
   ) {
     return make(
       'TIMEOUT',

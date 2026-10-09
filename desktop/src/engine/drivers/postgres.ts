@@ -58,12 +58,19 @@ const SYSTEM_SCHEMAS = [
   'pg_automv',
 ]
 
+/** bigint (int8): a number when it fits exactly, otherwise the exact text. */
+function parseBigInt(value: string): number | string {
+  const number = Number(value)
+  return Number.isSafeInteger(number) ? number : value
+}
+
 function typeParsers(): PoolConfig['types'] {
   return {
-    getTypeParser: ((oid: number, format?: 'text' | 'binary') =>
-      RAW_TEXT_TYPES.has(oid)
-        ? (value: string) => value
-        : pgTypes.getTypeParser(oid, format as 'text')) as never,
+    getTypeParser: ((oid: number, format?: 'text' | 'binary') => {
+      if (RAW_TEXT_TYPES.has(oid)) return (value: string) => value
+      if (oid === 20) return parseBigInt
+      return pgTypes.getTypeParser(oid, format as 'text')
+    }) as never,
   }
 }
 

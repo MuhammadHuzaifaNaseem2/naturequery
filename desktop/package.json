@@ -91,12 +91,21 @@
     }
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1148.0",
+    "@clickhouse/client": "^1.24.0",
+    "@google-cloud/bigquery": "^9.2.0",
+    "@google-cloud/firestore": "^9.3.1",
+    "@libsql/client": "^0.18.0",
+    "cassandra-driver": "^4.10.0",
     "electron-log": "^5.4.4",
     "electron-updater": "6.8.9",
     "exceljs": "^4.4.0",
+    "mongodb": "^7.7.0",
     "mssql": "^12.7.4",
     "mysql2": "^3.24.5",
+    "oracledb": "^26.0.0",
     "pg": "^8.23.1",
+    "snowflake-sdk": "^3.4.0",
     "ssh2": "^1.17.0",
     "zod": "^4.6.5"
   },

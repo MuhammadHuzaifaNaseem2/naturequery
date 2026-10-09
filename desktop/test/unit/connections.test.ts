@@ -4,8 +4,9 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { assertComplete, createConnectionStore } from '../../src/main/connections'
 import { createSecretBox, type SafeStorageLike } from '../../src/main/secure-store'
+import { connectionInputSchema } from '../../src/main/validation'
 import { NqError } from '../../src/shared/errors'
-import type { ConnectionConfig } from '../../src/shared/types'
+import type { ConnectionConfig, ConnectionInput } from '../../src/shared/types'
 
 // Reversible stand-in for the operating system's encryption.
 const fakeSafeStorage: SafeStorageLike = {
@@ -24,12 +25,10 @@ function fixture(storage: SafeStorageLike = fakeSafeStorage) {
   directories.push(directory)
   const file = path.join(directory, 'connections.json')
   const legacyFile = path.join(directory, 'local-connections.json')
-  return {
-    directory,
-    file,
-    legacyFile,
-    store: createConnectionStore({ file, legacyFile, box: createSecretBox(storage) }),
-  }
+  const store = createConnectionStore({ file, legacyFile, box: createSecretBox(storage) })
+  // Inputs go through the same validation as requests from the interface.
+  const save = (input: ConnectionInput) => store.save(connectionInputSchema.parse(input))
+  return { directory, file, legacyFile, store: { ...store, save } }
 }
 afterEach(() => {
   for (const directory of directories.splice(0))
