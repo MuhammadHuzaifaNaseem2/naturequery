@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens shared with naturequery.app (src/app/globals.css), plus
+   desktop-only surfaces for the sidebar and title bar. */
+@layer base {
+  :root {
+    --background: 220 18% 97%;
+    --foreground: 220 18% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 18% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 18% 10%;
+    --primary: 217 91% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 18% 10%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 42%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 64% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 44%;
+    --warning-foreground: 0 0% 100%;
+    --border: 220 13% 88%;
+    --input: 220 13% 86%;
+    --ring: 217 91% 55%;
+    --sidebar: 220 16% 94%;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --card: 224 71% 6%;
+    --card-foreground: 213 31% 91%;
+    --popover: 224 60% 8%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 213 31% 91%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215 20% 62%;
+    --accent: 262 83% 64%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 60% 48%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+    --border: 223 40% 15%;
+    --input: 223 40% 18%;
+    --ring: 217 91% 60%;
+    --sidebar: 224 65% 3%;
+    color-scheme: dark;
+  }
+
+  /* Dim: soft slate-navy dark, the desktop default. */
+  .dim {
+    --background: 215 27% 13%;
+    --foreground: 214 20% 90%;
+    --card: 215 24% 16%;
+    --card-foreground: 214 20% 90%;
+    --popover: 215 24% 18%;
+    --popover-foreground: 214 20% 90%;
+    --primary: 217 91% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 21% 21%;
+    --secondary-foreground: 214 20% 90%;
+    --muted: 215 21% 21%;
+    --muted-foreground: 215 14% 66%;
+    --accent: 262 72% 68%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 62%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 55% 52%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 90% 58%;
+    --warning-foreground: 0 0% 100%;
+    --border: 215 18% 24%;
+    --input: 215 18% 27%;
+    --ring: 217 91% 64%;
+    --sidebar: 215 28% 11%;
+    color-scheme: dark;
+  }
+
+  /* Forest: deep evergreen with emerald accents. */
+  .forest {
+    --background: 160 30% 7%;
+    --foreground: 150 18% 90%;
+    --card: 160 28% 10%;
+    --card-foreground: 150 18% 90%;
+    --popover: 160 26% 12%;
+    --popover-foreground: 150 18% 90%;
+    --primary: 158 64% 48%;
+    --primary-foreground: 160 40% 6%;
+    --secondary: 160 22% 15%;
+    --secondary-foreground: 150 18% 90%;
+    --muted: 160 22% 15%;
+    --muted-foreground: 150 14% 66%;
+    --accent: 43 88% 60%;
+    --accent-foreground: 45 40% 10%;
+    --destructive: 0 70% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 43 88% 60%;
+    --warning-foreground: 45 40% 10%;
+    --border: 160 20% 17%;
+    --input: 160 20% 20%;
+    --ring: 158 64% 48%;
+    --sidebar: 160 32% 5%;
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 13px;
+    font-feature-settings: 'cv11', 'ss01';
+    overflow: hidden;
+    user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable],
+  .cm-editor,
+  .selectable {
+    user-select: text;
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  button:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* Components used by the shared web components (ResultsTable, ResultsChart). */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  .btn-secondary {
+    @apply btn border border-border bg-secondary text-secondary-foreground hover:bg-secondary/70;
+  }
+  .btn-ghost {
+    @apply btn hover:bg-secondary;
+  }
+  .btn-destructive {
+    @apply btn bg-destructive text-destructive-foreground hover:bg-destructive/90;
+  }
+  .input {
+    @apply w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+  .card {
+    @apply rounded-xl border border-border bg-card shadow-sm;
+  }
+  .skeleton {
+    @apply animate-pulse rounded bg-muted;
+  }
+}
+
+@layer utilities {
+  .drag {
+    -webkit-app-region: drag;
+  }
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.22);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* The shared SQL editor fills its pane in the desktop layout. */
+.nq-editor-fill > div {
+  height: 100%;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+}
+.nq-editor-fill .cm-editor {
+  height: 100%;
+  max-height: none !important;
+}
+.nq-editor-fill .cm-editor.cm-focused {
+  outline: none;
+}
+
+/* Keep the shared results table compact inside desktop panes, and let it
+   fill the pane instead of the web page's fixed 500px cap. */
+.nq-results table {
+  font-size: 12.5px;
+}
+.nq-results-fill > .border {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  border-radius: 0;
+}
+.nq-results-fill > .border > div:last-child {
+  flex: 1 1 0%;
+  min-height: 0;
+  max-height: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,38 +1,58 @@
 {
   "name": "naturequery-desktop",
-  "version": "0.2.3",
-  "description": "NatureQuery Desktop — connect to local and internal databases that the web app cannot reach.",
-  "author": "Muhammad Huzaifa Naseem",
+  "productName": "NatureQuery",
+  "version": "0.9.0",
+  "description": "NatureQuery Desktop: ask your databases questions in plain English, on your own computer.",
+  "author": {
+    "name": "NatureQuery",
+    "email": "hello@naturequery.app",
+    "url": "https://naturequery.app"
+  },
+  "homepage": "https://naturequery.app",
   "license": "UNLICENSED",
   "private": true,
-  "main": "main.js",
+  "main": "dist/main/index.cjs",
   "scripts": {
-    "start": "electron .",
-    "test": "node --test engine/*.test.cjs test/*.test.cjs",
-    "build:win": "electron-builder --win --x64 --publish never",
-    "build:mac": "electron-builder --mac --publish never",
-    "build:linux": "electron-builder --linux --publish never",
-    "release:win": "electron-builder --win --x64 --publish always"
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "sample-db": "node scripts/make-sample-db.mjs",
+    "start": "node scripts/start.mjs",
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "dist:linux": "npm run build && electron-builder --linux --publish never",
+    "release:win": "npm run build && electron-builder --win --x64 --publish always"
   },
   "build": {
     "appId": "app.naturequery.desktop",
     "productName": "NatureQuery",
     "artifactName": "NatureQuery-${version}-${os}-${arch}-Setup.${ext}",
+    "copyright": "Copyright © 2026 NatureQuery",
     "directories": {
-      "output": "dist",
+      "output": "release",
       "buildResources": "build"
     },
     "files": [
-      "main.js",
-      "preload.js",
-      "store.cjs",
-      "policy.cjs",
-      "zoom.cjs",
-      "build/icon.png",
-      "engine/**/*",
-      "renderer/**/*",
-      "!engine/*.test.cjs",
-      "!renderer/welcome.html"
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/sample",
+        "to": "sample"
+      }
+    ],
+    "asar": true,
+    "protocols": [
+      {
+        "name": "NatureQuery",
+        "schemes": [
+          "naturequery"
+        ]
+      }
     ],
     "publish": [
       {
@@ -43,17 +63,21 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.png"
+      "icon": "build/icon.ico"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
       "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "NatureQuery",
+      "uninstallDisplayName": "NatureQuery",
       "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico"
+      "uninstallerIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false
     },
     "mac": {
       "target": "dmg",
@@ -67,13 +91,49 @@
     }
   },
   "dependencies": {
-    "pg": "^8.13.1",
-    "mysql2": "^3.11.5",
-    "mssql": "^11.0.1",
-    "electron-updater": "6.8.9"
+    "electron-log": "^5.4.4",
+    "electron-updater": "6.8.9",
+    "exceljs": "^4.4.0",
+    "mssql": "^12.7.4",
+    "mysql2": "^3.24.5",
+    "pg": "^8.23.1",
+    "ssh2": "^1.17.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "electron": "44.4.5",
-    "electron-builder": "26.15.3"
+    "@codemirror/autocomplete": "^6.20.1",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/lint": "^6.9.5",
+    "@codemirror/search": "^6.6.0",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.41.0",
+    "@lezer/highlight": "^1.2.3",
+    "@types/mssql": "^12.3.0",
+    "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/ssh2": "^1.15.6",
+    "@vitejs/plugin-react": "^5.2.0",
+    "autoprefixer": "^10.6.1",
+    "clsx": "^2.1.1",
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "^0.28.2",
+    "lucide-react": "^0.460.0",
+    "postcss": "^8.5.29",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "recharts": "^3.7.0",
+    "sonner": "^2.0.7",
+    "sql-formatter": "^15.7.3",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.7",
+    "vitest": "^4.1.11",
+    "zustand": "^5.0.15"
   }
 }
