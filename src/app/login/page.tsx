@@ -12,7 +12,6 @@ import { z } from 'zod'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { AuthLayout } from '@/components/AuthLayout'
 import { useOAuthProviders } from '@/hooks/useOAuthProviders'
-import { isNatureQueryDesktop } from '@/lib/desktop-bridge'
 import { preFlightCheck } from '@/actions/auth'
 import { requestEmailVerification } from '@/actions/auth-email'
 import { safeCallbackUrl } from '@/lib/safe-redirect'
@@ -201,10 +200,6 @@ function LoginForm() {
   }
 
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
-    if (isNatureQueryDesktop()) {
-      setError('Use email and password to sign in to NatureQuery Desktop.')
-      return
-    }
     setIsLoading(true)
     setError(null)
     try {
@@ -335,23 +330,6 @@ function LoginForm() {
         <h1 className="text-2xl font-bold">{t('auth.login.title')}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t('auth.login.subtitle')}</p>
       </div>
-
-      {oauthProviders.isDesktop && (
-        <div className="mb-6 rounded-xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-          <p>Use your NatureQuery email and password.</p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-primary">
-              Signed up with Google or GitHub?
-            </summary>
-            <p className="mt-2">
-              <Link href="/forgot-password" className="text-primary underline">
-                Request a password-reset email
-              </Link>{' '}
-              for the same account email to set a password for desktop sign-in.
-            </p>
-          </details>
-        </div>
-      )}
 
       {/* Error Message */}
       {error && (

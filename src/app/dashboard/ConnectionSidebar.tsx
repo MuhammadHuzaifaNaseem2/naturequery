@@ -11,7 +11,6 @@ import {
   X,
   UploadCloud,
   AlertTriangle,
-  Laptop,
 } from 'lucide-react'
 
 // Mini logos for each DB type shown in the sidebar connection list
@@ -248,7 +247,6 @@ interface ConnectionSidebarProps {
   onSelectConnection: (id: string) => void
   onDeleteConnection: (id: string) => void
   onAddConnection: () => void
-  onAddLocalConnection?: () => void
   onAddDemoConnection: () => void
   onSelectTemplate: (question: string) => void
   onNewChat?: () => void
@@ -265,7 +263,6 @@ export function ConnectionSidebar({
   onSelectConnection,
   onDeleteConnection,
   onAddConnection,
-  onAddLocalConnection,
   onAddDemoConnection,
   onSelectTemplate,
   onNewChat,
@@ -399,15 +396,6 @@ export function ConnectionSidebar({
                           <div className="flex-1 min-w-0 pr-6">
                             <div className="flex items-center gap-1.5">
                               <h3 className="font-medium text-sm truncate">{connection.name}</h3>
-                              {connection.source === 'desktop' && (
-                                <span
-                                  className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[9px] font-medium text-primary"
-                                  title="Queries run on this computer. Database credentials and result rows stay local."
-                                >
-                                  <Laptop className="h-2.5 w-2.5" />
-                                  Local
-                                </span>
-                              )}
                               {connection.status === 'active' && (
                                 <span className="flex h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
                               )}
@@ -454,18 +442,8 @@ export function ConnectionSidebar({
               className="flex-1 p-1.5 border border-dashed border-border hover:border-primary/30 rounded-lg text-[11px] text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1"
             >
               <Plus className="w-3 h-3" />
-              {onAddLocalConnection ? 'Cloud' : t('dashboard.sidebar.addConnection')}
+              {t('dashboard.sidebar.addConnection')}
             </button>
-            {onAddLocalConnection ? (
-              <button
-                onClick={onAddLocalConnection}
-                className="flex-1 p-1.5 border border-dashed border-primary/30 rounded-lg text-[11px] text-primary hover:bg-primary/5 transition-colors flex items-center justify-center gap-1"
-                title="Manage databases connected directly from this computer"
-              >
-                <Laptop className="w-3 h-3" />
-                Local
-              </button>
-            ) : null}
             <button
               onClick={() => fileInputRef.current?.click()}
               className="p-1.5 border border-dashed border-border/50 hover:border-primary/30 rounded-lg text-muted-foreground hover:text-primary transition-all"

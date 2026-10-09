@@ -12,7 +12,6 @@ import { z } from 'zod'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { AuthLayout } from '@/components/AuthLayout'
 import { useOAuthProviders } from '@/hooks/useOAuthProviders'
-import { isNatureQueryDesktop } from '@/lib/desktop-bridge'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -79,10 +78,6 @@ function RegisterForm() {
   }
 
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
-    if (isNatureQueryDesktop()) {
-      setError('Use email and password to create your account in NatureQuery Desktop.')
-      return
-    }
     setIsLoading(true)
     await signIn(provider, { callbackUrl: '/onboarding' })
   }
@@ -114,19 +109,6 @@ function RegisterForm() {
         <h1 className="text-2xl font-bold">{t('auth.register.title')}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t('auth.register.subtitle')}</p>
       </div>
-
-      {oauthProviders.isDesktop && (
-        <div className="mb-6 rounded-xl border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Create your desktop account</p>
-          <p className="mt-2">
-            Use an email and password to access the AI workspace in NatureQuery Desktop. Google and
-            GitHub sign-up are available in your browser.
-          </p>
-          <Link href="/login" className="mt-2 inline-block text-primary underline">
-            Already have an account? Sign in instead.
-          </Link>
-        </div>
-      )}
 
       {/* Error Message */}
       {error && (

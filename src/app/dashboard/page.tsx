@@ -78,9 +78,6 @@ export default function DashboardPage() {
     onSelectConnection: dashboard.handleSelectConnection,
     onDeleteConnection: dashboard.handleDeleteConnection,
     onAddConnection: () => dashboard.setShowAddConnection(true),
-    onAddLocalConnection: dashboard.desktopAvailable
-      ? () => dashboard.openDesktopConnectionManager().catch(() => {})
-      : undefined,
     onAddDemoConnection: dashboard.handleAddDemoConnection,
     onSelectTemplate: dashboard.handleSelectTemplate,
     onNewChat: () => {

@@ -47,15 +47,6 @@ import {
   refreshSchemaByConnection,
   executeSQLByConnection,
 } from '@/actions/connections'
-import {
-  executeDesktopSQL,
-  fetchDesktopSchema,
-  isDesktopConnectionId,
-  isNatureQueryDesktop,
-  listDesktopConnections,
-  openDesktopConnectionManager,
-  removeDesktopConnection,
-} from '@/lib/desktop-bridge'
 
 export function useDashboard() {
   const { t } = useTranslation()
@@ -74,7 +65,6 @@ export function useDashboard() {
   // Connection state
   const [connections, setConnections] = useState<SavedConnection[]>([])
   const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null)
-  const [desktopAvailable, setDesktopAvailable] = useState(false)
 
   // Query state
   const [nlQuery, setNlQuery] = useState('')
@@ -231,12 +221,11 @@ export function useDashboard() {
 
     // Show the UI immediately — don't wait for the server call
     setHydrated(true)
-    setDesktopAvailable(isNatureQueryDesktop())
 
     // Load connections from server and auto-fetch schema for active connection
     // Also load widgets after connections are known so we can resolve connectionId fallbacks
-    Promise.all([getUserConnections(), listDesktopConnections().catch(() => [])])
-      .then(async ([serverConns, desktopConns]) => {
+    getUserConnections()
+      .then(async (serverConns) => {
         if (cancelled) return
         const cachedById = new Map(cachedConnections.map((c) => [c.id, c]))
         const mapped: SavedConnection[] = serverConns.map((c) => ({
@@ -251,18 +240,11 @@ export function useDashboard() {
           status: 'active' as const,
           teamId: c.teamId,
           teamName: c.teamName,
-          source: 'cloud' as const,
           // Preserve cached schema so table counts show immediately on reload
           schema: cachedById.get(c.id)?.schema,
         }))
-        const localConnections = desktopConns.map((connection) => ({
-          ...connection,
-          schema: cachedById.get(connection.id)?.schema,
-        }))
         const demoConn = cachedConnections.find((c) => c.isDemo)
-        const merged = demoConn
-          ? [...mapped, ...localConnections, { ...demoConn, source: 'demo' as const }]
-          : [...mapped, ...localConnections]
+        const merged = demoConn ? [...mapped, demoConn] : mapped
         setConnections(merged)
         setConnectionsLoaded(true)
         try {
@@ -270,12 +252,7 @@ export function useDashboard() {
         } catch {}
 
         // Best connection to use as fallback: savedActive → first connection
-        const fallbackConnId =
-          (savedActive && mapped.some((connection) => connection.id === savedActive)
-            ? savedActive
-            : null) ||
-          mapped[0]?.id ||
-          null
+        const fallbackConnId = savedActive || mapped[0]?.id || null
 
         // Load and execute dashboard widgets now that we know available connections
         fetch('/api/dashboard/widgets')
@@ -671,12 +648,10 @@ export function useDashboard() {
               c.id === connectionId ? { ...c, schema: cached, status: 'active' as const } : c
             )
           )
-          if (!isDesktopConnectionId(connectionId)) runDiscovery(connectionId, cached)
+          runDiscovery(connectionId, cached)
         } else {
           // Fetch schema server-side (credentials decrypted on server)
-          const result = isDesktopConnectionId(connectionId)
-            ? await fetchDesktopSchema(connectionId)
-            : await fetchSchemaByConnection(connectionId)
+          const result = await fetchSchemaByConnection(connectionId)
           if (result.success && result.data) {
             schemaCache.set(connectionId, result.data)
             setConnections((prev) =>
@@ -691,7 +666,7 @@ export function useDashboard() {
                   : c
               )
             )
-            if (!isDesktopConnectionId(connectionId)) runDiscovery(connectionId, result.data)
+            runDiscovery(connectionId, result.data)
           } else {
             const errMsg = result.error || 'Failed to load schema'
             console.error(`[schema-fetch] ${connection.name} (${connection.dbType}):`, errMsg)
@@ -704,7 +679,7 @@ export function useDashboard() {
         }
       } else if (connection?.schema) {
         // Schema already loaded — run discovery if not cached
-        if (!isDesktopConnectionId(connectionId)) runDiscovery(connectionId, connection.schema)
+        runDiscovery(connectionId, connection.schema)
       }
     },
     [connections, runDiscovery]
@@ -714,10 +689,7 @@ export function useDashboard() {
   const handleDeleteConnection = useCallback(async (connectionId: string) => {
     // Demo connection is client-only
     if (connectionId !== 'demo') {
-      const result = isDesktopConnectionId(connectionId)
-        ? await removeDesktopConnection(connectionId)
-        : await deleteConnectionAction(connectionId)
-      if ('canceled' in result && result.canceled) return
+      const result = await deleteConnectionAction(connectionId)
       if (!result.success) {
         setError(result.error || 'Failed to delete connection')
         toast.error('Failed to delete connection')
@@ -735,9 +707,7 @@ export function useDashboard() {
     if (!activeConnection || activeConnection.isDemo) return
     setIsRefreshingSchema(true)
     try {
-      const result = isDesktopConnectionId(activeConnection.id)
-        ? await fetchDesktopSchema(activeConnection.id)
-        : await refreshSchemaByConnection(activeConnection.id)
+      const result = await refreshSchemaByConnection(activeConnection.id)
       if (result.success && result.data) {
         setConnections((prev) =>
           prev.map((c) => (c.id === activeConnection.id ? { ...c, schema: result.data } : c))
@@ -765,9 +735,7 @@ export function useDashboard() {
       setIsExecuting(true)
 
       const startTime = Date.now()
-      const result = isDesktopConnectionId(activeConnection.id)
-        ? await executeDesktopSQL(activeConnection.id, sql)
-        : await executeSQLByConnection(activeConnection.id, sql)
+      const result = await executeSQLByConnection(activeConnection.id, sql)
       const executionTimeMs = Date.now() - startTime
       setIsExecuting(false)
 
@@ -785,19 +753,17 @@ export function useDashboard() {
         conversationRef.current.set(connId, history)
         setConversationLength(history.length)
 
-        if (!isDesktopConnectionId(activeConnection.id)) {
-          addHistoryEntry({
-            question,
-            sql,
-            connectionId: activeConnection.id,
-            connectionName: activeConnection.name,
-            rowCount: result.data.rowCount,
-            executionTimeMs,
-            status: 'success',
-          }).then((res) => {
-            if (res.success && res.data) setQueryHistory((prev) => [res.data!, ...prev])
-          })
-        }
+        addHistoryEntry({
+          question,
+          sql,
+          connectionId: activeConnection.id,
+          connectionName: activeConnection.name,
+          rowCount: result.data.rowCount,
+          executionTimeMs,
+          status: 'success',
+        }).then((res) => {
+          if (res.success && res.data) setQueryHistory((prev) => [res.data!, ...prev])
+        })
       } else {
         const errMsg = result.error || 'Failed to execute query'
         const isLimitError =
@@ -953,31 +919,27 @@ export function useDashboard() {
 
       // Real connection - execute via server action (credentials decrypted server-side)
       const startTime = Date.now()
-      const result = isDesktopConnectionId(activeConnection.id)
-        ? await executeDesktopSQL(activeConnection.id, sqlToRun)
-        : await executeSQLByConnection(activeConnection.id, sqlToRun)
+      const result = await executeSQLByConnection(activeConnection.id, sqlToRun)
       const executionTimeMs = Date.now() - startTime
 
       setIsExecuting(false)
 
       if (result.success && result.data) {
         // In the background, get an AI chart recommendation
-        if (!isDesktopConnectionId(activeConnection.id)) {
-          recommendChart({
-            question: nlQuery,
-            sql: sqlToRun,
-            fields: result.data.fields,
-            sampleRows: result.data.rows.slice(0, 5),
+        recommendChart({
+          question: nlQuery,
+          sql: sqlToRun,
+          fields: result.data.fields,
+          sampleRows: result.data.rows.slice(0, 5),
+        })
+          .then((rec) => {
+            if (rec.success && rec.recommendation) {
+              setQueryResults((prev) =>
+                prev ? { ...prev, chartRecommendation: rec.recommendation } : null
+              )
+            }
           })
-            .then((rec) => {
-              if (rec.success && rec.recommendation) {
-                setQueryResults((prev) =>
-                  prev ? { ...prev, chartRecommendation: rec.recommendation } : null
-                )
-              }
-            })
-            .catch(console.error)
-        }
+          .catch(console.error)
 
         setQueryResults(result.data)
         toast.success(`Query returned ${result.data.rowCount} rows`, {
@@ -993,21 +955,19 @@ export function useDashboard() {
         setConversationLength(history.length)
 
         // Record success history via server action (fire-and-forget)
-        if (!isDesktopConnectionId(activeConnection.id)) {
-          addHistoryEntry({
-            question: nlQuery,
-            sql: sqlToRun,
-            connectionId: activeConnection.id,
-            connectionName: activeConnection.name,
-            rowCount: result.data.rowCount,
-            executionTimeMs,
-            status: 'success',
-          }).then((res) => {
-            if (res.success && res.data) {
-              setQueryHistory((prev) => [res.data!, ...prev])
-            }
-          })
-        }
+        addHistoryEntry({
+          question: nlQuery,
+          sql: sqlToRun,
+          connectionId: activeConnection.id,
+          connectionName: activeConnection.name,
+          rowCount: result.data.rowCount,
+          executionTimeMs,
+          status: 'success',
+        }).then((res) => {
+          if (res.success && res.data) {
+            setQueryHistory((prev) => [res.data!, ...prev])
+          }
+        })
       } else {
         const errMsg = result.error || 'Failed to execute query'
         const isLimitError =
@@ -1021,21 +981,19 @@ export function useDashboard() {
         }
 
         // Record error history via server action (fire-and-forget)
-        if (!isDesktopConnectionId(activeConnection.id)) {
-          addHistoryEntry({
-            question: nlQuery,
-            sql: sqlToRun,
-            connectionId: activeConnection.id,
-            connectionName: activeConnection.name,
-            executionTimeMs,
-            status: 'error',
-            errorMessage: errMsg,
-          }).then((res) => {
-            if (res.success && res.data) {
-              setQueryHistory((prev) => [res.data!, ...prev])
-            }
-          })
-        }
+        addHistoryEntry({
+          question: nlQuery,
+          sql: sqlToRun,
+          connectionId: activeConnection.id,
+          connectionName: activeConnection.name,
+          executionTimeMs,
+          status: 'error',
+          errorMessage: errMsg,
+        }).then((res) => {
+          if (res.success && res.data) {
+            setQueryHistory((prev) => [res.data!, ...prev])
+          }
+        })
       }
     },
     [activeConnection, generatedSQL, nlQuery, setShowPlanLimit]
@@ -1302,8 +1260,6 @@ export function useDashboard() {
     setShowAddConnection,
     searchQuery,
     setSearchQuery,
-    desktopAvailable,
-    openDesktopConnectionManager,
 
     // Query state
     nlQuery,
