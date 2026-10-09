@@ -75,7 +75,7 @@ export const EVENTS = {
   connectionsChanged: 'event:connections-changed',
 } as const
 
-export type FileKind = 'sqlite' | 'service-account' | 'ssh-key' | 'ca-certificate'
+export type FileKind = 'sqlite' | 'service-account' | 'ssh-key' | 'ca-certificate' | 'private-key'
 
 /** Colors for the native window controls drawn over the custom title bar. */
 export interface WindowChrome {

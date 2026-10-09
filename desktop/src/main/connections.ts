@@ -115,6 +115,7 @@ export function createConnectionStore(options: ConnectionStoreOptions) {
       clearSecrets = [],
       sshPrivateKeyPath,
       serviceAccountKeyPath,
+      privateKeyPath,
       id,
       ...fields
     } = input
@@ -137,6 +138,10 @@ export function createConnectionStore(options: ConnectionStoreOptions) {
     if (config.ssh?.enabled && config.ssh.auth === 'key' && sshPrivateKeyPath) {
       secrets.sshPrivateKey = readKeyFile(sshPrivateKeyPath)
       config.ssh.privateKeyPath = sshPrivateKeyPath
+    }
+    if (config.snowflake?.auth === 'keypair' && privateKeyPath) {
+      secrets.privateKey = readKeyFile(privateKeyPath)
+      config.snowflake.privateKeyPath = privateKeyPath
     }
     if (serviceAccountKeyPath) {
       const key = readKeyFile(serviceAccountKeyPath)
@@ -365,7 +370,16 @@ export function assertComplete(config: ConnectionConfig, secrets: ConnectionSecr
         'It looks like myorg-myaccount.'
       )
       need(config.user, 'Enter the Snowflake user name.')
-      need(secrets.password, 'Enter the password for this account.')
+      if (config.snowflake?.auth === 'keypair') {
+        need(secrets.privateKey, 'Choose the private key file (.p8).')
+        need(
+          /-----BEGIN (ENCRYPTED )?PRIVATE KEY-----/.test(secrets.privateKey ?? ''),
+          'That file is not a private key in PEM format.',
+          'Snowflake key pair sign-in uses a .p8 file that starts with -----BEGIN PRIVATE KEY-----.'
+        )
+      } else {
+        need(secrets.password, 'Enter the password or a programmatic access token.')
+      }
       break
     case 'bigquery':
       need(config.bigquery?.projectId, 'Enter the Google Cloud project ID.')

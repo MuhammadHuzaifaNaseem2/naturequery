@@ -215,6 +215,10 @@ async function start() {
         { name: 'Certificate', extensions: ['pem', 'crt', 'cer'] },
         { name: 'All files', extensions: ['*'] },
       ],
+      'private-key': [
+        { name: 'Private key', extensions: ['p8', 'pem', 'key'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
     }
     const result = await dialog.showOpenDialog(mainWindow!, {
       properties: ['openFile'],

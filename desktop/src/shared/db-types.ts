@@ -284,7 +284,21 @@ export const DB_TYPE_INFO: Record<DbType, DbTypeInfo> = {
 }
 
 /** Driver families included in this build. */
-export const AVAILABLE_FAMILIES: DriverFamily[] = ['postgres', 'mysql', 'sqlserver', 'sqlite']
+export const AVAILABLE_FAMILIES: DriverFamily[] = [
+  'postgres',
+  'mysql',
+  'sqlserver',
+  'oracle',
+  'sqlite',
+  'mongodb',
+  'clickhouse',
+  'snowflake',
+  'bigquery',
+  'dynamodb',
+  'firestore',
+  'cassandra',
+  'libsql',
+]
 
 export function isAvailable(type: DbType): boolean {
   return AVAILABLE_FAMILIES.includes(DB_TYPE_INFO[type].family)

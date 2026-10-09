@@ -15,6 +15,7 @@ export interface ErrorContext {
 }
 
 interface DriverErrorLike {
+  name?: string
   code?: string | number
   errno?: number
   number?: number
@@ -52,8 +53,30 @@ export function describeError(error: unknown, context: ErrorContext): AppError {
 
   if (context.canceled) return make('CANCELED', 'The query was canceled.')
 
+  const specific = engineSpecificError(context, err.name ?? '', text, make)
+  if (specific) return specific
+
+  // Oracle listener and call timeouts
+  if (/ORA-12514|ORA-12505|NJS-518|NJS-519/.test(text)) {
+    return make(
+      'NOT_FOUND',
+      `The Oracle listener at ${where} does not know the service name or SID "${context.database ?? ''}".`,
+      'Check the service name (for example ORCLPDB1) and whether to connect by service name or SID.'
+    )
+  }
+  if (/NJS-123|DPI-1067|call timeout of \d+ ms/i.test(text)) {
+    return make(
+      'TIMEOUT',
+      `The query ran longer than ${context.timeoutSeconds ?? 60} seconds and was stopped.`,
+      'Add filters or a FETCH FIRST clause to make it faster, or raise the time limit in Settings.'
+    )
+  }
+
   // Network reachability
-  if (code === 'ECONNREFUSED' || /ECONNREFUSED|connection refused/i.test(text)) {
+  if (
+    code === 'ECONNREFUSED' ||
+    /ECONNREFUSED|connection refused|ORA-12541|NJS-503|NJS-511/i.test(text)
+  ) {
     return make(
       'CONNECTION_REFUSED',
       `Could not connect to ${where}. The server refused the connection.`,
@@ -66,7 +89,9 @@ export function describeError(error: unknown, context: ErrorContext): AppError {
   ) {
     return make(
       'HOST_NOT_FOUND',
-      `The server name "${context.host ?? ''}" could not be found.`,
+      context.host
+        ? `The server name "${context.host}" could not be found.`
+        : 'The server in the connection settings could not be found.',
       'Check the spelling, or try the IP address. If the server is on a company network, connect to the VPN first.'
     )
   }
@@ -143,7 +168,7 @@ export function describeError(error: unknown, context: ErrorContext): AppError {
   // Authentication
   if (
     ['28P01', '28000', 'ER_ACCESS_DENIED_ERROR', '1045', 'ELOGIN', '18456'].includes(code) ||
-    /password authentication failed|Access denied for user|Login failed for user|ORA-01017|Authentication failed|AuthenticationFailed|invalid username\/password|Incorrect username or password/i.test(
+    /password authentication failed|Access denied for user|Login failed for user|ORA-01017|Authentication failed|AuthenticationFailed|invalid username\/password|Incorrect username or password|and\/or password are incorrect/i.test(
       text
     )
   ) {
@@ -155,7 +180,9 @@ export function describeError(error: unknown, context: ErrorContext): AppError {
   }
   if (
     ['3D000', 'ER_BAD_DB_ERROR', '1049', '4060'].includes(code) ||
-    /database "[^"]+" does not exist|Unknown database|Cannot open database/i.test(text)
+    /database "[^"]+" does not exist|Unknown database|Cannot open database|Database \S+ does(?:n't| not) exist/i.test(
+      text
+    )
   ) {
     return make(
       'NOT_FOUND',
@@ -204,6 +231,263 @@ export function describeError(error: unknown, context: ErrorContext): AppError {
     }
   }
   return make('DATABASE_ERROR', `Could not connect to ${where}.`, cleanDatabaseMessage(text))
+}
+
+type Make = (code: AppError['code'], message: string, hint?: string) => AppError
+
+/** Messages for cloud services and engines with their own error vocabulary. */
+function engineSpecificError(
+  context: ErrorContext,
+  name: string,
+  text: string,
+  make: Make
+): AppError | null {
+  switch (context.type) {
+    case 'snowflake':
+      if (/394508|394507|multi-factor|\bMFA\b/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'This Snowflake account requires multi-factor sign-in.',
+          'Use key pair sign-in or a programmatic access token instead of the password. Your Snowflake administrator can set either up.'
+        )
+      }
+      if (/390100|Incorrect username or password/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'Snowflake rejected the user name or password.',
+          'Check the credentials and the account identifier. A programmatic access token can be entered in the password field.'
+        )
+      }
+      if (/390144|390186|JWT token is invalid/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'Snowflake rejected the key pair sign-in.',
+          "Check that this user's public key is set in Snowflake (ALTER USER ... SET RSA_PUBLIC_KEY) and that the private key file matches it."
+        )
+      }
+      if (/390422|not allowed to access Snowflake/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          "Snowflake's network policy does not allow connections from this computer.",
+          'Connect to the company VPN, or ask your Snowflake administrator to allow this network.'
+        )
+      }
+      if (/No active warehouse selected/i.test(text)) {
+        return make(
+          'VALIDATION',
+          'No warehouse is selected for this connection.',
+          'Edit the connection and enter a warehouse that your role can use.'
+        )
+      }
+      if (/390201|warehouse '?\S*'? does not exist or not authorized/i.test(text)) {
+        return make(
+          'NOT_FOUND',
+          'The warehouse was not found, or this role cannot use it.',
+          'Check the warehouse and role names in the connection settings.'
+        )
+      }
+      if (
+        /390189|Role '?\S*'? (?:specified in the connect string )?(?:does not exist|is not granted)/i.test(
+          text
+        )
+      ) {
+        return make(
+          'AUTH_FAILED',
+          'That role does not exist or is not granted to this user.',
+          'Leave Role empty to use your default role, or check the name.'
+        )
+      }
+      if (
+        /250001|Could not connect to Snowflake backend|snowflakecomputing\.(?:com|cn).*(?:ENOTFOUND|getaddrinfo)/i.test(
+          text
+        )
+      ) {
+        return make(
+          'HOST_NOT_FOUND',
+          'Could not reach this Snowflake account.',
+          'Check the account identifier (for example myorg-myaccount), and your network or proxy settings.'
+        )
+      }
+      return null
+
+    case 'bigquery':
+    case 'firestore': {
+      const product = context.type === 'bigquery' ? 'BigQuery' : 'Cloud Firestore'
+      if (/invalid_grant|Invalid JWT Signature|invalid_client|account not found/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'Google rejected the service account key.',
+          'The key may have been deleted or rotated. Create a new JSON key for the service account in the Google Cloud console.'
+        )
+      }
+      if (
+        /has not been used in project|SERVICE_DISABLED|API has not been enabled|it is disabled/i.test(
+          text
+        )
+      ) {
+        return make(
+          'NOT_FOUND',
+          `The ${product} API is turned off for this Google Cloud project.`,
+          'Enable it in the Google Cloud console under "APIs & Services", wait a minute, then try again.'
+        )
+      }
+      if (/The database .* does not exist/i.test(text)) {
+        return make(
+          'NOT_FOUND',
+          'This Firestore database was not found.',
+          'Check the project ID. Leave Database empty for the default database.'
+        )
+      }
+      if (
+        /Access Denied|PERMISSION_DENIED|Missing or insufficient permissions|does not have [\w.]+ permission/i.test(
+          text
+        )
+      ) {
+        return make(
+          'AUTH_FAILED',
+          'The service account does not have permission for this.',
+          context.type === 'bigquery'
+            ? 'Give the service account the "BigQuery Data Viewer" and "BigQuery Job User" roles on the project.'
+            : 'Give the service account the "Cloud Datastore Viewer" role on the project.'
+        )
+      }
+      if (/Not found: Project|project .* (?:was )?not found|Unknown project/i.test(text)) {
+        return make(
+          'NOT_FOUND',
+          'The Google Cloud project was not found.',
+          'Check the project ID in the connection settings.'
+        )
+      }
+      return null
+    }
+
+    case 'dynamodb':
+      if (
+        name === 'UnrecognizedClientException' ||
+        /security token included in the request is invalid/i.test(text)
+      ) {
+        return make(
+          'AUTH_FAILED',
+          'AWS did not recognize the access key ID.',
+          'Check the access key ID, and that the key is still active in IAM.'
+        )
+      }
+      if (
+        name === 'InvalidSignatureException' ||
+        /signature we calculated does not match/i.test(text)
+      ) {
+        return make(
+          'AUTH_FAILED',
+          'AWS rejected the secret access key.',
+          'Check the secret access key. AWS shows it only once, when the key is created.'
+        )
+      }
+      if (name === 'AccessDeniedException' || /is not authorized to perform/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'This AWS key is not allowed to read DynamoDB.',
+          'Ask your AWS administrator for the dynamodb:ListTables, DescribeTable, Scan and PartiQLSelect permissions.'
+        )
+      }
+      if (name === 'ResourceNotFoundException') {
+        return make(
+          'NOT_FOUND',
+          'The table was not found in this region.',
+          'Check the table name (it is case-sensitive) and the region.'
+        )
+      }
+      return null
+
+    case 'cassandra': {
+      const centers = /only found hosts in data centers: \[([^\]]*)\]/i.exec(text)
+      if (centers || /localDataCenter/i.test(text)) {
+        return make(
+          'VALIDATION',
+          'The data center name does not match this cluster.',
+          centers
+            ? `This cluster's data centers are: ${centers[1]}.`
+            : 'Run "nodetool status" on a node to see the data center names.'
+        )
+      }
+      const keyspace = /Keyspace '?([^' ]+)'? does not exist/i.exec(text)
+      if (keyspace) {
+        return make(
+          'NOT_FOUND',
+          `The keyspace "${keyspace[1]}" was not found.`,
+          'Check the keyspace name, or leave it empty to browse all keyspaces.'
+        )
+      }
+      if (/requires authentication|Authentication provider not set/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'This cluster requires a user name and password.',
+          'Enter the credentials in the connection settings.'
+        )
+      }
+      return null
+    }
+
+    case 'mongodb':
+      if (/isn't whitelisted|IP access list/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'MongoDB Atlas does not allow connections from this computer.',
+          "Add this computer's IP address to the cluster's IP Access List in MongoDB Atlas."
+        )
+      }
+      if (/not authorized on \S+ to execute command|requires authentication/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'This MongoDB user cannot read this database.',
+          'Check the database name, or ask your administrator for the "read" role on it.'
+        )
+      }
+      return null
+
+    case 'clickhouse':
+      if (/plain HTTP request was sent to HTTPS port/i.test(text)) {
+        return make(
+          'TLS',
+          'This ClickHouse port expects HTTPS.',
+          'Change the protocol to HTTPS. ClickHouse Cloud uses HTTPS on port 8443.'
+        )
+      }
+      if (/wrong version number|EPROTO/i.test(text)) {
+        return make(
+          'TLS',
+          'This ClickHouse port does not use HTTPS.',
+          'Change the protocol to HTTP, or use the HTTPS port (usually 8443).'
+        )
+      }
+      return null
+
+    case 'turso':
+      if (/HTTP status 40[13]|Unauthorized/i.test(text)) {
+        return make(
+          'AUTH_FAILED',
+          'The database rejected the auth token.',
+          'Create a new token, for example with "turso db tokens create <database>", and paste it into the connection.'
+        )
+      }
+      if (/HTTP status 404/i.test(text)) {
+        return make(
+          'NOT_FOUND',
+          'No database was found at this URL.',
+          'Check the database URL, for example libsql://my-db-myorg.turso.io.'
+        )
+      }
+      if (/URL_INVALID|URL_SCHEME_NOT_SUPPORTED|Invalid URL/i.test(text)) {
+        return make(
+          'VALIDATION',
+          'The database URL is not valid.',
+          'Use a URL that starts with libsql://, https:// or http://.'
+        )
+      }
+      return null
+
+    default:
+      return null
+  }
 }
 
 function cleanDatabaseMessage(text: string): string {

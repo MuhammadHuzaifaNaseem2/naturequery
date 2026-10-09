@@ -46,6 +46,8 @@ const secrets = z
     authToken: z.string().max(8192),
     secretAccessKey: z.string().max(4096),
     caCertificate: z.string().max(65536),
+    privateKey: z.string().max(65536),
+    privateKeyPassphrase: z.string().max(4096),
   })
   .partial()
 
@@ -79,6 +81,8 @@ export const connectionInputSchema = z.object({
       warehouse: optionalText(255),
       role: optionalText(255),
       schema: optionalText(255),
+      auth: z.enum(['password', 'keypair']).optional(),
+      privateKeyPath: optionalText(1024),
     })
     .optional(),
   bigquery: z
@@ -103,6 +107,7 @@ export const connectionInputSchema = z.object({
   clearSecrets: z.array(z.enum(SECRET_KEYS)).max(SECRET_KEYS.length).optional(),
   sshPrivateKeyPath: optionalText(1024),
   serviceAccountKeyPath: optionalText(1024),
+  privateKeyPath: optionalText(1024),
 })
 
 export type ValidConnectionInput = z.infer<typeof connectionInputSchema>
@@ -177,7 +182,13 @@ export const windowChromeSchema = z.object({
   symbol: hexColor,
   dark: z.boolean(),
 })
-export const fileKindSchema = z.enum(['sqlite', 'service-account', 'ssh-key', 'ca-certificate'])
+export const fileKindSchema = z.enum([
+  'sqlite',
+  'service-account',
+  'ssh-key',
+  'ca-certificate',
+  'private-key',
+])
 export const externalUrlSchema = z.string().url().max(2048)
 export const clipboardTextSchema = z.string().max(20_000_000)
 

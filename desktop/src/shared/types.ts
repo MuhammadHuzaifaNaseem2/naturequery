@@ -57,7 +57,16 @@ export interface ConnectionConfig {
   sqlite?: { path: string }
   mongodb?: { useConnectionString: boolean; authSource?: string }
   clickhouse?: { protocol: 'http' | 'https' }
-  snowflake?: { account: string; warehouse?: string; role?: string; schema?: string }
+  snowflake?: {
+    account: string
+    warehouse?: string
+    role?: string
+    schema?: string
+    /** password also covers programmatic access tokens. */
+    auth?: 'password' | 'keypair'
+    /** Shown in the form; the key itself is stored encrypted. */
+    privateKeyPath?: string
+  }
   bigquery?: { projectId: string; location?: string; keyFilePath?: string }
   dynamodb?: { region: string; endpoint?: string }
   firestore?: { projectId: string; keyFilePath?: string }
@@ -78,6 +87,8 @@ export const SECRET_KEYS = [
   'authToken',
   'secretAccessKey',
   'caCertificate',
+  'privateKey',
+  'privateKeyPassphrase',
 ] as const
 
 export type SecretKey = (typeof SECRET_KEYS)[number]
@@ -99,6 +110,8 @@ export interface ConnectionInput extends Omit<ConnectionConfig, 'id' | 'createdA
   clearSecrets?: SecretKey[]
   sshPrivateKeyPath?: string
   serviceAccountKeyPath?: string
+  /** Snowflake key pair sign-in. */
+  privateKeyPath?: string
 }
 
 export interface TestResult {

@@ -1,10 +1,21 @@
 // Database engine utility process. Runs every driver outside the main
 // process, so a slow or crashing database client cannot freeze the window.
+import tls from 'node:tls'
 import { fail, ok } from '@shared/errors'
 import type { EngineMessage, EngineReply, EngineRequest } from '@shared/engine-protocol'
 import type { ConnectionConfig, Envelope } from '@shared/types'
 import { describeError } from './errors'
 import { createRegistry } from './registry'
+import { trustedCertificates } from './tls'
+
+// Cloud drivers (Snowflake, BigQuery, DynamoDB...) use Node's default trust
+// list. Add the operating system's certificates so they also work behind
+// company proxies that inspect TLS with a certificate installed by IT.
+try {
+  tls.setDefaultCACertificates(trustedCertificates())
+} catch (error) {
+  console.warn('[engine] could not load system certificates', error)
+}
 
 const registry = createRegistry()
 const started = Date.now()

@@ -63,3 +63,75 @@ services:
   ssh:
     build: ./ssh
     ports: ['52222:22']
+
+  # ── Extended engines ──────────────────────────────────────────────
+  # Started separately to keep memory use reasonable:
+  #   docker compose -f test/integration/docker-compose.yml --profile extended up -d --wait
+  mongo:
+    profiles: ['extended']
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: nq_admin
+      MONGO_INITDB_ROOT_PASSWORD: nq_admin_pw
+      MONGO_INITDB_DATABASE: acme
+    ports: ['58017:27017']
+    volumes: ['./seed/mongo.js:/docker-entrypoint-initdb.d/seed.js:ro']
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      interval: 3s
+      retries: 40
+
+  clickhouse:
+    profiles: ['extended']
+    image: clickhouse/clickhouse-server:25.8
+    environment:
+      CLICKHOUSE_USER: nq_admin
+      CLICKHOUSE_PASSWORD: nq_admin_pw
+      CLICKHOUSE_DB: acme
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
+    ports: ['58123:8123']
+    volumes: ['./seed/clickhouse.sql:/docker-entrypoint-initdb.d/seed.sql:ro']
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    healthcheck:
+      test: ['CMD', 'clickhouse-client', '--user', 'nq_admin', '--password', 'nq_admin_pw', '-q', 'SELECT 1']
+      interval: 3s
+      retries: 40
+
+  cassandra:
+    profiles: ['extended']
+    image: cassandra:5.0
+    environment:
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+    ports: ['59042:9042']
+    healthcheck:
+      test: ['CMD-SHELL', 'cqlsh -e "DESCRIBE KEYSPACES" > /dev/null || exit 1']
+      interval: 10s
+      retries: 30
+      start_period: 40s
+
+  dynamodb:
+    profiles: ['extended']
+    image: amazon/dynamodb-local:latest
+    command: ['-jar', 'DynamoDBLocal.jar', '-inMemory', '-sharedDb']
+    ports: ['58000:8000']
+
+  libsql:
+    profiles: ['extended']
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    ports: ['58080:8080']
+
+  oracle:
+    profiles: ['extended']
+    image: gvenzl/oracle-free:23-slim-faststart
+    environment:
+      ORACLE_PASSWORD: nq_sys_pw
+      APP_USER: nq_reader
+      APP_USER_PASSWORD: nq_reader_pw
+    ports: ['51521:1521']
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh']
+      interval: 10s
+      retries: 60
+      start_period: 30s

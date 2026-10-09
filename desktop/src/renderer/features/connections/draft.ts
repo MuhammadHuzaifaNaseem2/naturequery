@@ -31,6 +31,9 @@ export interface ConnectionDraft {
   snowflakeWarehouse: string
   snowflakeRole: string
   snowflakeSchema: string
+  snowflakeAuth: 'password' | 'keypair'
+  privateKeyPath: string
+  privateKeyPassphrase: string
   projectId: string
   location: string
   keyFilePath: string
@@ -46,6 +49,8 @@ export interface ConnectionDraft {
   sshKeyPath: string
   sshPassphrase: string
   savedSecrets: SecretKey[]
+  /** Key files already read and saved, so unchanged paths are not read again. */
+  savedFiles: { serviceAccount?: string; privateKey?: string }
 }
 
 export function emptyDraft(type: DbType): ConnectionDraft {
@@ -61,7 +66,10 @@ export function emptyDraft(type: DbType): ConnectionDraft {
     // Managed cloud services always use TLS with a public certificate.
     tlsMode: ['neon', 'planetscale', 'redshift', 'cockroachdb'].includes(type)
       ? 'verify-full'
-      : 'prefer',
+      : // These cannot fall back from TLS to plain, so there is no "prefer".
+        type === 'mongodb' || type === 'cassandra'
+        ? 'disable'
+        : 'prefer',
     caPath: '',
     sqlserver: { auth: 'sql', encrypt: true, trustServerCertificate: true },
     oracleConnectAs: 'service',
@@ -74,6 +82,9 @@ export function emptyDraft(type: DbType): ConnectionDraft {
     snowflakeWarehouse: '',
     snowflakeRole: '',
     snowflakeSchema: '',
+    snowflakeAuth: 'password',
+    privateKeyPath: '',
+    privateKeyPassphrase: '',
     projectId: '',
     location: '',
     keyFilePath: '',
@@ -89,6 +100,7 @@ export function emptyDraft(type: DbType): ConnectionDraft {
     sshKeyPath: '',
     sshPassphrase: '',
     savedSecrets: [],
+    savedFiles: {},
   }
 }
 
@@ -114,6 +126,8 @@ export function draftFromConnection(connection: ConnectionInfo): ConnectionDraft
     snowflakeWarehouse: connection.snowflake?.warehouse ?? '',
     snowflakeRole: connection.snowflake?.role ?? '',
     snowflakeSchema: connection.snowflake?.schema ?? '',
+    snowflakeAuth: connection.snowflake?.auth ?? 'password',
+    privateKeyPath: connection.snowflake?.privateKeyPath ?? '',
     projectId: connection.bigquery?.projectId ?? connection.firestore?.projectId ?? '',
     location: connection.bigquery?.location ?? '',
     keyFilePath: connection.bigquery?.keyFilePath ?? connection.firestore?.keyFilePath ?? '',
@@ -125,6 +139,14 @@ export function draftFromConnection(connection: ConnectionInfo): ConnectionDraft
     ssh: connection.ssh ?? draft.ssh,
     sshKeyPath: connection.ssh?.privateKeyPath ?? '',
     savedSecrets: connection.savedSecrets,
+    savedFiles: {
+      serviceAccount: connection.savedSecrets.includes('serviceAccountKey')
+        ? (connection.bigquery?.keyFilePath ?? connection.firestore?.keyFilePath)
+        : undefined,
+      privateKey: connection.savedSecrets.includes('privateKey')
+        ? connection.snowflake?.privateKeyPath
+        : undefined,
+    },
   }
 }
 
@@ -154,6 +176,9 @@ export function draftToInput(draft: ConnectionDraft): ConnectionInput {
   if (draft.sshPassphrase) secrets.sshPassphrase = draft.sshPassphrase
   if (draft.secretAccessKey) secrets.secretAccessKey = draft.secretAccessKey
   if (draft.authToken) secrets.authToken = draft.authToken
+  if (draft.privateKeyPassphrase) secrets.privateKeyPassphrase = draft.privateKeyPassphrase
+  const serviceAccountChanged =
+    !!draft.keyFilePath.trim() && draft.keyFilePath.trim() !== draft.savedFiles.serviceAccount
 
   const input: ConnectionInput = {
     id: draft.id,
@@ -191,7 +216,14 @@ export function draftToInput(draft: ConnectionDraft): ConnectionInput {
     case 'mongodb':
       input.mongodb = {
         useConnectionString: draft.mongoUseUri,
-        authSource: optional(draft.mongoAuthSource),
+        authSource: draft.mongoUseUri ? undefined : optional(draft.mongoAuthSource),
+      }
+      if (draft.mongoUseUri) {
+        // The connection string holds the address and credentials.
+        input.host = undefined
+        input.port = undefined
+        input.user = undefined
+        input.tls = undefined
       }
       break
     case 'clickhouse':
@@ -203,9 +235,19 @@ export function draftToInput(draft: ConnectionDraft): ConnectionInput {
         warehouse: optional(draft.snowflakeWarehouse),
         role: optional(draft.snowflakeRole),
         schema: optional(draft.snowflakeSchema),
+        auth: draft.snowflakeAuth,
+        privateKeyPath:
+          draft.snowflakeAuth === 'keypair' ? optional(draft.privateKeyPath) : undefined,
       }
       input.database = optional(draft.database)
       input.user = optional(draft.user)
+      if (
+        draft.snowflakeAuth === 'keypair' &&
+        draft.privateKeyPath.trim() &&
+        draft.privateKeyPath.trim() !== draft.savedFiles.privateKey
+      ) {
+        input.privateKeyPath = draft.privateKeyPath.trim()
+      }
       break
     case 'bigquery':
       input.bigquery = {
@@ -213,16 +255,16 @@ export function draftToInput(draft: ConnectionDraft): ConnectionInput {
         location: optional(draft.location),
         keyFilePath: optional(draft.keyFilePath),
       }
-      if (draft.keyFilePath && !draft.savedSecrets.includes('serviceAccountKey'))
-        input.serviceAccountKeyPath = draft.keyFilePath
+      if (serviceAccountChanged) input.serviceAccountKeyPath = draft.keyFilePath.trim()
       break
     case 'firestore':
       input.firestore = {
         projectId: draft.projectId.trim(),
         keyFilePath: optional(draft.keyFilePath),
       }
-      if (draft.keyFilePath && !draft.savedSecrets.includes('serviceAccountKey'))
-        input.serviceAccountKeyPath = draft.keyFilePath
+      // The Firestore database ID; empty means "(default)".
+      input.database = optional(draft.database)
+      if (serviceAccountChanged) input.serviceAccountKeyPath = draft.keyFilePath.trim()
       break
     case 'dynamodb':
       input.dynamodb = { region: draft.region.trim(), endpoint: optional(draft.endpoint) }
@@ -235,7 +277,8 @@ export function draftToInput(draft: ConnectionDraft): ConnectionInput {
       input.turso = { url: draft.tursoUrl.trim() }
       break
   }
-  if (info.network && draft.ssh.enabled) {
+  const sshAvailable = info.network && !(family === 'mongodb' && draft.mongoUseUri)
+  if (sshAvailable && draft.ssh.enabled) {
     input.ssh = { ...draft.ssh, port: Number(draft.ssh.port) || 22 }
     // Re-read the key file when it changed or no key is saved yet.
     const keyChanged =

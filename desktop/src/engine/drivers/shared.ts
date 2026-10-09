@@ -172,6 +172,21 @@ export function buildTables(
   return [...tables.values()]
 }
 
+type ExactReviver = (key: string, value: unknown, context?: { source?: string }) => unknown
+
+/**
+ * Parses JSON without losing precision: numbers a JavaScript number cannot
+ * hold exactly (large integers, or decimals such as 1235.50) keep their
+ * original text. Small numbers stay numbers.
+ */
+export function parseJsonExact(text: string): unknown {
+  const reviver: ExactReviver = (_key, value, context) =>
+    typeof value === 'number' && context?.source !== undefined && String(value) !== context.source
+      ? context.source
+      : value
+  return JSON.parse(text, reviver as (key: string, value: unknown) => unknown)
+}
+
 /** Runs an operation with a deadline, rejecting with a timeout error. */
 export async function withDeadline<T>(
   operation: Promise<T>,
