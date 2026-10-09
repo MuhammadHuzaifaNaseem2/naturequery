@@ -10,6 +10,11 @@ through:
 4. Questions, a follow-up, Explain, Summarize, Fix with AI, a declined request to
    delete data, plan counting, and sign-out revoking the server session.
 
+The app reaches the website through a local redirect to another host, the same
+way naturequery.app redirects to www.naturequery.app. Run this test after every
+Electron upgrade: it fails if Electron stops sending the sign-in token when it
+follows a redirect, which would sign every customer out.
+
 It makes about seven requests to the AI provider configured in the website's
 `.env.local`, and never touches your NatureQuery profile, your browser or a real
 database.

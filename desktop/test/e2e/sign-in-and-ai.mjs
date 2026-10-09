@@ -1,8 +1,9 @@
 // End-to-end test: the desktop app, the website running locally and a
 // throwaway database. Signs in through the browser flow, then asks real
 // questions on the sample database. See README.md in this folder.
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
+import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -32,6 +33,22 @@ const childEnv = () => {
   return env
 }
 
+// Runs a helper process without blocking this one, which serves the redirect below.
+function run(command, args, { env, timeout }) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { env, stdio: ['ignore', 'pipe', 'pipe'] })
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (chunk) => (stdout += chunk))
+    child.stderr.on('data', (chunk) => (stderr += chunk))
+    const timer = setTimeout(() => child.kill(), timeout)
+    child.on('close', (status) => {
+      clearTimeout(timer)
+      resolve({ status, stdout, stderr })
+    })
+  })
+}
+
 for (const dir of [profile, path.join(work, 'browser-profile')]) fs.rmSync(dir, { recursive: true, force: true })
 fs.mkdirSync(shots, { recursive: true })
 for (const file of [openedLog, linkFile]) fs.rmSync(file, { force: true })
@@ -55,13 +72,26 @@ for (let i = 0; i < 120 && !ready; i++) {
 step('local website responds', ready)
 if (!ready) process.exit(1)
 
+// The live site answers on naturequery.app with a redirect to www.naturequery.app.
+// The app talks to a local stand-in for that redirect, so every request it makes
+// crosses to another host the same way, sign-in token included.
+const hop = { requests: 0, withToken: 0 }
+const redirect = http.createServer((req, res) => {
+  hop.requests++
+  if (req.headers.authorization) hop.withToken++
+  res.writeHead(307, { Location: `${site}${req.url}` })
+  res.end()
+})
+await new Promise((resolve) => redirect.listen(0, '127.0.0.1', resolve))
+const appSite = `http://127.0.0.1:${redirect.address().port}`
+
 // 3. Desktop app with an isolated profile; sign-in pages are recorded, not opened.
 const app = await launch({
   appDir: desktopDir,
   userData: profile,
   port: 9347,
   quiet: true,
-  env: { NATUREQUERY_API_URL: site, NQ_OPEN_EXTERNAL_LOG: openedLog },
+  env: { NATUREQUERY_API_URL: appSite, NQ_OPEN_EXTERNAL_LOG: openedLog },
 })
 const $ = (js) => app.evaluate(js)
 const clickButton = (text, scope = 'document') =>
@@ -83,11 +113,10 @@ try {
   await app.screenshot(path.join(shots, '01-sign-in-dialog.png'))
   for (let i = 0; i < 50 && !fs.existsSync(openedLog); i++) await sleep(200)
   const authorizeUrl = fs.readFileSync(openedLog, 'utf8').trim().split('\n').at(-1)
-  step('desktop opens the approval page', authorizeUrl.startsWith(`${site}/desktop/authorize?challenge=`))
+  step('desktop opens the approval page', authorizeUrl.startsWith(`${appSite}/desktop/authorize?challenge=`))
 
-  const browser = spawnSync(electronExe, [path.join(here, 'browser.cjs'), linkFile, shots, authorizeUrl], {
+  const browser = await run(electronExe, [path.join(here, 'browser.cjs'), linkFile, shots, authorizeUrl], {
     env: childEnv(),
-    encoding: 'utf8',
     timeout: 180_000,
   })
   console.log(browser.stdout.trim())
@@ -95,8 +124,8 @@ try {
   step('browser login, approval and app link', link.startsWith('naturequery://auth?code=nqd_code_'), browser.stderr?.trim().slice(0, 300))
 
   // 5. The browser opens the link: Windows starts a second copy, which hands it over.
-  const second = spawnSync(electronExe, [desktopDir, link], {
-    env: { ...childEnv(), NATUREQUERY_USER_DATA: profile, NATUREQUERY_API_URL: site },
+  const second = await run(electronExe, [desktopDir, link], {
+    env: { ...childEnv(), NATUREQUERY_USER_DATA: profile, NATUREQUERY_API_URL: appSite },
     timeout: 30_000,
   })
   step('second instance hands the link over and exits', second.status === 0, `exit ${second.status}`)
@@ -185,6 +214,11 @@ try {
   }
   step('sign out revokes the server session', after === '0', after)
   step('account file removed on sign out', !fs.existsSync(path.join(profile, 'account.json')))
+  step(
+    'signed-in requests work through a redirect to another host',
+    hop.withToken >= 6,
+    `${hop.withToken} of ${hop.requests} redirected requests carried the sign-in token`
+  )
 
   const problems = app.consoleMessages.filter((m) => /^(error|EXCEPTION)/.test(m))
   step('no console errors in the app', problems.length === 0, problems.slice(0, 3).join(' | '))
@@ -193,6 +227,8 @@ try {
   await app.screenshot(path.join(shots, 'zz-failure.png')).catch(() => {})
 } finally {
   await app.close()
+  redirect.closeAllConnections()
+  redirect.close()
 }
 
 const failed = results.filter((r) => !r.ok)

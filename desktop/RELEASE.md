@@ -30,6 +30,11 @@ Then run both integration batches against disposable databases, as described in
 Firestore have no local test server: check each against a real account before a
 release.
 
+Finally, run the end-to-end sign-in and AI test in
+[test/e2e/README.md](test/e2e/README.md). Always run it after upgrading
+Electron: it checks that sign-in still works when naturequery.app redirects to
+www.naturequery.app.
+
 ## 3. Build the installer
 
 ```powershell
