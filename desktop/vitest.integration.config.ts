@@ -15,5 +15,7 @@ export default defineConfig({
     testTimeout: 120000,
     hookTimeout: 180000,
     fileParallelism: false,
+    // The engine process runs in UTC (see engine-host.ts).
+    env: { TZ: 'UTC' },
   },
 })

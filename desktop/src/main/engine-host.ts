@@ -25,6 +25,9 @@ export function createEngineHost(enginePath: string) {
     const proc = utilityProcess.fork(enginePath, [], {
       serviceName: 'NatureQuery Database Engine',
       stdio: 'pipe',
+      // Drivers that build dates in local time (Oracle) then keep stored
+      // wall-clock times exactly, with no daylight saving gaps.
+      env: { ...process.env, TZ: 'UTC' },
     })
     proc.stdout?.on('data', (chunk) => engineLogger.info(String(chunk).trimEnd()))
     proc.stderr?.on('data', (chunk) => engineLogger.warn(String(chunk).trimEnd()))

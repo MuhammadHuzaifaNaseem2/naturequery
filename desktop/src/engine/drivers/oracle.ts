@@ -1,7 +1,7 @@
 import oracledb from 'oracledb'
 import { NqError } from '@shared/errors'
 import { assertReadOnlySql, stripTrailingSemicolon, maskSql } from '../safety/sql'
-import { normalizeRows } from '../normalize'
+import { formatDateTime, normalizeRows } from '../normalize'
 import {
   buildTables,
   quoteIdentifier,
@@ -11,26 +11,35 @@ import {
 } from './shared'
 import { SCHEMA_TABLE_LIMIT, type Driver, type DriverFactory } from './types'
 
-// Dates and times arrive as text in an unambiguous format instead of Oracle's
-// default DD-MON-RR, and without time zone conversion on this computer.
+// Readable defaults for dates that queries turn into text themselves, for
+// example with TO_CHAR(d), instead of Oracle's default DD-MON-RR.
 const SESSION_SETUP = `ALTER SESSION SET
   NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'
   NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'
   NLS_TIMESTAMP_TZ_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'`
 
-const TEXT_TYPES = new Set<unknown>([
-  oracledb.DB_TYPE_DATE,
-  oracledb.DB_TYPE_TIMESTAMP,
+// The driver builds DATE and TIMESTAMP values as dates in this process's time
+// zone, so reading the same local fields back gives the stored wall-clock
+// time. The engine runs in UTC, which has no daylight saving gaps.
+const WALL_CLOCK_TYPES = new Set<unknown>([oracledb.DB_TYPE_DATE, oracledb.DB_TYPE_TIMESTAMP])
+// Values with a time zone are moments in time, shown in UTC.
+const INSTANT_TYPES = new Set<unknown>([
   oracledb.DB_TYPE_TIMESTAMP_TZ,
   oracledb.DB_TYPE_TIMESTAMP_LTZ,
-  oracledb.DB_TYPE_CLOB,
-  oracledb.DB_TYPE_NCLOB,
 ])
+const TEXT_TYPES = new Set<unknown>([oracledb.DB_TYPE_CLOB, oracledb.DB_TYPE_NCLOB])
 
-/** Keeps large NUMBER values exact by fetching them as text. */
+const wallClock = <T>(value: T | null) =>
+  value instanceof Date ? formatDateTime(value, false) : value
+const instant = <T>(value: T | null) =>
+  value instanceof Date ? `${formatDateTime(value, true)} UTC` : value
+
+/** Keeps dates as stored, and large NUMBER values exact by fetching them as text. */
 function fetchTypeHandler(
   meta: oracledb.Metadata<unknown>
 ): oracledb.FetchTypeResponse | undefined {
+  if (WALL_CLOCK_TYPES.has(meta.dbType)) return { converter: wallClock }
+  if (INSTANT_TYPES.has(meta.dbType)) return { converter: instant }
   if (TEXT_TYPES.has(meta.dbType)) return { type: oracledb.STRING }
   if (meta.dbType === oracledb.DB_TYPE_NUMBER && (meta.precision ?? 0) > 15)
     return { type: oracledb.STRING }
