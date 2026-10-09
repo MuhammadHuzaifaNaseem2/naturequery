@@ -64,6 +64,7 @@ export const IPC = {
   aiExplain: 'ai:explain',
   aiInsights: 'ai:insights',
   updatesCheck: 'updates:check',
+  updatesDownload: 'updates:download',
   updatesInstall: 'updates:install',
   updatesStatus: 'updates:status',
 } as const
@@ -151,6 +152,7 @@ export interface NqBridge {
   updates: {
     status: Call<[], UpdateStatus>
     check: Call<[], UpdateStatus>
+    download: Call<[], UpdateStatus>
     install: Call<[], void>
     onStatus: Listen<UpdateStatus>
   }

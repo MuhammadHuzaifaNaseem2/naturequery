@@ -36,6 +36,7 @@ import { paths } from './paths'
 import { registerAppScheme, serveRenderer, isTrustedAppUrl } from './protocol'
 import { createSecretBox } from './secure-store'
 import { createSettingsStore } from './settings'
+import { createUpdater } from './updater'
 import {
   accountPathSchema,
   authCodeSchema,
@@ -437,16 +438,17 @@ async function start() {
   handle(IPC.aiExplain, (request) => ai.explain(parseInput(explainRequestSchema, request)))
   handle(IPC.aiInsights, (request) => ai.insights(parseInput(insightsRequestSchema, request)))
 
-  // ── Updates (connected with release packaging) ───────────────────────
-  const updatesDisabled = () => ({
-    state: 'disabled' as const,
-    reason: app.isPackaged
-      ? 'Updates are not configured for this build.'
-      : 'Development builds do not update.',
+  // ── Updates ──────────────────────────────────────────────────────────
+  const updater = createUpdater({
+    packaged: app.isPackaged,
+    emit: (status) => send(EVENTS.updateStatus, status),
+    automaticChecks: () => settings.get().checkForUpdates,
+    logger,
   })
-  handle(IPC.updatesStatus, updatesDisabled)
-  handle(IPC.updatesCheck, updatesDisabled)
-  handle(IPC.updatesInstall, () => undefined)
+  handle(IPC.updatesStatus, () => updater.status())
+  handle(IPC.updatesCheck, () => updater.check())
+  handle(IPC.updatesDownload, () => updater.download())
+  handle(IPC.updatesInstall, () => updater.install())
 
   const initial = resolveInitialChrome(settings.get().theme, nativeTheme.shouldUseDarkColors)
   const openWindow = () => {
@@ -472,11 +474,13 @@ async function start() {
     })
   }
   openWindow()
+  updater.start()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) openWindow()
   })
   app.on('before-quit', () => {
+    updater.stop()
     engine.stop()
     try {
       workspace.close()

@@ -79,6 +79,7 @@ const bridge: NqBridge = {
   updates: {
     status: invoke(IPC.updatesStatus),
     check: invoke(IPC.updatesCheck),
+    download: invoke(IPC.updatesDownload),
     install: invoke(IPC.updatesInstall),
     onStatus: listen(EVENTS.updateStatus),
   },

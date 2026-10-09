@@ -11,6 +11,7 @@ import {
   type SchemaSnapshot,
   type Settings,
   type ThemeName,
+  type UpdateStatus,
 } from '@shared/types'
 import { DB_TYPE_INFO, usesSql } from '@shared/db-types'
 import { api, asAppError } from '../lib/nq'
@@ -173,11 +174,34 @@ export async function initialize(): Promise<void> {
   restoreTabs()
   api.connections.onChanged(() => void refreshConnections())
   api.auth.onChanged(onAuthChanged)
+  api.updates.onStatus(onUpdateStatus)
   set({
     ready: true,
     dialog: settings.onboardingCompleted ? null : { kind: 'welcome' },
     view: get().tabs.length ? 'workspace' : 'home',
   })
+}
+
+const announced = new Set<string>()
+
+/** Tells the user once when an update can be downloaded, and when it is ready. */
+function onUpdateStatus(status: UpdateStatus) {
+  if (status.state === 'available' && !announced.has(`available:${status.version}`)) {
+    announced.add(`available:${status.version}`)
+    toast(`NatureQuery ${status.version} is available`, {
+      description: 'Download it now. It installs the next time you restart NatureQuery.',
+      action: { label: 'Download', onClick: () => void api.updates.download().catch(() => {}) },
+      duration: 20_000,
+    })
+  }
+  if (status.state === 'ready' && !announced.has(`ready:${status.version}`)) {
+    announced.add(`ready:${status.version}`)
+    toast.success(`NatureQuery ${status.version} is ready`, {
+      description: 'Restart to finish updating. Your open queries are kept.',
+      action: { label: 'Restart now', onClick: () => void api.updates.install().catch(() => {}) },
+      duration: Infinity,
+    })
+  }
 }
 
 function onAuthChanged(state: AuthState) {

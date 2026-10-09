@@ -34,7 +34,7 @@ async function openDriver(
   config: ConnectionConfig,
   secrets: ConnectionSecrets
 ): Promise<{ driver: Driver; tunnel?: Tunnel }> {
-  const factory = driverFactoryFor(config)
+  const factory = await driverFactoryFor(config)
   let tunnel: Tunnel | undefined
   if (config.ssh?.enabled) {
     if (!DB_TYPE_INFO[config.type].network) {

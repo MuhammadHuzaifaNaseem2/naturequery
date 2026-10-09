@@ -261,6 +261,19 @@ export function SettingsView() {
             >
               Check now
             </Button>
+            {update?.state === 'available' && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() =>
+                  api.updates
+                    .download()
+                    .then(setUpdate, (error) => toast.error((error as Error).message))
+                }
+              >
+                Download update
+              </Button>
+            )}
             {update?.state === 'ready' && (
               <Button size="sm" variant="primary" onClick={() => void api.updates.install()}>
                 Restart and update
