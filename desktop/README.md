@@ -1,82 +1,118 @@
 # NatureQuery Desktop
 
-The downloadable desktop version of NatureQuery, for Windows, Mac, and Linux.
+Version 0.2.3 is a **Windows release candidate**, not a published release.
+It opens a local workspace for databases on your computer or private network,
+with an optional connection to the hosted NatureQuery AI workspace.
 
-## Why this exists
+## What works locally
 
-The website (naturequery.app) runs in the cloud, so it can only reach
-databases that are open to the public internet. Most business owners keep
-their database on their own PC or inside a private office network. The
-desktop app runs **on the user's machine**, so it can connect to those
-local and internal databases the website can never reach. Credentials and
-query results stay on the user's computer. Table and column names are sent to
-NatureQuery only when the user asks AI to generate SQL; AI Insights sends the
-displayed result only after the user chooses that feature.
+- Start in a dim graphite theme, with a saved light/dim switch in the toolbar.
+- Explore three preset sample datasets without an account or database.
+- Test, save, edit, and remove local database connections.
+- Inspect tables, run read queries, and export the displayed results to CSV.
+- Open the AI workspace when you want natural-language queries and online features.
 
-This project is completely separate from the web app. Building or running it
-cannot affect the live website.
+The local workspace does not require sign-in or internet access. A remote
+database still requires its network or VPN connection. The AI workspace requires
+internet access and a NatureQuery account; use email/password sign-in for this
+candidate. Browser OAuth handoff is not implemented yet.
+The desktop hides the older hosted page's unsupported OAuth buttons and recovers
+external OAuth attempts back to email sign-in. Its compact hosted sign-in styling
+is bundled with the app; the new web auth layout and request timeout also need a
+web deployment before they appear in the production AI workspace.
 
-## How it works (in plain terms)
+The connection form supports PostgreSQL, MySQL, MariaDB, and SQL Server. Only
+PostgreSQL has a real-database integration test in this candidate; the other
+drivers need their own end-to-end qualification before production claims.
+macOS and Linux packaging configurations exist but have not been qualified or
+shipped as part of this release.
 
-- The window loads the real NatureQuery product (the same web app).
-- When a query needs to run against a local database, the desktop app's
-  background process does the connecting, reusing the same database logic the
-  web app already uses on the server (`src/lib/db-drivers.ts`).
-- The UI never touches a database directly; it asks through a secure bridge.
-- Saved local connections appear in the main dashboard under **On this
-  computer**. Their IDs are namespaced so they cannot be confused with cloud
-  connections.
-- IPC requests are accepted only from the configured NatureQuery origin and
-  bundled local screens. Ad-hoc credential APIs are restricted to bundled
-  screens.
+## Data and query boundaries
 
-## Run it (development)
+- Saved passwords use Electron's operating-system-backed encryption. Saving
+  fails if secure storage is unavailable; passwords are not returned to the UI.
+  Connection names, hosts, database names, and usernames are local metadata,
+  not encrypted fields. A copied connection file is not a portable credential backup.
+- Local SQL execution connects directly from this computer to the database.
+  In the AI workspace, your question and schema are sent to NatureQuery for SQL
+  generation. AI Insights sends displayed results when you choose that feature.
+- Use a dedicated **read-only database account** with access only to the data
+  you need. The SQL filter is a guardrail, not a security sandbox. PostgreSQL
+  and MySQL/MariaDB queries also use read-only transactions; database permissions
+  remain essential, particularly for functions and SQL Server.
+- Results and CSV exports contain at most 1,000 rows, with a truncation notice
+  when additional rows are detected. This does not limit the database's work
+  needed to compute a query. Query/request timeouts are configured at 30 seconds
+  (PostgreSQL also has a 35-second client timeout); timeout behavior varies by driver.
+- Remote hosts require verified TLS. Automatic mode permits an unencrypted
+  connection only for `localhost`, `127.0.0.1`, or `::1`. Custom CA configuration
+  and SSH tunneling are not included.
+- Database access is exposed through a narrow IPC bridge to trusted top-level
+  NatureQuery pages. Entering and saving credentials is restricted to bundled
+  local screens. The renderer has no Node.js access.
 
-```bash
-cd desktop
-npm install
+## Run and test
+
+From `desktop/`:
+
+```powershell
+npm ci
+npm test
 npm start
 ```
 
-This opens the real NatureQuery product in a desktop window. To open the
-local-database test screen instead, use the **NatureQuery → Local Database
-Test** menu item, or start with:
+The window starts at Desktop home. Use the sidebar or the NatureQuery menu to
+open the AI workspace or return home. `Ctrl+Enter` runs a query in the local editor.
+Use `Ctrl+=`, `Ctrl+Shift+=`, or numpad `Ctrl+Plus` to zoom in, `Ctrl+-` to
+zoom out, and `Ctrl+0` / View > Actual Size to reset. On macOS use Command.
 
-```bash
-# Windows PowerShell
-$env:NATUREQUERY_LOAD = "test"; npm start
+Development can use a separate profile and a locally running web app:
+
+```powershell
+$env:NATUREQUERY_USER_DATA = 'D:\reportflow\reportflow\.local-artifacts\desktop-dev-profile'
+$env:NATUREQUERY_URL = 'http://127.0.0.1:3000'
+npm start
 ```
 
-## Build an installer
+These overrides are ignored by packaged builds. Remove them from the shell when
+finished if you want the normal development profile and hosted AI workspace.
+Use the same hostname as the web server's auth redirect URL. For example, if
+local auth redirects to `http://localhost:3000`, use that URL rather than
+`http://127.0.0.1:3000` so the desktop's origin check permits the redirect.
 
-```bash
-npm run build:win     # Windows .exe installer (NSIS)
-npm run build:mac     # macOS .dmg
-npm run build:linux   # Linux AppImage
+The PostgreSQL integration test is skipped unless `NQ_TEST_PG_PORT` is set.
+Use **only an isolated, disposable PostgreSQL instance**: the test creates and
+truncates `nq_fixture` and replaces `nq_write_test()`. It connects to
+`127.0.0.1`, database `postgres`, user `nq_test`, with an empty password. Never
+point it at an existing personal, shared, or production database.
+
+```powershell
+# First start a disposable PostgreSQL instance with the test credentials above.
+$env:NQ_TEST_PG_PORT = '55432'
+npm test
+Remove-Item Env:NQ_TEST_PG_PORT
 ```
 
-Output appears in `desktop/dist/`.
+## Build locally
 
-## Roadmap
+```powershell
+npm run build:win
+```
 
-1. **Done:** Electron shell + local database bridge.
-2. **Done:** Multi-database engine (PostgreSQL, MySQL, MariaDB, SQL Server).
-3. **Done:** Read-only SQL safety in the engine.
-4. **Done:** Load the real NatureQuery product, surface desktop-local
-   connections in its dashboard, and route their schema and query operations
-   through the local bridge.
-5. **Done:** Branded installer (NSIS) with the app icon, and auto-update via
-   GitHub Releases (`electron-updater`). See `RELEASE.md`. Remaining polish:
-   code signing to remove the Windows SmartScreen warning.
-6. First-run onboarding and macOS build.
+This script explicitly uses `--publish never`. The Windows x64 installer is
+`dist/NatureQuery-0.2.1-win-x64-Setup.exe`. Building does not deploy the web app
+or publish a desktop release. See [RELEASE.md](RELEASE.md) for launch gates and
+the manual, user-consented update flow.
 
-## Files
+## Source map
 
-| File                    | Purpose                                                |
-| ----------------------- | ------------------------------------------------------ |
-| `main.js`               | Background process: window + local database bridge     |
-| `preload.js`            | Secure bridge exposed to the UI (`window.naturequery`) |
-| `renderer/local.html`   | Saved local-connection manager                          |
-| `renderer/welcome.html` | Proof-of-concept raw connection screen                  |
-| `engine/sql-safety.cjs` | Read-only validation and result-size limits             |
-| `package.json`          | App config + installer (electron-builder) settings     |
+| File                                                   | Purpose                                                     |
+| ------------------------------------------------------ | ----------------------------------------------------------- |
+| `main.js`                                              | Windows, navigation, IPC, export dialogs, and update checks |
+| `preload.js`                                           | Narrow `window.naturequery` bridge                          |
+| `policy.cjs`                                           | Trusted origins and input validation                        |
+| `store.cjs`                                            | OS-encrypted passwords and atomic connection-file writes    |
+| `renderer/local.html`, `workspace.js`, `workspace.css` | Local desktop workspace                                     |
+| `renderer/offline.html`                                | Hosted workspace failure recovery                           |
+| `engine/`                                              | Local database drivers and SQL guardrails                   |
+| `test/`                                                | Policy, storage, and opt-in PostgreSQL integration tests    |

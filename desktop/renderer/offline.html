@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <title>NatureQuery — Connection unavailable</title>
+    <script src="theme-init.js"></script>
+    <link rel="stylesheet" href="workspace.css" />
+    <link rel="stylesheet" href="theme.css" />
+    <script src="offline.js" defer></script>
+  </head>
+  <body class="offline-body">
+    <main class="offline-card">
+      <img src="logo.svg" alt="NatureQuery" />
+      <h1>Let’s get you<br />connected again.</h1>
+      <p>
+        The AI workspace couldn’t be reached. Check your internet connection and try again. Your
+        local database workspace is still available.
+      </p>
+      <div class="actions">
+        <button class="button" id="retry">Try again ↗</button
+        ><button class="button secondary" id="home">Open local workspace</button>
+      </div>
+      <small
+        >Local SQL queries and saved connections work without the website.<br />AI features need an
+        internet connection.</small
+      >
+      <div id="status" class="status" role="status"></div>
+    </main>
+  </body>
+</html>

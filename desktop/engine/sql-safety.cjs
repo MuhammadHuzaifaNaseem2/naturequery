@@ -1,103 +1,181 @@
 'use strict'
 
-// SQL read-only safety for the desktop engine.
-//
-// Mirrors the regex protection layer of the web app's src/lib/sql-validator.ts
-// so the desktop enforces the same promise: NatureQuery only ever reads data,
-// it never modifies it. Blocks destructive keywords, multiple statements, and
-// anything that does not start as a read query. Also caps result size with a
-// LIMIT/TOP clause so a huge table cannot be pulled down by accident.
-
-const DANGEROUS_KEYWORDS =
-  /\b(DROP|ALTER|TRUNCATE|DELETE|INSERT|UPDATE|CREATE|GRANT|REVOKE|EXEC(?:UTE)?|LOAD\s+DATA|INTO\s+(?:OUT|DUMP)FILE|CALL|MERGE|REPLACE\s+INTO|RENAME|SET\s+(?:GLOBAL|SESSION)|SHUTDOWN|KILL|COPY|VACUUM|ANALYZE|LOCK|UNLOCK)\b/i
-
-const DANGEROUS_READ_MODIFIERS = /\b(INTO|FOR\s+(?:UPDATE|SHARE))\b/i
-
-const SAFE_STARTERS = ['SELECT', 'WITH', 'EXPLAIN', 'SHOW', 'DESCRIBE', 'DESC', 'PRAGMA']
-
-// Blank out string literals and comments so keywords inside them (e.g. a value
-// like 'DROP off the package') don't trigger a false positive.
-function stripLiterals(sql) {
-  return sql
-    .replace(/'(?:''|[^'])*'/g, "''")
-    .replace(/"(?:""|[^"])*"/g, '""')
-    .replace(/`(?:``|[^`])*`/g, '``')
-    .replace(/--.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
+// This is a defense-in-depth filter, not a SQL sandbox. Use a read-only DB
+// account. PostgreSQL/MySQL execution also uses a read-only transaction.
+function dialectFor(dbType) {
+  if (['mysql', 'mariadb', 'planetscale'].includes(dbType)) return 'mysql'
+  if (['sqlserver', 'mssql'].includes(dbType)) return 'sqlserver'
+  return 'postgresql'
 }
-
-function validateReadOnly(sql) {
-  if (!sql || sql.trim().length === 0) {
-    return { valid: false, error: 'SQL query is empty' }
+function maskSql(sql, dbType = 'postgresql') {
+  const dialect = dialectFor(dbType)
+  let output = '',
+    i = 0
+  while (i < sql.length) {
+    const start = i
+    const dashComment =
+      sql.startsWith('--', i) &&
+      (dialect !== 'mysql' || i + 2 === sql.length || /[\s\x00-\x20]/.test(sql[i + 2]))
+    if (dashComment || (dialect === 'mysql' && sql[i] === '#')) {
+      while (i < sql.length && sql[i] !== '\n' && sql[i] !== '\r') i++
+    } else if (sql.startsWith('/*', i)) {
+      if (/^\/\*(?:[!+]|M!)/i.test(sql.slice(i))) {
+        throw new Error('Executable comments and optimizer hints are not supported.')
+      }
+      let depth = 1
+      i += 2
+      while (i < sql.length && depth) {
+        if (sql.startsWith('/*', i)) {
+          if (dialect === 'mysql')
+            throw new Error('Nested comments are not supported for MySQL or MariaDB.')
+          depth++
+          i += 2
+        } else if (sql.startsWith('*/', i)) {
+          depth--
+          i += 2
+        } else i++
+      }
+      if (depth) throw new Error('Close the SQL comment before running the query.')
+    } else if (
+      ["'", '"'].includes(sql[i]) ||
+      (dialect === 'mysql' && sql[i] === '\x60') ||
+      (dialect === 'sqlserver' && sql[i] === '[')
+    ) {
+      const end = sql[i] === '[' ? ']' : sql[i]
+      // PostgreSQL E strings explicitly opt into backslash escaping. Ordinary
+      // PostgreSQL/MySQL strings depend on server settings, so refuse ambiguous
+      // escapes instead of potentially hiding a second statement.
+      const escapeString =
+        dialect === 'postgresql' &&
+        end === "'" &&
+        /[eE]/.test(sql[i - 1] || '') &&
+        !/[\w$]/.test(sql[i - 2] || '')
+      i++
+      let closed = false
+      while (i < sql.length) {
+        if (sql[i] === end) {
+          if (sql[i + 1] === end) {
+            i += 2
+            continue
+          }
+          i++
+          closed = true
+          break
+        }
+        if (sql[i] === '\\') {
+          if (escapeString) {
+            i += 2
+            continue
+          }
+          if ((dialect === 'postgresql' && end === "'") || dialect === 'mysql') {
+            throw new Error(
+              'Use doubled quotes instead of backslash escapes, or an explicit PostgreSQL E string.'
+            )
+          }
+        }
+        i++
+      }
+      if (!closed) throw new Error('Close the quoted text before running the query.')
+    } else if (
+      dialect === 'postgresql' &&
+      sql[i] === '$' &&
+      !/[\w$]/.test(sql[i - 1] || '') &&
+      /^\$(?:[A-Za-z_]\w*)?\$/.test(sql.slice(i))
+    ) {
+      const marker = sql.slice(i).match(/^\$(?:[A-Za-z_]\w*)?\$/)[0]
+      const end = sql.indexOf(marker, i + marker.length)
+      if (end < 0) throw new Error('Close the quoted text before running the query.')
+      i = end + marker.length
+    } else {
+      output += sql[i++]
+      continue
+    }
+    output += sql.slice(start, i).replace(/[^\n]/g, ' ')
   }
-
-  const stripped = stripLiterals(sql)
-
-  // Reject multiple statements — prevents "SELECT 1; DROP TABLE x"
-  if (stripped.replace(/;+\s*$/, '').includes(';')) {
-    return { valid: false, error: 'Multiple SQL statements are not allowed' }
+  return output
+}
+const forbidden =
+  /\b(DROP|ALTER|TRUNCATE|DELETE|INSERT|UPDATE|CREATE|GRANT|REVOKE|EXEC(?:UTE)?|CALL|MERGE|REPLACE|RENAME|SET|SHUTDOWN|KILL|COPY|VACUUM|ANALYZE|LOCK|UNLOCK|INTO|FOR\s+SHARE|OPENROWSET|OPENDATASOURCE|NEXTVAL|SETVAL|PG_ADVISORY_LOCK|PG_TERMINATE_BACKEND|PG_CANCEL_BACKEND|LO_IMPORT|LO_EXPORT)\b/i
+function validateReadOnly(sql, dbType = 'postgresql') {
+  if (typeof sql !== 'string' || !sql.trim()) return { valid: false, error: 'SQL query is empty.' }
+  let masked
+  try {
+    masked = maskSql(sql, dbType)
+  } catch (error) {
+    return { valid: false, error: error.message }
   }
-
-  // Block destructive keywords
-  if (DANGEROUS_KEYWORDS.test(stripped)) {
-    const matched = (stripped.match(DANGEROUS_KEYWORDS) || [])[0] || 'a forbidden keyword'
+  if (masked.replace(/;\s*$/, '').includes(';'))
+    return { valid: false, error: 'Run one SQL statement at a time.' }
+  if (!/^\s*(SELECT|WITH)\b/i.test(masked))
+    return { valid: false, error: 'Use a SELECT query, optionally with a WITH clause.' }
+  if (forbidden.test(masked))
     return {
       valid: false,
-      error: `Only read-only queries are allowed. Found: ${String(matched).toUpperCase().trim()}. NatureQuery never modifies your data.`,
+      error: 'This workspace only accepts read queries. Use a read-only database account.',
     }
-  }
-
-  if (DANGEROUS_READ_MODIFIERS.test(stripped)) {
-    const matched = (stripped.match(DANGEROUS_READ_MODIFIERS) || [])[0]
-    return {
-      valid: false,
-      error: `Only read-only queries are allowed. Found: ${String(matched).toUpperCase().trim()}. NatureQuery never modifies your data.`,
-    }
-  }
-
-  // Must start with a safe, read-only keyword
-  const firstWord = stripped.trim().toUpperCase().split(/[\s(]+/)[0]
-  if (!SAFE_STARTERS.includes(firstWord)) {
-    return {
-      valid: false,
-      error: `Only read-only queries are allowed. Got: ${firstWord}. NatureQuery never modifies your data.`,
-    }
-  }
-
   return { valid: true }
 }
-
-// ── Result-size cap ────────────────────────────────────────────────────────
-
-function stripTrailing(sql) {
-  return sql
-    .replace(/--[^\n]*$/gm, '')
-    .replace(/\s*;+\s*$/, '')
-    .trim()
-}
-
-function hasLimitClause(sql) {
-  const stripped = stripLiterals(sql)
-  const lastParen = stripped.lastIndexOf(')')
-  const tail = (lastParen >= 0 ? stripped.slice(lastParen) : stripped).toUpperCase()
-  return (
-    /\bLIMIT\s+(\d+|\?|\$)/i.test(tail) ||
-    /\bTOP\s+\d+/i.test(tail) ||
-    /\bFETCH\s+(FIRST|NEXT)\s+(\d+|\?|\$)/i.test(tail)
-  )
-}
-
-// Inject a row cap if the query doesn't already have one.
-function ensureLimit(sql, maxRows, dbType) {
-  const cleaned = stripTrailing(sql)
-  const firstWord = cleaned.toUpperCase().split(/[\s(]+/)[0]
-  if (!['SELECT', 'WITH'].includes(firstWord)) return sql
-  if (hasLimitClause(cleaned)) return sql
-
-  if (dbType === 'sqlserver' || dbType === 'mssql') {
-    return cleaned.replace(/^(SELECT\s+)(DISTINCT\s+)?/i, `$1$2TOP ${maxRows} `)
+function topLevel(masked) {
+  let depth = 0,
+    output = ''
+  for (const char of masked) {
+    if (char === '(') depth++
+    output += depth ? ' ' : char
+    if (char === ')') depth--
   }
-  return `${cleaned}\nLIMIT ${maxRows}`
+  return output
 }
-
+function ensureLimit(sql, maxRows, dbType) {
+  const masked = maskSql(sql, dbType)
+  const semicolon = /;\s*$/.exec(masked)
+  let cleaned = semicolon ? sql.slice(0, semicolon.index) + sql.slice(semicolon.index + 1) : sql
+  const outer = topLevel(maskSql(cleaned, dbType))
+  if (dbType === 'sqlserver' || dbType === 'mssql') {
+    // SQL Server's driver also sets ROWCOUNT on its isolated connection.
+    const select = /\bSELECT\s+(?:DISTINCT\s+|ALL\s+)?/i.exec(outer)
+    if (!select) return cleaned
+    const offset = select.index + select[0].length
+    // TOP cannot be combined with OFFSET/FETCH in SQL Server. ROWCOUNT on
+    // the isolated driver connection caps these queries without rewriting.
+    if (/\b(?:OFFSET|FETCH)\b/i.test(outer)) return cleaned
+    const top = /^TOP\s*(?:\(\s*(\d+)\s*\)|(\d+))\s*/i.exec(cleaned.slice(offset))
+    if (top)
+      return (
+        cleaned.slice(0, offset) +
+        top[0].replace(/\d+/, (n) => String(Math.min(Number(n), maxRows))) +
+        cleaned.slice(offset + top[0].length)
+      )
+    if (/^TOP\b/i.test(outer.slice(offset))) return cleaned
+    return cleaned.slice(0, offset) + 'TOP ' + maxRows + ' ' + cleaned.slice(offset)
+  }
+  const limit = /\bLIMIT\s+(\d+)(?:\s*,\s*(\d+))?/i.exec(outer)
+  if (limit) {
+    // Do not clamp only the first digit sequence of LIMIT 1e9 or LIMIT 1 + 999999.
+    // Require the complete top-level limit clause to have a bounded numeric form.
+    const tail = outer.slice(limit.index + limit[0].length)
+    if (!/^\s*(?:OFFSET\s+\d+\s*(?:ROWS?\s*)?)?$/i.test(tail)) {
+      throw new Error('Use a numeric row limit in this workspace.')
+    }
+    const value = limit[2] || limit[1]
+    const relative = limit[0].lastIndexOf(value)
+    const start = limit.index + relative
+    return (
+      cleaned.slice(0, start) +
+      Math.min(Number(value), maxRows) +
+      cleaned.slice(start + value.length)
+    )
+  }
+  const fetch = /\bFETCH\s+(?:FIRST|NEXT)\s+(\d+)\s+ROWS?\s+ONLY/i.exec(outer)
+  if (fetch) {
+    const start = fetch.index + fetch[0].indexOf(fetch[1])
+    return (
+      cleaned.slice(0, start) +
+      Math.min(Number(fetch[1]), maxRows) +
+      cleaned.slice(start + fetch[1].length)
+    )
+  }
+  if (/\b(LIMIT|FETCH)\b/i.test(outer))
+    throw new Error('Use a numeric row limit in this workspace.')
+  return cleaned.trimEnd() + '\nLIMIT ' + maxRows
+}
 module.exports = { validateReadOnly, ensureLimit }

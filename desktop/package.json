@@ -1,6 +1,6 @@
 {
   "name": "naturequery-desktop",
-  "version": "0.1.0",
+  "version": "0.2.3",
   "description": "NatureQuery Desktop — connect to local and internal databases that the web app cannot reach.",
   "author": "Muhammad Huzaifa Naseem",
   "license": "UNLICENSED",
@@ -8,7 +8,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test engine/*.test.cjs",
+    "test": "node --test engine/*.test.cjs test/*.test.cjs",
     "build:win": "electron-builder --win --x64 --publish never",
     "build:mac": "electron-builder --mac --publish never",
     "build:linux": "electron-builder --linux --publish never",
@@ -17,6 +17,7 @@
   "build": {
     "appId": "app.naturequery.desktop",
     "productName": "NatureQuery",
+    "artifactName": "NatureQuery-${version}-${os}-${arch}-Setup.${ext}",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -25,8 +26,13 @@
       "main.js",
       "preload.js",
       "store.cjs",
+      "policy.cjs",
+      "zoom.cjs",
+      "build/icon.png",
       "engine/**/*",
-      "renderer/**/*"
+      "renderer/**/*",
+      "!engine/*.test.cjs",
+      "!renderer/welcome.html"
     ],
     "publish": [
       {
@@ -64,10 +70,10 @@
     "pg": "^8.13.1",
     "mysql2": "^3.11.5",
     "mssql": "^11.0.1",
-    "electron-updater": "^6.3.9"
+    "electron-updater": "6.8.9"
   },
   "devDependencies": {
-    "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3"
   }
 }

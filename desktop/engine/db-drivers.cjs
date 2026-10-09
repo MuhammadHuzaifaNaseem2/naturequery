@@ -26,11 +26,11 @@ function isLocal(host) {
 function withSafety(driver, dbType) {
   const runQuery = driver.executeQuery.bind(driver)
   driver.executeQuery = async (sql) => {
-    const check = validateReadOnly(sql)
+    const check = validateReadOnly(sql, dbType)
     if (!check.valid) {
       throw new Error(check.error)
     }
-    return runQuery(ensureLimit(sql, MAX_ROWS, dbType))
+    return runQuery(ensureLimit(sql, MAX_ROWS + 1, dbType))
   }
   return driver
 }
@@ -59,9 +59,12 @@ function createPostgresDriver(creds) {
     database: creds.database,
     user: creds.user,
     password: creds.password,
-    ssl: isLocal(creds.host) ? false : { rejectUnauthorized: true },
+    ssl: isLocal(creds.host) && creds.tls !== 'verify' ? false : { rejectUnauthorized: true },
     max: 5,
     connectionTimeoutMillis: 10000,
+    statement_timeout: 30000,
+    query_timeout: 35000,
+    options: '-c standard_conforming_strings=on',
   })
   return {
     async testConnection() {
@@ -73,21 +76,30 @@ function createPostgresDriver(creds) {
       }
     },
     async executeQuery(sql) {
-      const result = await pool.query(sql)
-      const all = result.rows || []
-      return {
-        rows: all.slice(0, MAX_ROWS),
-        fields: (result.fields || []).map((f) => f.name),
-        rowCount: result.rowCount,
-        truncated: all.length > MAX_ROWS,
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN READ ONLY')
+        const result = await client.query(sql)
+        const all = result.rows || []
+        return {
+          rows: all.slice(0, MAX_ROWS),
+          fields: (result.fields || []).map((f) => f.name),
+          rowCount: Math.min(all.length, MAX_ROWS),
+          truncated: all.length > MAX_ROWS,
+        }
+      } finally {
+        await client.query('ROLLBACK').catch(() => {})
+        client.release()
       }
     },
     async fetchSchema() {
       const result = await pool.query(
-        `SELECT table_name, column_name, data_type, is_nullable
+        `SELECT '"' || replace(table_schema, '"', '""') || '"."' ||
+                replace(table_name, '"', '""') || '"' AS table_name,
+                column_name, data_type, is_nullable
          FROM information_schema.columns
-         WHERE table_schema = 'public'
-         ORDER BY table_name, ordinal_position`
+         WHERE table_schema <> 'information_schema' AND table_schema !~ '^pg_'
+         ORDER BY table_schema, table_name, ordinal_position`
       )
       return groupColumns(result.rows, 'table_name', 'column_name', 'data_type', 'is_nullable')
     },
@@ -110,7 +122,9 @@ function createMysqlDriver(creds) {
         user: creds.user,
         password: creds.password,
         connectTimeout: 10000,
-        ssl: isLocal(creds.host) ? undefined : { rejectUnauthorized: true },
+        ssl:
+          isLocal(creds.host) && creds.tls !== 'verify' ? undefined : { rejectUnauthorized: true },
+        multipleStatements: false,
       })
     }
     return conn
@@ -122,13 +136,18 @@ function createMysqlDriver(creds) {
     },
     async executeQuery(sql) {
       const c = await getConn()
-      const [rows, fields] = await c.query(sql)
-      const all = Array.isArray(rows) ? rows : []
-      return {
-        rows: all.slice(0, MAX_ROWS),
-        fields: (fields || []).map((f) => f.name),
-        rowCount: all.length,
-        truncated: all.length > MAX_ROWS,
+      await c.query('START TRANSACTION READ ONLY')
+      try {
+        const [rows, fields] = await c.query({ sql, timeout: 30000 })
+        const all = Array.isArray(rows) ? rows : []
+        return {
+          rows: all.slice(0, MAX_ROWS),
+          fields: (fields || []).map((f) => f.name),
+          rowCount: Math.min(all.length, MAX_ROWS),
+          truncated: all.length > MAX_ROWS,
+        }
+      } finally {
+        await c.query('ROLLBACK').catch(() => {})
       }
     },
     async fetchSchema() {
@@ -164,9 +183,11 @@ function createSqlServerDriver(creds) {
         user: creds.user,
         password: creds.password,
         connectionTimeout: 10000,
+        requestTimeout: 30000,
+        pool: { max: 1, min: 0 },
         options: {
-          encrypt: !isLocal(creds.host),
-          trustServerCertificate: isLocal(creds.host),
+          encrypt: !isLocal(creds.host) || creds.tls === 'verify',
+          trustServerCertificate: isLocal(creds.host) && creds.tls !== 'verify',
         },
       }).connect()
     }
@@ -179,23 +200,25 @@ function createSqlServerDriver(creds) {
     },
     async executeQuery(sql) {
       const p = await getPool()
-      const result = await p.request().query(sql)
+      const result = await p.request().query(`SET ROWCOUNT ${MAX_ROWS + 1};\n${sql}`)
       const all = result.recordset || []
-      const fields = all.length > 0 ? Object.keys(all[0]) : []
+      const fields = Object.keys(result.recordset?.columns || all[0] || {})
       return {
         rows: all.slice(0, MAX_ROWS),
         fields,
-        rowCount: all.length,
+        rowCount: Math.min(all.length, MAX_ROWS),
         truncated: all.length > MAX_ROWS,
       }
     },
     async fetchSchema() {
       const p = await getPool()
       const result = await p.request().query(
-        `SELECT TABLE_NAME as table_name, COLUMN_NAME as column_name,
+        `SELECT QUOTENAME(TABLE_SCHEMA) + '.' + QUOTENAME(TABLE_NAME) as table_name,
+                COLUMN_NAME as column_name,
                 DATA_TYPE as data_type, IS_NULLABLE as is_nullable
          FROM INFORMATION_SCHEMA.COLUMNS
-         ORDER BY TABLE_NAME, ORDINAL_POSITION`
+         WHERE TABLE_SCHEMA NOT IN ('sys', 'INFORMATION_SCHEMA')
+         ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION`
       )
       return groupColumns(
         result.recordset || [],
@@ -236,9 +259,7 @@ function createDriver(creds) {
       driver = createPostgresDriver(creds)
       break
     default:
-      throw new Error(
-        `Database type "${type}" is not supported in the desktop app yet.`
-      )
+      throw new Error(`Database type "${type}" is not supported in the desktop app yet.`)
   }
   return withSafety(driver, type)
 }

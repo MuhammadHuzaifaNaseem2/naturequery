@@ -1,67 +1,77 @@
-# Building and releasing NatureQuery Desktop
+# NatureQuery Desktop release checklist
 
-This guide covers building the Windows installer and publishing updates.
-All commands run from the `desktop/` folder.
+The 0.2.3 Windows x64 build is a local release candidate. Nothing in this guide's
+build commands publishes a release. Public distribution requires a separate,
+explicit release decision after the checks below.
 
-## One-time setup
+## Build without publishing
 
-```bash
-cd desktop
-npm install
-```
+Run from `desktop/`:
 
-The app icon is generated from `build/icon.png` (1024x1024, rendered from your
-logo). electron-builder creates all the Windows installer icon sizes from it
-automatically — no `.ico` needed.
-
-## Build the installer (local, no publishing)
-
-```bash
+```powershell
+npm ci
+npm test
 npm run build:win
 ```
 
-This produces a Windows installer in `desktop/dist/`:
+`build:win` runs `electron-builder --win --x64 --publish never`. Expected output
+in `desktop/dist/`:
 
-- `NatureQuery Setup <version>.exe` — the installer you can share or test
-- supporting files (`latest.yml`, blockmap) used by auto-update
+- `NatureQuery-0.2.3-win-x64-Setup.exe`: per-user NSIS installer.
+- The corresponding `.blockmap` and `latest.yml`: update support files.
+- `win-unpacked/`: packaged application for local smoke testing.
 
-Double-click the `.exe` to install. It creates desktop and Start-menu
-shortcuts named **NatureQuery**.
+The installer is configured to create Desktop and Start-menu shortcuts and run
+the app after installation. Test installation and uninstallation in a disposable
+Windows account or VM; running the unpacked app is not an installation test.
+The build uses `build/icon.png` for the application and `build/icon.ico` for the
+installer and uninstaller.
 
-> Note: the installer is not code-signed yet, so Windows SmartScreen will show
-> a "Windows protected your PC" warning on first run (click _More info → Run
-> anyway_). Code signing (a paid certificate) removes this and is the next
-> polish step.
+## Checks before public launch
 
-## Publish a release with auto-update
+- Run unit tests and the opt-in disposable PostgreSQL integration test described
+  in [README.md](README.md). Record the results and the exact commit being built.
+- Smoke-test the packaged app on Windows: sample presets, connection validation,
+  save/reopen/edit/remove, schema loading, read query, blocked write query,
+  truncation, CSV export/cancel, offline recovery, keyboard navigation, and restart.
+- Qualify MySQL, MariaDB, and SQL Server against real disposable databases.
+  PostgreSQL coverage does not establish support quality for those engines.
+- Review and deploy the required hosted-web desktop integration separately,
+  then verify email/password sign-in, local-connection discovery, SQL generation,
+  execution, and explicit AI Insights use from the packaged app. Local source
+  changes alone do not update the hosted workspace.
+- Keep OAuth unavailable in the desktop UI until a secure external-browser
+  callback/session handoff is implemented and tested. Do not advertise it as
+  working in this candidate.
+- Configure Windows code signing and verify the signer and installer integrity.
+  This candidate is not signed. Signing identifies the publisher; it does not
+  guarantee that Windows SmartScreen reputation warnings disappear. Resolve
+  distribution trust before broad release rather than asking users to bypass warnings.
+- Prepare a public release, matching installer/update metadata, release notes,
+  checksum, supported-platform notice, privacy explanation, and support path.
+  Verify upgrade and rollback/recovery behavior using a controlled test release.
+- Obtain the product owner's approval before publishing or adding a public download.
 
-Auto-update pulls new versions from this repo's GitHub Releases.
+macOS DMG and Linux AppImage build scripts exist, both with `--publish never`.
+They are untested release targets here. macOS signing/notarization and Linux
+secure-storage behavior require separate qualification; do not list them as shipped.
 
-1. Bump the version in `desktop/package.json` (e.g. `0.1.0` → `0.1.1`).
-2. Create a GitHub token with `repo` scope and set it:
-   ```bash
-   # Windows PowerShell
-   $env:GH_TOKEN = "your_token_here"
-   ```
-3. Build and publish:
-   ```bash
-   npm run release:win
-   ```
+## How updates work in this candidate
 
-This uploads the installer and `latest.yml` to a GitHub Release. Installed apps
-check that release on launch; when a newer version exists, electron-updater
-downloads it in the background and prompts the user to restart.
+- Checks run only when the user chooses **Check for updates** in a packaged app.
+  Development builds explain that updates are unavailable. There is no launch-time
+  update check.
+- The configured source is GitHub Releases for
+  `MuhammadHuzaifaNaseem2/naturequery`. Configuration is not evidence that a
+  public release or working update channel exists.
+- A newer version prompts the user before download. Declining leaves the current
+  version running. Automatic downloads and installation on quit are disabled.
+- After a download, choosing **Check for updates** again offers **Restart and
+  install** or **Later**. The user should finish running queries before restarting.
+- An unavailable release service leaves the app usable and reports an actionable
+  retry message. Test this flow with signed, published artifacts before claiming
+  verified update support.
 
-## How auto-update behaves
-
-- Runs only in the installed (packaged) app, never in `npm start` dev mode.
-- Checks GitHub Releases on launch; failures (offline, etc.) are ignored.
-- The user is notified once the update is downloaded and applies it on restart.
-
-## Next polish steps
-
-- **Code signing** (Windows EV/OV certificate) to remove the SmartScreen
-  warning and make the installer trusted.
-- **App metadata**: publisher name, version display, license screen in the
-  NSIS installer.
-- **macOS build + notarization** when you want a Mac version.
+`release:win` is a publishing script, unlike `build:win`. Do not run it during
+local QA. Publishing credentials must not be placed in source files, documentation,
+or committed configuration.
