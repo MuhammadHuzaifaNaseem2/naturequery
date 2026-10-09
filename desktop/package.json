@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "node test/e2e/sign-in-and-ai.mjs",
     "sample-db": "node scripts/make-sample-db.mjs",
     "start": "node scripts/start.mjs",
     "dist:win": "npm run build && electron-builder --win --x64 --publish never",
