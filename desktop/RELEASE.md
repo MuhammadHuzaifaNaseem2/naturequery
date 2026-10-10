@@ -67,7 +67,9 @@ Sandbox or a virtual machine), not on your everyday PC.
 ## 4. Sign the installer
 
 Unsigned apps show "Windows protected your PC" with "Unknown publisher", and
-antivirus programs are much more likely to quarantine them. Sign every release
+antivirus programs are much more likely to quarantine them. Without a
+certificate, publish through the Microsoft Store instead (section 8): Microsoft
+signs Store apps for free. Sign every release
 with the same certificate so its reputation builds up over time.
 
 Recommended for an individual developer outside the USA and Canada: an
@@ -131,3 +133,36 @@ Windows x64 is the supported platform. `npm run dist:mac` and
 `npm run dist:linux` exist but are untested: macOS needs Apple signing and
 notarization, and Linux secure storage needs its own testing before either can
 be offered.
+
+## 8. Microsoft Store (free signing)
+
+Microsoft signs apps published in the Microsoft Store, so Store installs show no
+"Unknown publisher" warning, and the Store installs updates itself. Registering
+as an individual developer is free (storedeveloper.microsoft.com).
+
+1. In Partner Center, the product **NatureQuery** (an MSIX app) is reserved. Its
+   **Product identity** page lists `Package/Identity/Name`,
+   `Package/Identity/Publisher` and `Package/Properties/PublisherDisplayName`.
+   These must match `build.appx.identityName`, `build.appx.publisher` and
+   `build.appx.publisherDisplayName` in `package.json` exactly.
+2. Build the Store package. It is unsigned on purpose; the Store signs it.
+
+   ```powershell
+   npm run dist:store
+   ```
+
+   Output: `release/NatureQuery-<version>-store-x64.appx`. The tile images come
+   from `build/appx/`, made from `build/icon.png` with `npm run store-assets`.
+
+3. Raise `version` for every submission; the Store only accepts higher versions.
+4. In Partner Center, choose **Start submission**, upload the `.appx` and fill
+   in the listing. Under **Notes for certification**, give the reviewers a test
+   NatureQuery account (email and password) and explain that signing in opens
+   the browser, where they choose **Allow**.
+5. To share the app privately during a pilot, set **Visibility** so the app is
+   available only through its Store link.
+
+In the Store version, the app does not check GitHub for updates, the
+`naturequery://` sign-in link is declared in the package, and **Show log files**
+copies the logs to the `NatureQuery logs` folder in Documents, because File
+Explorer cannot open a Store app's private data folder.

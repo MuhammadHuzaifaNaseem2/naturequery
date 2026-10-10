@@ -230,49 +230,60 @@ export function SettingsView() {
         </Section>
 
         <Section title="Updates">
-          <Switch
-            checked={settings.checkForUpdates}
-            onChange={(checkForUpdates) => change({ checkForUpdates })}
-            label="Check for updates automatically"
-            description="Updates are downloaded only after you agree."
-          />
-          <div className="flex items-center gap-3">
-            <Button
-              size="sm"
-              icon={
-                <RefreshCw
-                  className={clsx('h-3.5 w-3.5', update?.state === 'checking' && 'animate-spin')}
-                />
-              }
-              onClick={() =>
-                api.updates
-                  .check()
-                  .then(setUpdate, (error) => toast.error((error as Error).message))
-              }
-              disabled={update?.state === 'checking' || update?.state === 'downloading'}
-            >
-              Check now
-            </Button>
-            {update?.state === 'available' && (
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() =>
-                  api.updates
-                    .download()
-                    .then(setUpdate, (error) => toast.error((error as Error).message))
-                }
-              >
-                Download update
-              </Button>
-            )}
-            {update?.state === 'ready' && (
-              <Button size="sm" variant="primary" onClick={() => void api.updates.install()}>
-                Restart and update
-              </Button>
-            )}
-            <span className="text-[12px] text-muted-foreground">{describeUpdate(update)}</span>
-          </div>
+          {info?.store ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              The Microsoft Store installs NatureQuery updates for you.
+            </p>
+          ) : (
+            <>
+              <Switch
+                checked={settings.checkForUpdates}
+                onChange={(checkForUpdates) => change({ checkForUpdates })}
+                label="Check for updates automatically"
+                description="Updates are downloaded only after you agree."
+              />
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  icon={
+                    <RefreshCw
+                      className={clsx(
+                        'h-3.5 w-3.5',
+                        update?.state === 'checking' && 'animate-spin'
+                      )}
+                    />
+                  }
+                  onClick={() =>
+                    api.updates
+                      .check()
+                      .then(setUpdate, (error) => toast.error((error as Error).message))
+                  }
+                  disabled={update?.state === 'checking' || update?.state === 'downloading'}
+                >
+                  Check now
+                </Button>
+                {update?.state === 'available' && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() =>
+                      api.updates
+                        .download()
+                        .then(setUpdate, (error) => toast.error((error as Error).message))
+                    }
+                  >
+                    Download update
+                  </Button>
+                )}
+                {update?.state === 'ready' && (
+                  <Button size="sm" variant="primary" onClick={() => void api.updates.install()}>
+                    Restart and update
+                  </Button>
+                )}
+                <span className="text-[12px] text-muted-foreground">{describeUpdate(update)}</span>
+              </div>
+            </>
+          )}
         </Section>
 
         <Section
@@ -298,7 +309,7 @@ export function SettingsView() {
             <dt className="text-muted-foreground">Version</dt>
             <dd className="selectable">
               {info?.version}
-              {info && !info.packaged ? ' (development)' : ''}
+              {info?.store ? ' (Microsoft Store)' : info && !info.packaged ? ' (development)' : ''}
             </dd>
             <dt className="text-muted-foreground">Platform</dt>
             <dd>

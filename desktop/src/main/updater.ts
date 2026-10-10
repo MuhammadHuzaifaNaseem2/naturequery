@@ -12,6 +12,8 @@ const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
 
 export interface UpdaterOptions {
   packaged: boolean
+  /** Installed from the Microsoft Store, which updates the app itself. */
+  store?: boolean
   emit: (status: UpdateStatus) => void
   automaticChecks: () => boolean
   logger: {
@@ -48,9 +50,16 @@ export function friendlyError(error: unknown): string | null {
 }
 
 export function createUpdater(options: UpdaterOptions) {
-  let status: UpdateStatus = options.packaged
+  // Only the installer from GitHub releases updates itself.
+  const selfUpdating = options.packaged && !options.store
+  let status: UpdateStatus = selfUpdating
     ? { state: 'idle' }
-    : { state: 'disabled', reason: 'Development builds do not update.' }
+    : {
+        state: 'disabled',
+        reason: options.store
+          ? 'The Microsoft Store installs updates for you.'
+          : 'Development builds do not update.',
+      }
   let timer: NodeJS.Timeout | undefined
 
   function set(next: UpdateStatus) {
@@ -58,7 +67,7 @@ export function createUpdater(options: UpdaterOptions) {
     options.emit(next)
   }
 
-  if (options.packaged) {
+  if (selfUpdating) {
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = true
     autoUpdater.allowPrerelease = false
@@ -88,7 +97,7 @@ export function createUpdater(options: UpdaterOptions) {
   }
 
   async function check(): Promise<UpdateStatus> {
-    if (!options.packaged) return status
+    if (!selfUpdating) return status
     if (status.state === 'downloading' || status.state === 'ready') return status
     try {
       await autoUpdater.checkForUpdates()
@@ -119,7 +128,7 @@ export function createUpdater(options: UpdaterOptions) {
 
     /** Checks shortly after start and then every few hours, while allowed in Settings. */
     start(): void {
-      if (!options.packaged) return
+      if (!selfUpdating) return
       const tick = () => {
         if (options.automaticChecks()) void check()
       }

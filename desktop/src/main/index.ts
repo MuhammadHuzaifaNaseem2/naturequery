@@ -64,6 +64,8 @@ import {
 import { applyChrome, createMainWindow, openExternalSafely, resolveInitialChrome } from './window'
 
 const devServerUrl = !app.isPackaged ? process.env.NQ_DEV_SERVER_URL : undefined
+/** Installed from the Microsoft Store (an MSIX package), which handles updates and links. */
+const STORE = process.windowsStore === true
 const API_BASE_URL =
   (!app.isPackaged && process.env.NATUREQUERY_API_URL) || 'https://naturequery.app'
 
@@ -209,7 +211,8 @@ async function start() {
   }
 
   // The installer registers naturequery:// too; this repairs it if another app took it over.
-  if (app.isPackaged) {
+  // Microsoft Store installs declare it in their package instead.
+  if (app.isPackaged && !STORE) {
     app.setAsDefaultProtocolClient(PROTOCOL)
   } else if (process.env.NQ_REGISTER_PROTOCOL === '1') {
     app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])])
@@ -271,6 +274,7 @@ async function start() {
       platform: process.platform,
       arch: process.arch,
       packaged: app.isPackaged,
+      store: STORE,
       electron: process.versions.electron,
       userDataPath: app.getPath('userData'),
       apiBaseUrl: API_BASE_URL,
@@ -278,7 +282,16 @@ async function start() {
   )
   handle(IPC.appOpenExternal, (url) => openExternalSafely(parseInput(externalUrlSchema, url)))
   handle(IPC.appOpenLogs, () => {
-    shell.showItemInFolder(logFilePath())
+    if (!STORE) return shell.showItemInFolder(logFilePath())
+    // Store installs keep app data in a private folder that File Explorer
+    // cannot open, so the logs are copied to Documents first.
+    const source = path.dirname(logFilePath())
+    const target = path.join(app.getPath('documents'), 'NatureQuery logs')
+    fs.mkdirSync(target, { recursive: true })
+    for (const name of fs.readdirSync(source)) {
+      if (name.endsWith('.log')) fs.copyFileSync(path.join(source, name), path.join(target, name))
+    }
+    shell.showItemInFolder(path.join(target, path.basename(logFilePath())))
   })
   handle(IPC.appSetTheme, (theme, chrome) => {
     const name = parseInput(themeSchema, theme)
@@ -468,6 +481,7 @@ async function start() {
   // ── Updates ──────────────────────────────────────────────────────────
   const updater = createUpdater({
     packaged: app.isPackaged,
+    store: STORE,
     emit: (status) => send(EVENTS.updateStatus, status),
     automaticChecks: () => settings.get().checkForUpdates,
     logger,

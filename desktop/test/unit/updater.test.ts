@@ -42,4 +42,23 @@ describe('updates', () => {
     })
     expect(await updater.check()).toEqual(updater.status())
   })
+
+  it('leaves updates to the Microsoft Store in Store installs', async () => {
+    const { autoUpdater } = await import('electron-updater')
+    vi.mocked(autoUpdater.on).mockClear()
+    const updater = createUpdater({
+      packaged: true,
+      store: true,
+      emit: () => {},
+      automaticChecks: () => true,
+      logger: { info() {}, warn() {}, error() {} },
+    })
+    expect(updater.status()).toEqual({
+      state: 'disabled',
+      reason: 'The Microsoft Store installs updates for you.',
+    })
+    expect(await updater.check()).toEqual(updater.status())
+    // Never wired to GitHub releases.
+    expect(autoUpdater.on).not.toHaveBeenCalled()
+  })
 })

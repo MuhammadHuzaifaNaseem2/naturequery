@@ -388,6 +388,8 @@ export interface AppInfo {
   platform: NodeJS.Platform
   arch: string
   packaged: boolean
+  /** Installed from the Microsoft Store, which installs updates itself. */
+  store: boolean
   electron: string
   userDataPath: string
   apiBaseUrl: string
