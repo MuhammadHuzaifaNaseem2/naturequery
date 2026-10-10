@@ -8,8 +8,8 @@ through:
 2. "Sign in with your browser" opens the approval page (recorded, not opened in your browser).
 3. A hidden browser window logs in through the real login form and chooses Allow.
 4. The `naturequery://` link is handed to the running app by a second copy, as Windows does.
-5. Questions, a follow-up, Explain, Summarize, Fix with AI, a declined request to
-   delete data, plan counting, and sign-out (with a real mouse click) closing the
+5. Questions, a follow-up, Explain, Summarize, reporting an AI answer, Fix with
+   AI, a declined request to delete data, plan counting, and sign-out (with a real mouse click) closing the
    workspace and revoking the server session.
 6. A second account signs in on the same computer and sees none of the first
    account's work; the first account then signs in again and gets its tabs back.

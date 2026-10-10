@@ -32,8 +32,22 @@ import {
 import { formatCount, formatDuration, plural } from '../../lib/format'
 import { api } from '../../lib/nq'
 import { toTableData, toTsv } from '../../lib/results'
-import { cancelTab, setResultView, setView, useApp, type QueryTab } from '../../store/app-store'
-import { dismissExplanation, dismissInsights, fixTab, summarizeTab } from '../../store/assistant'
+import {
+  cancelTab,
+  setResultView,
+  setView,
+  useApp,
+  type AiReportDraft,
+  type QueryTab,
+} from '../../store/app-store'
+import {
+  dismissExplanation,
+  dismissInsights,
+  fixTab,
+  lastQuestionOf,
+  summarizeTab,
+} from '../../store/assistant'
+import { ReportAiButton } from './ReportAiButton'
 
 /** Errors the AI can usually fix: mistakes in the query, not connection problems. */
 function fixable(tab: QueryTab): boolean {
@@ -53,11 +67,14 @@ function bullets(text: string): string[] {
 function AiCard({
   icon,
   title,
+  report,
   onClose,
   children,
 }: {
   icon: ReactNode
   title: string
+  /** The finished answer, which can be reported. */
+  report?: AiReportDraft
   onClose: () => void
   children: ReactNode
 }) {
@@ -66,6 +83,7 @@ function AiCard({
       <div className="mb-1.5 flex items-center gap-2">
         <span className="text-primary">{icon}</span>
         <span className="flex-1 font-medium">{title}</span>
+        {report && <ReportAiButton draft={report} className="h-6 w-6" />}
         <IconButton label="Close" onClick={onClose} className="h-6 w-6">
           <X className="h-3.5 w-3.5" />
         </IconButton>
@@ -103,6 +121,11 @@ function AiPanels({ tab, beside }: { tab: QueryTab; beside: boolean }) {
         <AiCard
           icon={<BookOpenText className="h-4 w-4" />}
           title="What this query does"
+          report={
+            explanation.status === 'ready'
+              ? { kind: 'explanation', question: explanation.forSql, content: explanation.text }
+              : undefined
+          }
           onClose={() => dismissExplanation(tab.id)}
         >
           {explanation.status === 'loading' && (
@@ -131,6 +154,18 @@ function AiPanels({ tab, beside }: { tab: QueryTab; beside: boolean }) {
         <AiCard
           icon={<Lightbulb className="h-4 w-4" />}
           title="Summary"
+          report={
+            insights.status === 'ready'
+              ? {
+                  kind: 'summary',
+                  question: lastQuestionOf(tab) || tab.sql,
+                  content: [
+                    insights.summary,
+                    ...insights.highlights.map((line) => `- ${line}`),
+                  ].join('\n'),
+                }
+              : undefined
+          }
           onClose={() => dismissInsights(tab.id)}
         >
           {insights.status === 'loading' && (

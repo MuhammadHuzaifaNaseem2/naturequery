@@ -209,6 +209,9 @@ Also available:
   corrected query and runs it. **Undo AI fix** puts your query back.
 - **Explain** describes any query in plain language.
 - **Summarize** describes the result for business readers.
+- **Report AI answer** (the flag next to a query the AI wrote, an explanation or
+  a summary) sends that answer to the NatureQuery team for review when it is
+  wrong or inappropriate.
 
 Writing queries yourself has no limit. The Free plan
 includes 50 AI questions a month (only questions that produce a query count);
@@ -236,10 +239,13 @@ paid plans have no monthly limit. The account menu shows how many you have left.
   Result rows are included only if you turn on **Let AI summaries use result
   rows** (off by default); then at most 50 rows are sent, with long values
   shortened.
+- **Report AI answer**: what the AI was asked, its answer, your comment and
+  your account email.
 
 NatureQuery counts your AI questions for your plan but does not store the
 questions, queries or schema details. The text is processed by NatureQuery's AI
-providers to produce the answer.
+providers to produce the answer. Answers you report are the exception: they are
+kept so the team can review them.
 
 Signing in happens in your web browser, so the app never sees your NatureQuery
 password. You can see and sign out every computer that is signed in under

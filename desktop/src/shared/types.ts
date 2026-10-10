@@ -381,6 +381,18 @@ export interface InsightsResult {
   highlights: string[]
 }
 
+export type AiReportReason = 'wrong' | 'offensive' | 'harmful' | 'other'
+
+/** Someone reports an AI answer as wrong or inappropriate (Store policy 11.16). */
+export interface AiReportRequest {
+  kind: 'query' | 'explanation' | 'summary'
+  reason: AiReportReason
+  comment: string
+  question: string
+  /** The AI answer being reported. */
+  content: string
+}
+
 // ─── App and updates ─────────────────────────────────────────────────
 
 export interface AppInfo {

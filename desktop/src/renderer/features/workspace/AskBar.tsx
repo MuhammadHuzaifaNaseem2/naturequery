@@ -3,8 +3,14 @@ import { ArrowUp, CircleHelp, MessageSquarePlus, ShieldAlert, Sparkles, X } from
 import { DB_TYPE_INFO } from '@shared/db-types'
 import { Button, ErrorNotice, IconButton, Spinner } from '../../components/ui'
 import { api } from '../../lib/nq'
-import { askTab, dismissAssistantMessage, newConversation } from '../../store/assistant'
+import {
+  askTab,
+  dismissAssistantMessage,
+  lastQuestionOf,
+  newConversation,
+} from '../../store/assistant'
 import { setTabQuestion, useApp, useConnection, type QueryTab } from '../../store/app-store'
+import { ReportAiButton } from './ReportAiButton'
 
 const SAMPLE_QUESTIONS = [
   'Which 5 products earned the most revenue last year?',
@@ -118,6 +124,14 @@ export function AskBar({ tab }: { tab: QueryTab }) {
             )}
             {tab.assistant.notice.message}
           </p>
+          <ReportAiButton
+            draft={{
+              kind: 'query',
+              question: tab.question.trim() || lastQuestionOf(tab),
+              content: tab.assistant.notice.message,
+            }}
+            className="h-6 w-6"
+          />
           <IconButton
             label="Dismiss"
             onClick={() => dismissAssistantMessage(tab.id)}

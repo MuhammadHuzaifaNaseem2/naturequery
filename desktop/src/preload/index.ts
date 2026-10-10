@@ -75,6 +75,7 @@ const bridge: NqBridge = {
     fix: invoke(IPC.aiFix),
     explain: invoke(IPC.aiExplain),
     insights: invoke(IPC.aiInsights),
+    report: invoke(IPC.aiReport),
   },
   updates: {
     status: invoke(IPC.updatesStatus),

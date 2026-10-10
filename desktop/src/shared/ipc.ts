@@ -14,6 +14,7 @@ import type {
   HistoryEntry,
   HistoryQuery,
   InsightsRequest,
+  AiReportRequest,
   InsightsResult,
   MenuCommand,
   QueryRequest,
@@ -63,6 +64,7 @@ export const IPC = {
   aiFix: 'ai:fix',
   aiExplain: 'ai:explain',
   aiInsights: 'ai:insights',
+  aiReport: 'ai:report',
   updatesCheck: 'updates:check',
   updatesDownload: 'updates:download',
   updatesInstall: 'updates:install',
@@ -148,6 +150,7 @@ export interface NqBridge {
     fix: Call<[request: FixRequest], GenerateResult>
     explain: Call<[request: ExplainRequest], ExplainResult>
     insights: Call<[request: InsightsRequest], InsightsResult>
+    report: Call<[request: AiReportRequest], void>
   }
   updates: {
     status: Call<[], UpdateStatus>

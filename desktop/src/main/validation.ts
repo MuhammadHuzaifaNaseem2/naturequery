@@ -243,6 +243,13 @@ export const insightsRequestSchema = z.object({
   rows: z.array(z.array(z.unknown()).max(1000)).max(1000),
   rowCount: z.number().int().min(0),
 })
+export const aiReportRequestSchema = z.object({
+  kind: z.enum(['query', 'explanation', 'summary']),
+  reason: z.enum(['wrong', 'offensive', 'harmful', 'other']),
+  comment: z.string().max(2000),
+  question: z.string().max(2000),
+  content: z.string().min(1).max(20_000),
+})
 export const clipboardTextSchema = z.string().max(20_000_000)
 
 /** Parses IPC input and turns schema failures into a readable validation error. */

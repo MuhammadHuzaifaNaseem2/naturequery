@@ -40,6 +40,7 @@ import { createSettingsStore } from './settings'
 import { createUpdater } from './updater'
 import {
   accountPathSchema,
+  aiReportRequestSchema,
   authCodeSchema,
   clipboardTextSchema,
   connectionIdSchema,
@@ -477,6 +478,7 @@ async function start() {
   handle(IPC.aiFix, (request) => ai.fix(parseInput(fixRequestSchema, request)))
   handle(IPC.aiExplain, (request) => ai.explain(parseInput(explainRequestSchema, request)))
   handle(IPC.aiInsights, (request) => ai.insights(parseInput(insightsRequestSchema, request)))
+  handle(IPC.aiReport, (request) => ai.report(parseInput(aiReportRequestSchema, request)))
 
   // ── Updates ──────────────────────────────────────────────────────────
   const updater = createUpdater({

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { toast } from 'sonner'
 import {
   DEFAULT_SETTINGS,
+  type AiReportRequest,
   type AppError,
   type AppInfo,
   type AuthState,
@@ -64,12 +65,16 @@ export interface SchemaState {
   error?: AppError
 }
 
+/** An AI answer someone is about to report; they add the reason and a comment. */
+export type AiReportDraft = Omit<AiReportRequest, 'reason' | 'comment'>
+
 export type DialogState =
   | { kind: 'connection'; editing?: ConnectionInfo; presetType?: ConnectionInfo['type'] }
   | { kind: 'welcome' }
   | { kind: 'shortcuts' }
   | { kind: 'save-query'; tabId: string }
   | { kind: 'confirm-remove-connection'; connection: ConnectionInfo }
+  | { kind: 'report-ai'; draft: AiReportDraft }
   | null
 
 interface AppState {

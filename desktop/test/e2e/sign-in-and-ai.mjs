@@ -205,6 +205,22 @@ try {
   step('the summary is plain text, not raw JSON', !/\{\s*"summary"|"highlights"\s*:/.test(await bodyText()))
   await app.screenshot(path.join(shots, '05-explain-summary.png'))
 
+  // Every AI answer can be reported (Microsoft Store policy 11.16): the query,
+  // the explanation and the summary each have a Report button.
+  const flags = await $(`document.querySelectorAll('button[aria-label="Report AI answer"]').length`)
+  step('AI answers can be reported', flags === 3, `${flags} report buttons`)
+  await $(`[...document.querySelectorAll('button[aria-label="Report AI answer"]')].find((b) => b.parentElement.textContent.trim() === 'Summary').click()`)
+  await until(`document.querySelector('dialog[open]')?.innerText.includes('The summary you are reporting')`)
+  await $(`document.querySelector('dialog[open] input[name=report-reason][value=wrong]').click()`)
+  await $(`document.querySelector('#report-comment').focus()`)
+  await app.type('E2E: the totals look wrong')
+  await app.screenshot(path.join(shots, '05b-report.png'))
+  await clickButton('Send report', `document.querySelector('dialog[open]')`)
+  await until(`!document.querySelector('dialog[open]') && document.body.innerText.includes('Report sent')`, 30_000)
+  const reported = execFileSync('docker', ['exec', 'nq-web-db', 'psql', '-U', 'postgres', '-d', 'naturequery_test', '-tAc',
+    `select count(*) from "AuditLog" where "userId"='${userId}' and action='AI_OUTPUT_REPORTED' and metadata->>'kind'='summary' and metadata->>'reason'='wrong' and metadata->>'comment'='E2E: the totals look wrong'`], { encoding: 'utf8' }).trim()
+  step('a report reaches the NatureQuery team', reported === '1', `${reported} in the audit log`)
+
   // 9. Fix a broken query with AI.
   await clickButton('SQL')
   await $(`(() => { const view = document.querySelector('.cm-content'); view.focus(); document.execCommand('selectAll'); })()`)

@@ -26,6 +26,13 @@ The link to share: https://apps.microsoft.com/detail/9N6PJDWJRLFM
 - **Support contact info:** https://naturequery.app/contact
 - **System requirements (minimum):** Windows 10 version 1809 or later, 64-bit
   (x64), 4 GB of memory, internet connection for sign-in and AI questions.
+- **Product declarations:** tick "This product allows users to make purchases,
+  but does not use the Microsoft Store commerce system" (plans are bought on the
+  website) and "This product incorporates generative AI features" (Store policy
+  11.16). Untick "Windows can include this product's data in automatic backups
+  to OneDrive" (connections and history stay on the computer) and "Customers can
+  use Windows features to record and broadcast clips" (for games only). Leave
+  the rest unchanged.
 
 ## 3. Age ratings
 
@@ -63,6 +70,9 @@ More than questions
 - Summarize turns a result into a short summary for your team.
 - History and saved queries keep your work in one place.
 - A built-in sample store database lets you try everything before connecting your own data.
+
+About the AI
+NatureQuery uses generative AI to write queries, explanations and summaries from your questions. AI can make mistakes, so check important answers. If an answer is wrong or inappropriate, select the flag button next to it to report it, and we will review it.
 
 NatureQuery needs a free NatureQuery account. The Free plan includes 50 AI questions a month, and paid plans have no monthly limit. Writing queries yourself is always unlimited.
 ```
@@ -142,6 +152,8 @@ What to try:
 - In the sidebar, open "Acme Store (sample)", a built-in sample database that needs no setup.
 - Choose "Ask" and type a question, for example: Which 5 customers spent the most?
 - Switch the results to "Chart", and try "Explain" and "Summarize".
+
+NatureQuery uses live generative AI to write queries, explanations and summaries. Every AI answer has a flag button ("Report AI answer"): in the editor toolbar for a query the AI wrote, and on the explanation and summary cards. Reports reach the developer for review.
 
 NatureQuery connects directly to databases on the user's own computer and network. The sample database is included so the app can be tested without one.
 ```

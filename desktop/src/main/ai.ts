@@ -1,5 +1,6 @@
 import { DB_TYPE_INFO } from '@shared/db-types'
 import type {
+  AiReportRequest,
   ExplainRequest,
   ExplainResult,
   FixRequest,
@@ -89,6 +90,11 @@ export function createAi(deps: AiDependencies) {
         rows: deps.shareRows() ? sampleRows(request.rows) : [],
         rowCount: request.rowCount,
       })
+    },
+
+    /** Sends a report about an AI answer to the NatureQuery team. */
+    async report(request: AiReportRequest): Promise<void> {
+      await deps.account.request('/api/desktop/ai/report', request, 20_000)
     },
   }
 }

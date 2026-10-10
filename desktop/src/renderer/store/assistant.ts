@@ -24,7 +24,8 @@ export async function startSignIn(): Promise<void> {
   }
 }
 
-function lastQuestionOf(tab: QueryTab): string {
+/** The question behind the tab's current query, if one was asked. */
+export function lastQuestionOf(tab: QueryTab): string {
   return tab.lastQuestion ?? tab.conversation.at(-1)?.question ?? ''
 }
 

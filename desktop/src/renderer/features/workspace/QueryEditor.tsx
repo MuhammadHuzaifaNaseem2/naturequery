@@ -29,6 +29,7 @@ import {
 } from '../../store/app-store'
 import { explainTab, undoAiChange } from '../../store/assistant'
 import { AskBar } from './AskBar'
+import { ReportAiButton } from './ReportAiButton'
 
 export function QueryEditor({ tab }: { tab: QueryTab }) {
   const connection = useConnection(tab.connectionId)
@@ -76,6 +77,10 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
   const running = tab.status === 'running'
   const sqlBased = usesSql(connection.type)
   const changedByAi = !!tab.aiChange && tab.sql === tab.aiChange.after
+  // The query in the editor is AI output when the AI wrote it for a question or fixed it.
+  const turn = tab.conversation.at(-1)
+  const writtenForQuestion = !!turn && turn.sql === tab.sql
+  const aiWritten = !!tab.sql.trim() && (writtenForQuestion || changedByAi)
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -144,6 +149,17 @@ export function QueryEditor({ tab }: { tab: QueryTab }) {
             >
               Undo AI fix
             </Button>
+          )}
+          {aiWritten && (
+            <ReportAiButton
+              draft={{
+                kind: 'query',
+                question: writtenForQuestion
+                  ? turn.question
+                  : `Fix this query:\n${tab.aiChange?.before ?? ''}`,
+                content: tab.sql,
+              }}
+            />
           )}
           <Button
             size="sm"

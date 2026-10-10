@@ -1,9 +1,19 @@
 import { useState } from 'react'
+import { clsx } from 'clsx'
 import { DatabaseZap, Lock, MessagesSquare, Store, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '../../components/brand'
-import { Button, Dialog, Field, Input, Kbd, modKey, Textarea } from '../../components/ui'
-import { api } from '../../lib/nq'
+import {
+  Button,
+  Dialog,
+  ErrorNotice,
+  Field,
+  Input,
+  Kbd,
+  modKey,
+  Textarea,
+} from '../../components/ui'
+import { api, asAppError } from '../../lib/nq'
 import {
   closeDialog,
   closeTab,
@@ -14,8 +24,9 @@ import {
   renameTab,
   updateSettings,
   useApp,
+  type AiReportDraft,
 } from '../../store/app-store'
-import type { ConnectionInfo } from '@shared/types'
+import type { AiReportReason, AppError, ConnectionInfo } from '@shared/types'
 import { ConnectionDialog } from '../connections/ConnectionDialog'
 
 function WelcomeDialog() {
@@ -277,6 +288,144 @@ function ConfirmRemoveConnection({ connection }: { connection: ConnectionInfo })
   )
 }
 
+const REPORT_REASONS: { value: AiReportReason; label: string; description: string }[] = [
+  {
+    value: 'wrong',
+    label: 'Wrong or misleading',
+    description: 'It is incorrect or does not answer the question.',
+  },
+  {
+    value: 'offensive',
+    label: 'Offensive or inappropriate',
+    description: 'The wording is rude, hateful or out of place.',
+  },
+  {
+    value: 'harmful',
+    label: 'Could cause harm',
+    description: 'Acting on it could hurt people, privacy or data.',
+  },
+  {
+    value: 'other',
+    label: 'Something else',
+    description: 'Describe the problem in the comment below.',
+  },
+]
+
+const REPORTED_ANSWER: Record<AiReportDraft['kind'], string> = {
+  query: 'The answer you are reporting',
+  explanation: 'The explanation you are reporting',
+  summary: 'The summary you are reporting',
+}
+
+function ReportAiDialog({ draft }: { draft: AiReportDraft }) {
+  const [reason, setReason] = useState<AiReportReason | null>(null)
+  const [comment, setComment] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<AppError | null>(null)
+  // "Something else" needs a few words to be useful.
+  const ready = reason !== null && (reason !== 'other' || comment.trim().length > 0)
+
+  const send = async () => {
+    if (!ready || sending) return
+    setSending(true)
+    setError(null)
+    try {
+      await api.ai.report({ ...draft, reason, comment: comment.trim() })
+      closeDialog()
+      toast.success('Report sent', {
+        description: 'Thank you. The NatureQuery team reviews every report.',
+      })
+    } catch (failure) {
+      setError(asAppError(failure))
+      setSending(false)
+    }
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={closeDialog}
+      title="Report AI answer"
+      description="Tell the NatureQuery team what is wrong with this answer. We review every report and use it to improve the AI."
+      footer={
+        <>
+          <Button onClick={closeDialog}>Cancel</Button>
+          <Button variant="primary" loading={sending} disabled={!ready} onClick={() => void send()}>
+            Send report
+          </Button>
+        </>
+      }
+    >
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void send()
+        }}
+      >
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-foreground/90">{REPORTED_ANSWER[draft.kind]}</p>
+          <div
+            className={clsx(
+              'selectable max-h-36 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-border bg-secondary/40 px-3 py-2 text-[12px] leading-relaxed',
+              draft.kind === 'query' && 'font-mono'
+            )}
+          >
+            {draft.content}
+          </div>
+        </div>
+        <fieldset className="space-y-1.5">
+          <legend className="mb-1.5 text-xs font-medium text-foreground/90">What is wrong?</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {REPORT_REASONS.map((option) => (
+              <label
+                key={option.value}
+                className={clsx(
+                  'flex cursor-pointer items-start gap-2.5 rounded-md border px-3 py-2 transition-colors',
+                  reason === option.value
+                    ? 'border-primary/60 bg-primary/[0.06]'
+                    : 'border-border hover:bg-secondary/50'
+                )}
+              >
+                <input
+                  type="radio"
+                  name="report-reason"
+                  value={option.value}
+                  checked={reason === option.value}
+                  onChange={() => setReason(option.value)}
+                  className="mt-0.5 accent-primary"
+                />
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-medium">{option.label}</span>
+                  <span className="block text-[11.5px] leading-snug text-muted-foreground">
+                    {option.description}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <Field label="Comment" htmlFor="report-comment" optional={reason !== 'other'}>
+          <Textarea
+            id="report-comment"
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            rows={3}
+            maxLength={2000}
+            spellCheck
+            placeholder="What should the answer have said?"
+          />
+        </Field>
+        {error && <ErrorNotice error={error} compact />}
+        <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+          The report includes what the AI was asked, this answer, your comment and your account
+          email, so we can reply. Nothing else from your databases is sent.
+        </p>
+      </form>
+    </Dialog>
+  )
+}
+
 export function DialogHost() {
   const dialog = useApp((state) => state.dialog)
   if (!dialog) return null
@@ -291,5 +440,7 @@ export function DialogHost() {
       return <SaveQueryDialog tabId={dialog.tabId} />
     case 'confirm-remove-connection':
       return <ConfirmRemoveConnection connection={dialog.connection} />
+    case 'report-ai':
+      return <ReportAiDialog draft={dialog.draft} />
   }
 }
