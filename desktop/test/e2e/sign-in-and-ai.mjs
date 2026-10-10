@@ -146,7 +146,28 @@ try {
   const sql1 = await $(`document.querySelector('.cm-content')?.innerText`)
   const text1 = await bodyText()
   step('ask: generates SQL and runs it', /select/i.test(sql1) && /5 rows ·/.test(text1), sql1.replace(/\s+/g, ' ').slice(0, 160))
+  const hiddenPx = await $(`(() => { const s = document.querySelector('.cm-scroller'); return s ? s.scrollHeight - s.clientHeight : -1 })()`)
+  step('the whole generated query is visible', hiddenPx >= 0 && hiddenPx <= 2, `${hiddenPx}px hidden`)
   await app.screenshot(path.join(shots, '03-ask-result.png'))
+
+  // Full-screen chart: the close button is clear of other controls and the title bar.
+  await clickButton('Chart')
+  await until(`document.querySelector('button[aria-label="Full screen"]')`)
+  await $(`document.querySelector('button[aria-label="Full screen"]').click()`)
+  await until(`document.querySelector('button[aria-label="Close full screen"]')`)
+  await sleep(500)
+  const closeButton = await $(`(() => {
+    const close = document.querySelector('button[aria-label="Close full screen"]')
+    const r = close.getBoundingClientRect()
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+    return { top: Math.round(r.top), onTop: hit?.closest('button') === close }
+  })()`)
+  step('full-screen chart has a clear close button', closeButton.onTop && closeButton.top >= 40, JSON.stringify(closeButton))
+  await app.screenshot(path.join(shots, '03b-chart-full-screen.png'))
+  await app.key('Escape')
+  await until(`!document.querySelector('button[aria-label="Close full screen"]')`)
+  step('Escape closes the full-screen chart', true)
+  await clickButton('Table')
 
   // 7. Follow-up question.
   await $(`document.querySelector('textarea[aria-label=Question]').focus()`)
@@ -164,6 +185,7 @@ try {
   await clickButton('Summarize')
   await until(`document.body.innerText.includes('Summary') && !document.body.innerText.includes('Summarizing the result')`, 90_000)
   step('summarize shows a summary', /Based on the question and column names only/.test(await bodyText()))
+  step('the summary is plain text, not raw JSON', !/\{\s*"summary"|"highlights"\s*:/.test(await bodyText()))
   await app.screenshot(path.join(shots, '05-explain-summary.png'))
 
   // 9. Fix a broken query with AI.
@@ -201,9 +223,22 @@ try {
     `select count(*) from "UsageRecord" where "userId"='${userId}' and action='QUERY'`], { encoding: 'utf8' }).trim()
   step('only generated queries count toward the plan', usage === '2', `${usage} recorded`)
 
+  // Sign out with a real mouse click, so a menu cut off by the window edge fails.
   await $(`[...document.querySelectorAll('button')].find((b) => b.textContent.includes('E2E Tester')).click()`)
   await sleep(300)
-  await clickButton('Sign out')
+  const signOutItem = await $(`(() => {
+    const item = [...document.querySelectorAll('[role=menuitem]')].find((el) => el.textContent.includes('Sign out'))
+    if (!item) return null
+    const r = item.getBoundingClientRect()
+    const x = r.left + r.width / 2
+    const y = r.top + r.height / 2
+    const inside = r.top >= 0 && r.bottom <= innerHeight
+    return { x, y, inside, onTop: document.elementFromPoint(x, y)?.closest('[role=menuitem]') === item }
+  })()`)
+  step('account menu shows "Sign out" inside the window', !!signOutItem?.inside && !!signOutItem?.onTop, JSON.stringify(signOutItem))
+  await app.screenshot(path.join(shots, '09-account-menu.png'))
+  if (!signOutItem) throw new Error('The account menu has no "Sign out" item')
+  await app.mouseClick(signOutItem.x, signOutItem.y)
   await until(`[...document.querySelectorAll('button')].some((b) => b.textContent.includes('Sign in for AI'))`, 15_000)
   // The dev server compiles each route on first use, so allow a few seconds.
   let after = ''

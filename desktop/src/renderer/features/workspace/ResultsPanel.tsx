@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { clsx } from 'clsx'
 import {
   BarChart3,
   Ban,
@@ -74,12 +75,30 @@ function AiCard({
   )
 }
 
-function AiPanels({ tab }: { tab: QueryTab }) {
+/** Whether an element is at least `width` pixels wide, updated as it resizes. */
+function useWiderThan(ref: React.RefObject<HTMLElement>, width: number): boolean {
+  const [wider, setWider] = useState(false)
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) => setWider(entry.contentRect.width >= width))
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [ref, width])
+  return wider
+}
+
+function AiPanels({ tab, beside }: { tab: QueryTab; beside: boolean }) {
   const { explanation, insights } = tab
   if (!explanation && !insights) return null
-  // At most about half the panel, so the result stays in view.
+  // Beside the result when there is room, otherwise above it, so the rows stay in view.
   return (
-    <div className="max-h-[45%] shrink-0 overflow-y-auto pb-1">
+    <div
+      className={clsx(
+        'overflow-y-auto pb-2.5',
+        beside ? 'order-last w-[340px] shrink-0 border-l border-border/70' : 'max-h-[38%] shrink-0'
+      )}
+    >
       {explanation && (
         <AiCard
           icon={<BookOpenText className="h-4 w-4" />}
@@ -162,6 +181,8 @@ function Elapsed({ since }: { since: number }) {
 
 export function ResultsPanel({ tab }: { tab: QueryTab }) {
   const rowLimit = useApp((state) => state.settings.rowLimit)
+  const body = useRef<HTMLDivElement>(null)
+  const wide = useWiderThan(body, 900)
   const result = tab.status === 'success' ? tab.result : undefined
   const table = useMemo(() => (result ? toTableData(result) : null), [result])
 
@@ -279,107 +300,109 @@ export function ResultsPanel({ tab }: { tab: QueryTab }) {
         </div>
       )}
 
-      <AiPanels tab={tab} />
+      <div ref={body} className={clsx('flex min-h-0 flex-1', wide ? 'flex-row' : 'flex-col')}>
+        <AiPanels tab={tab} beside={wide} />
 
-      <div className="relative min-h-0 flex-1">
-        {tab.status === 'idle' &&
-          (tab.mode === 'ask' ? (
-            <EmptyState
-              icon={<Sparkles className="h-5 w-5" />}
-              title="Ask a question to see results"
-              description="NatureQuery writes the query, shows it above, and runs it on this computer."
-              className="h-full"
-            />
-          ) : (
-            <EmptyState
-              icon={<Play className="h-5 w-5" />}
-              title="Run a query to see results"
-              description={
-                <span className="inline-flex items-center gap-1">
-                  Press <Kbd>{modKey()}</Kbd> <Kbd>Enter</Kbd> in the editor.
-                </span>
-              }
-              className="h-full"
-            />
-          ))}
-        {tab.status === 'running' && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-[13px] text-muted-foreground">
-            <Spinner className="h-5 w-5 text-primary" />
-            <p>Running query… {tab.startedAt && <Elapsed since={tab.startedAt} />}</p>
-            <Button
-              size="sm"
-              icon={<Ban className="h-3.5 w-3.5" />}
-              onClick={() => void cancelTab(tab.id)}
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
-        {tab.status === 'error' && tab.error && (
-          <div className="h-full space-y-3 overflow-y-auto p-4">
-            <ErrorNotice error={tab.error} />
-            {fixable(tab) && (
-              <div className="flex items-center gap-3">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={
-                    tab.assistant.status === 'fixing' ? (
-                      <Spinner className="h-3.5 w-3.5" />
-                    ) : (
-                      <Sparkles className="h-3.5 w-3.5" />
-                    )
-                  }
-                  disabled={tab.assistant.status !== 'idle'}
-                  onClick={() => void fixTab(tab.id)}
-                >
-                  {tab.assistant.status === 'fixing' ? 'Fixing…' : 'Fix with AI'}
-                </Button>
-                <span className="text-[12px] text-muted-foreground">
-                  NatureQuery suggests a corrected query and runs it. You can undo the change.
-                </span>
-              </div>
-            )}
-            {tab.assistant.error && tab.mode !== 'ask' && (
-              <ErrorNotice error={tab.assistant.error} compact />
-            )}
-          </div>
-        )}
-        {tab.status === 'canceled' && (
-          <EmptyState
-            icon={<Ban className="h-5 w-5" />}
-            title="Query canceled"
-            description="Run it again whenever you are ready."
-            className="h-full"
-          />
-        )}
-        {result &&
-          table &&
-          (result.rows.length === 0 ? (
-            <EmptyState
-              icon={<Table2 className="h-5 w-5" />}
-              title="No rows returned"
-              description={
-                result.columns.length
-                  ? `The query ran successfully. Columns: ${result.columns.map((c) => c.name).join(', ')}.`
-                  : 'The query ran successfully.'
-              }
-              className="h-full"
-            />
-          ) : tab.resultView === 'chart' ? (
-            <div className="h-full overflow-auto p-4">
-              <ResultsChart rows={table.rows} fields={table.fields} />
-            </div>
-          ) : (
-            <div className="nq-results nq-results-fill h-full">
-              <ResultsTable
-                rows={table.rows}
-                fields={table.fields}
-                rowCount={result.rowCount}
-                executionTime={result.durationMs}
+        <div className="relative min-h-0 min-w-0 flex-1">
+          {tab.status === 'idle' &&
+            (tab.mode === 'ask' ? (
+              <EmptyState
+                icon={<Sparkles className="h-5 w-5" />}
+                title="Ask a question to see results"
+                description="NatureQuery writes the query, shows it above, and runs it on this computer."
+                className="h-full"
               />
+            ) : (
+              <EmptyState
+                icon={<Play className="h-5 w-5" />}
+                title="Run a query to see results"
+                description={
+                  <span className="inline-flex items-center gap-1">
+                    Press <Kbd>{modKey()}</Kbd> <Kbd>Enter</Kbd> in the editor.
+                  </span>
+                }
+                className="h-full"
+              />
+            ))}
+          {tab.status === 'running' && (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-[13px] text-muted-foreground">
+              <Spinner className="h-5 w-5 text-primary" />
+              <p>Running query… {tab.startedAt && <Elapsed since={tab.startedAt} />}</p>
+              <Button
+                size="sm"
+                icon={<Ban className="h-3.5 w-3.5" />}
+                onClick={() => void cancelTab(tab.id)}
+              >
+                Cancel
+              </Button>
             </div>
-          ))}
+          )}
+          {tab.status === 'error' && tab.error && (
+            <div className="h-full space-y-3 overflow-y-auto p-4">
+              <ErrorNotice error={tab.error} />
+              {fixable(tab) && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={
+                      tab.assistant.status === 'fixing' ? (
+                        <Spinner className="h-3.5 w-3.5" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )
+                    }
+                    disabled={tab.assistant.status !== 'idle'}
+                    onClick={() => void fixTab(tab.id)}
+                  >
+                    {tab.assistant.status === 'fixing' ? 'Fixing…' : 'Fix with AI'}
+                  </Button>
+                  <span className="text-[12px] text-muted-foreground">
+                    NatureQuery suggests a corrected query and runs it. You can undo the change.
+                  </span>
+                </div>
+              )}
+              {tab.assistant.error && tab.mode !== 'ask' && (
+                <ErrorNotice error={tab.assistant.error} compact />
+              )}
+            </div>
+          )}
+          {tab.status === 'canceled' && (
+            <EmptyState
+              icon={<Ban className="h-5 w-5" />}
+              title="Query canceled"
+              description="Run it again whenever you are ready."
+              className="h-full"
+            />
+          )}
+          {result &&
+            table &&
+            (result.rows.length === 0 ? (
+              <EmptyState
+                icon={<Table2 className="h-5 w-5" />}
+                title="No rows returned"
+                description={
+                  result.columns.length
+                    ? `The query ran successfully. Columns: ${result.columns.map((c) => c.name).join(', ')}.`
+                    : 'The query ran successfully.'
+                }
+                className="h-full"
+              />
+            ) : tab.resultView === 'chart' ? (
+              <div className="h-full overflow-auto p-4">
+                <ResultsChart rows={table.rows} fields={table.fields} />
+              </div>
+            ) : (
+              <div className="nq-results nq-results-fill h-full">
+                <ResultsTable
+                  rows={table.rows}
+                  fields={table.fields}
+                  rowCount={result.rowCount}
+                  executionTime={result.durationMs}
+                />
+              </div>
+            ))}
+        </div>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { clsx } from 'clsx'
 import { Plus, X } from 'lucide-react'
 import { DbIcon } from '../../components/brand'
@@ -94,8 +94,17 @@ function TabStrip() {
   )
 }
 
+const MIN_EDITOR = 120
+const MIN_RESULTS = 140
+
+/** The tallest the editor may be, so the results always keep some room. */
+function maxEditorHeight(containerHeight: number) {
+  return Math.max(MIN_EDITOR, containerHeight - MIN_RESULTS)
+}
+
 function useEditorHeight(container: React.RefObject<HTMLDivElement>) {
-  const [height, setHeight] = useState(() => Number(localStorage.getItem(HEIGHT_KEY)) || 260)
+  const saved = useRef(Number(localStorage.getItem(HEIGHT_KEY)) || 0)
+  const [height, setHeight] = useState(() => saved.current || 260)
   const latest = useRef(height)
   latest.current = height
   const dragging = useRef(false)
@@ -108,34 +117,77 @@ function useEditorHeight(container: React.RefObject<HTMLDivElement>) {
     (event: React.PointerEvent) => {
       if (!dragging.current || !container.current) return
       const rect = container.current.getBoundingClientRect()
-      const next = Math.max(120, Math.min(event.clientY - rect.top, rect.height - 140))
-      setHeight(next)
+      setHeight(
+        Math.max(MIN_EDITOR, Math.min(event.clientY - rect.top, maxEditorHeight(rect.height)))
+      )
     },
     [container]
   )
   const onPointerUp = useCallback(() => {
     if (!dragging.current) return
     dragging.current = false
-    localStorage.setItem(HEIGHT_KEY, String(Math.round(latest.current)))
+    saved.current = Math.round(latest.current)
+    localStorage.setItem(HEIGHT_KEY, String(saved.current))
   }, [])
 
-  return { height, setHeight, handlers: { onPointerDown, onPointerMove, onPointerUp } }
+  return { height, setHeight, saved, handlers: { onPointerDown, onPointerMove, onPointerUp } }
 }
 
 export function WorkspaceView() {
   const tab = useActiveTab()
   const schemaOpen = useApp((state) => state.schemaPanelOpen)
   const container = useRef<HTMLDivElement>(null)
-  const { height, setHeight, handlers } = useEditorHeight(container)
+  const editorArea = useRef<HTMLDivElement>(null)
+  const { height, setHeight, saved, handlers } = useEditorHeight(container)
 
   useEffect(() => {
     const onResize = () => {
       const rect = container.current?.getBoundingClientRect()
-      if (rect) setHeight((value) => Math.min(value, Math.max(120, rect.height - 140)))
+      if (rect) setHeight((value) => Math.min(value, maxEditorHeight(rect.height)))
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [setHeight])
+
+  // Until the user drags the divider, the editor takes a share of the window.
+  const hasTab = !!tab
+  useLayoutEffect(() => {
+    const rect = container.current?.getBoundingClientRect()
+    if (saved.current || !rect) return
+    setHeight(
+      Math.min(Math.max(260, Math.round(rect.height * 0.42)), 440, maxEditorHeight(rect.height))
+    )
+  }, [hasTab, saved, setHeight])
+
+  // When the AI writes or fixes a query, make the editor tall enough to show all of it.
+  // Depends only on the texts, so running the query does not cancel the measurement.
+  const tabId = tab?.id
+  const tabSql = tab?.sql
+  const aiSql = tab?.aiChange?.after ?? tab?.conversation.at(-1)?.sql
+  const lastAi = useRef<{ tabId?: string; sql?: string }>({})
+  useEffect(() => {
+    const previous = lastAi.current
+    lastAi.current = { tabId, sql: aiSql }
+    if (
+      !tabId ||
+      tabId !== previous.tabId ||
+      !aiSql ||
+      aiSql === previous.sql ||
+      aiSql !== tabSql
+    ) {
+      return
+    }
+    const frame = requestAnimationFrame(() => {
+      const scroller = editorArea.current?.querySelector<HTMLElement>('.cm-scroller')
+      const rect = container.current?.getBoundingClientRect()
+      if (!scroller || !rect) return
+      const hidden = scroller.scrollHeight - scroller.clientHeight
+      if (hidden <= 0) return
+      const max = Math.min(Math.round(rect.height * 0.6), maxEditorHeight(rect.height))
+      setHeight((value) => Math.max(value, Math.min(max, value + hidden + 8)))
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [tabId, aiSql, tabSql, setHeight])
 
   if (!tab) return <HomeView />
 
@@ -145,21 +197,24 @@ export function WorkspaceView() {
       <div className="flex min-h-0 flex-1">
         {schemaOpen && <SchemaPanel connectionId={tab.connectionId} />}
         <div ref={container} className="flex min-w-0 flex-1 flex-col">
-          <div style={{ height }} className="shrink-0">
+          <div ref={editorArea} style={{ height }} className="shrink-0">
             <QueryEditor tab={tab} />
           </div>
           <div
             role="separator"
             aria-orientation="horizontal"
             aria-label="Resize editor"
+            title="Drag to resize"
             tabIndex={0}
             onKeyDown={(event) => {
-              if (event.key === 'ArrowUp') setHeight((value) => Math.max(120, value - 24))
+              if (event.key === 'ArrowUp') setHeight((value) => Math.max(MIN_EDITOR, value - 24))
               if (event.key === 'ArrowDown') setHeight((value) => value + 24)
             }}
-            className="group relative h-1.5 shrink-0 cursor-row-resize border-y border-border/70 bg-sidebar/60 hover:bg-primary/30 focus:bg-primary/30"
+            className="group relative h-2 shrink-0 cursor-row-resize border-y border-border/70 bg-sidebar/60 hover:bg-primary/20 focus:bg-primary/20 focus:outline-none"
             {...handlers}
-          />
+          >
+            <span className="pointer-events-none absolute left-1/2 top-1/2 h-[3px] w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground/40 transition-colors group-hover:bg-primary group-focus:bg-primary" />
+          </div>
           <ResultsPanel tab={tab} />
         </div>
       </div>

@@ -119,6 +119,13 @@ export async function launch({ appDir, exe: packagedExe, userData, port = 9339, 
     async click(selector) {
       return api.evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return 'NOT_FOUND'; el.click(); return 'OK' })()`)
     },
+    /** Clicks a point on screen like a person: only what is visible there gets the click. */
+    async mouseClick(x, y) {
+      await session.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y })
+      for (const type of ['mousePressed', 'mouseReleased']) {
+        await session.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 })
+      }
+    },
     async screenshot(file) {
       const { data } = await session.send('Page.captureScreenshot', { format: 'png' })
       fs.writeFileSync(file, Buffer.from(data, 'base64'))

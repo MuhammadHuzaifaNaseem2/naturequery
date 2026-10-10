@@ -2,6 +2,7 @@ import {
   forwardRef,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -385,8 +386,18 @@ export function Menu({
   label: string
 }) {
   const [open, setOpen] = useState(false)
+  const [above, setAbove] = useState(false)
   const container = useRef<HTMLDivElement>(null)
   const list = useRef<HTMLDivElement>(null)
+
+  // Opens upward when there is no room below, for example from the account
+  // button at the foot of the sidebar. Measured before the menu is painted.
+  useLayoutEffect(() => {
+    if (!open || !list.current || !container.current) return
+    const trigger = container.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - trigger.bottom
+    setAbove(spaceBelow < list.current.offsetHeight + 12 && trigger.top > spaceBelow)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -428,7 +439,8 @@ export function Menu({
           role="menu"
           aria-label={label}
           className={clsx(
-            'absolute top-full z-50 mt-1 min-w-[200px] animate-fade-in rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl',
+            'absolute z-50 min-w-[200px] animate-fade-in rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl',
+            above ? 'bottom-full mb-1' : 'top-full mt-1',
             align === 'end' ? 'right-0' : 'left-0'
           )}
         >
