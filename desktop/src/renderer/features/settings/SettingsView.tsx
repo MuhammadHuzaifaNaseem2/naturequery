@@ -12,7 +12,6 @@ import {
 import { Button, Field, Select, Switch } from '../../components/ui'
 import { formatCount } from '../../lib/format'
 import { api } from '../../lib/nq'
-import { startSignIn } from '../../store/assistant'
 import { updateSettings, useApp } from '../../store/app-store'
 
 const THEMES: { value: ThemeName; label: string; swatch: [string, string, string] }[] = [
@@ -193,14 +192,17 @@ export function SettingsView() {
             description="When you choose Summarize, up to 50 result rows are sent so the summary can mention real values. Off by default."
           />
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            When you ask a question, NatureQuery receives your question and the names and types of
-            your tables and columns, never your data. Database passwords and query results stay on
-            this computer unless you turn on the option above.
+            When you ask a question, NatureQuery receives your question and the structure of your
+            tables (names, columns, types and approximate sizes), never your data. Database
+            passwords and query results stay on this computer unless you turn on the option above.
           </p>
         </Section>
 
-        <Section title="Account" description="Sign in to use AI features and your plan.">
-          {auth.status === 'signed-in' ? (
+        <Section
+          title="Account"
+          description="Your connections, history and saved queries belong to this account."
+        >
+          {auth.status === 'signed-in' && (
             <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-medium">
@@ -223,16 +225,6 @@ export function SettingsView() {
                   Sign out
                 </Button>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
-              <p className="text-[12.5px] text-muted-foreground">
-                You can use the SQL editor without an account. Sign in to ask questions in plain
-                English.
-              </p>
-              <Button variant="primary" size="sm" onClick={() => void startSignIn()}>
-                Sign in
-              </Button>
             </div>
           )}
         </Section>

@@ -1,18 +1,9 @@
 import { useState } from 'react'
-import {
-  DatabaseZap,
-  ExternalLink,
-  Globe,
-  Lock,
-  MessagesSquare,
-  Store,
-  Sparkles,
-} from 'lucide-react'
+import { DatabaseZap, Lock, MessagesSquare, Store, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '../../components/brand'
-import { Button, Dialog, Field, Input, Kbd, modKey, Spinner, Textarea } from '../../components/ui'
-import { api, asAppError } from '../../lib/nq'
-import { startSignIn } from '../../store/assistant'
+import { Button, Dialog, Field, Input, Kbd, modKey, Textarea } from '../../components/ui'
+import { api } from '../../lib/nq'
 import {
   closeDialog,
   closeTab,
@@ -121,19 +112,10 @@ function WelcomeDialog() {
               </p>
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => finish(() => void startSignIn())}
-            className="flex w-full items-center gap-3 rounded-xl border border-dashed border-border px-4 py-3 text-left transition-colors hover:border-accent/60"
-          >
-            <Sparkles className="h-5 w-5 text-accent" />
-            <span className="text-[12.5px]">
-              <span className="font-semibold">Sign in to use AI.</span>{' '}
-              <span className="text-muted-foreground">
-                Sign-in happens in your browser, with your NatureQuery account, Google or GitHub.
-              </span>
-            </span>
-          </button>
+          <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+            In any query tab, choose Ask to describe what you want in plain English.
+          </p>
         </div>
       )}
     </Dialog>
@@ -295,114 +277,6 @@ function ConfirmRemoveConnection({ connection }: { connection: ConnectionInfo })
   )
 }
 
-function SignInDialog() {
-  const auth = useApp((state) => state.auth)
-  const [code, setCode] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const pending = auth.status === 'pending'
-
-  const close = () => {
-    if (pending) void api.auth.cancel().catch(() => {})
-    closeDialog()
-  }
-
-  const submit = async () => {
-    setSubmitting(true)
-    setError(null)
-    try {
-      await api.auth.submitCode(code)
-    } catch (caught) {
-      const appError = asAppError(caught)
-      setError([appError.message, appError.hint].filter(Boolean).join(' '))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Dialog
-      open
-      onClose={close}
-      width="sm"
-      title="Sign in to NatureQuery"
-      description="Signing in happens in your web browser, so this app never sees your password."
-      footer={
-        <Button variant="ghost" onClick={close}>
-          Cancel
-        </Button>
-      }
-    >
-      <div className="space-y-4">
-        <ol className="space-y-2 text-[13px] leading-relaxed">
-          {[
-            'A sign-in page opened in your browser.',
-            'Sign in or create a free account, then choose Allow.',
-            'Your browser sends you back here automatically.',
-          ].map((step, index) => (
-            <li key={step} className="flex gap-2.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
-                {index + 1}
-              </span>
-              {step}
-            </li>
-          ))}
-        </ol>
-
-        {pending ? (
-          <p className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
-            <Spinner className="h-3.5 w-3.5" /> Waiting for your browser…
-          </p>
-        ) : (
-          <p className="text-[12.5px] text-muted-foreground">Sign-in did not finish.</p>
-        )}
-
-        <Button
-          size="sm"
-          icon={
-            pending ? <ExternalLink className="h-3.5 w-3.5" /> : <Globe className="h-3.5 w-3.5" />
-          }
-          onClick={() => void startSignIn()}
-        >
-          {pending ? 'Open the sign-in page again' : 'Start again'}
-        </Button>
-
-        <div className="space-y-2 rounded-lg border border-border px-3 py-3">
-          <p className="text-[12.5px] font-medium">Did the browser not bring you back?</p>
-          <p className="text-[12px] text-muted-foreground">
-            After choosing Allow, copy the code shown on the page and paste it here.
-          </p>
-          <form
-            className="flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void submit()
-            }}
-          >
-            <Input
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              placeholder="nqd_code_..."
-              aria-label="Sign-in code"
-              className="flex-1 font-mono text-[12px]"
-              disabled={!pending}
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              loading={submitting}
-              disabled={!pending || !code.trim()}
-            >
-              Continue
-            </Button>
-          </form>
-          {error && <p className="text-[12px] text-destructive">{error}</p>}
-        </div>
-      </div>
-    </Dialog>
-  )
-}
-
 export function DialogHost() {
   const dialog = useApp((state) => state.dialog)
   if (!dialog) return null
@@ -417,7 +291,5 @@ export function DialogHost() {
       return <SaveQueryDialog tabId={dialog.tabId} />
     case 'confirm-remove-connection':
       return <ConfirmRemoveConnection connection={dialog.connection} />
-    case 'sign-in':
-      return <SignInDialog />
   }
 }

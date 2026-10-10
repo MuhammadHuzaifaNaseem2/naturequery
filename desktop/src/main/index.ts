@@ -17,6 +17,7 @@ import { DB_TYPE_INFO } from '@shared/db-types'
 import { NqError } from '@shared/errors'
 import type {
   AppInfo,
+  AuthState,
   ConnectionConfig,
   ConnectionInfo,
   ConnectionSecrets,
@@ -26,8 +27,8 @@ import type {
   SchemaSnapshot,
 } from '@shared/types'
 import { createAccount } from './account'
+import { openAccountData, type AccountData } from './account-data'
 import { createAi } from './ai'
-import { createConnectionStore } from './connections'
 import { createEngineHost } from './engine-host'
 import { EXPORT_FILTERS, writeExport } from './exporter'
 import { createIpc, passThrough } from './ipc'
@@ -61,7 +62,6 @@ import {
   windowChromeSchema,
 } from './validation'
 import { applyChrome, createMainWindow, openExternalSafely, resolveInitialChrome } from './window'
-import { openWorkspaceDb, type WorkspaceDb } from './workspace-db'
 
 const devServerUrl = !app.isPackaged ? process.env.NQ_DEV_SERVER_URL : undefined
 const API_BASE_URL =
@@ -124,21 +124,6 @@ function send(channel: string, payload?: unknown) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload)
 }
 
-function openWorkspaceDbSafely(): WorkspaceDb {
-  const file = paths.workspaceDb()
-  try {
-    return openWorkspaceDb(file)
-  } catch (error) {
-    // A damaged history file must not stop the app from starting.
-    logger.error('Workspace database could not be opened; starting a fresh one', error)
-    const backup = `${file}.damaged-${Date.now()}`
-    for (const suffix of ['', '-wal', '-shm']) {
-      if (fs.existsSync(file + suffix)) fs.renameSync(file + suffix, backup + suffix)
-    }
-    return openWorkspaceDb(file)
-  }
-}
-
 function sampleConnection(): ConnectionInfo {
   return {
     id: 'sample',
@@ -171,22 +156,51 @@ async function start() {
   session.defaultSession.on('will-download', (event) => event.preventDefault())
 
   const box = createSecretBox(safeStorage)
-  const connections = createConnectionStore({
-    file: paths.connections(),
-    legacyFile: paths.legacyConnections(),
-    box,
-  })
-  try {
-    const migrated = connections.migrateLegacy()
-    if (migrated) logger.info(`Imported ${migrated} connection(s) from an earlier desktop version`)
-  } catch (error) {
-    logger.error('Could not import connections from an earlier version', error)
-  }
   const settings = createSettingsStore(paths.settings())
-  const workspace = openWorkspaceDbSafely()
   const engine = createEngineHost(paths.engine())
 
+  // ── The signed-in account's connections and history ────────────────
+  // Nothing in the workspace is available until someone signs in. Signing
+  // out closes it, ends every database connection and forgets loaded schemas.
+  let data: AccountData | null = null
+  let dataError: unknown = null
+  // Schemas used for AI questions, kept from the last time each was loaded.
+  const schemaCache = new Map<string, SchemaSnapshot>()
+
+  function switchAccountData(state: AuthState) {
+    const userId = state.status === 'signed-in' ? state.user.id : null
+    if (data && data.userId === userId) return
+    if (data) {
+      data.close()
+      data = null
+      engine.closeAll()
+      schemaCache.clear()
+      logger.info('Closed the workspace of the account that signed out')
+    }
+    dataError = null
+    if (!userId) return
+    try {
+      data = openAccountData({ root: paths.userData(), userId, box, log: logger })
+      logger.info('Opened the workspace of the signed-in account')
+    } catch (error) {
+      dataError = error
+      logger.error('Could not open the workspace of the signed-in account', error)
+    }
+  }
+
+  function requireData(): AccountData {
+    if (data) return data
+    if (dataError) {
+      throw new NqError('UNKNOWN', 'Your workspace on this computer could not be opened.', {
+        hint: 'Restart NatureQuery. If it keeps happening, send the log file to support.',
+        detail: (dataError as Error)?.message,
+      })
+    }
+    throw new NqError('SIGNED_OUT', 'Sign in to NatureQuery to continue.')
+  }
+
   function resolveConnection(id: string): { config: ConnectionConfig; secrets: ConnectionSecrets } {
+    const { connections } = requireData()
     if (id === 'sample') {
       const { savedSecrets: _saved, ...config } = sampleConnection()
       return { config, secrets: {} }
@@ -208,7 +222,11 @@ async function start() {
     // Chromium's network stack uses the system proxy and the Windows certificate store.
     fetch: (url, init) => net.fetch(url, init),
     openExternal: openSite,
-    emit: (state) => send(EVENTS.authChanged, state),
+    // Switch workspaces before the window hears about the change.
+    emit: (state) => {
+      switchAccountData(state)
+      send(EVENTS.authChanged, state)
+    },
     device: { name: os.hostname(), platform: process.platform, appVersion: app.getVersion() },
     log: {
       info: (message) => logger.info(message),
@@ -219,13 +237,12 @@ async function start() {
     focusWindow()
     void account.handleCallback(url).catch((error) => logger.error('Sign-in link failed', error))
   }
+  switchAccountData(account.state())
   for (const url of queuedLinks.splice(0)) openLink(url)
   if (account.isSignedIn()) {
     account.refreshProfile().catch((error) => logger.warn('Could not refresh the account', error))
   }
 
-  // Schemas used for AI questions, kept from the last time each was loaded.
-  const schemaCache = new Map<string, SchemaSnapshot>()
   async function schemaOf(connectionId: string): Promise<SchemaSnapshot> {
     const cached = schemaCache.get(connectionId)
     if (cached) return cached
@@ -276,9 +293,9 @@ async function start() {
   handle(IPC.settingsUpdate, (patch) => settings.update(parseInput(settingsPatchSchema, patch)))
 
   // ── Connections ──────────────────────────────────────────────────────
-  handle(IPC.connectionsList, () => connections.list())
+  handle(IPC.connectionsList, () => requireData().connections.list())
   handle(IPC.connectionsSave, async (input) => {
-    const saved = connections.save(parseInput(connectionInputSchema, input))
+    const saved = requireData().connections.save(parseInput(connectionInputSchema, input))
     schemaCache.delete(saved.id)
     await engine.request({ kind: 'release', connectionId: saved.id }, 10_000)
     send(EVENTS.connectionsChanged)
@@ -286,18 +303,20 @@ async function start() {
   })
   handle(IPC.connectionsRemove, async (id) => {
     const connectionId = parseInput(connectionIdSchema, id)
-    connections.remove(connectionId)
+    requireData().connections.remove(connectionId)
     schemaCache.delete(connectionId)
     await engine.request({ kind: 'release', connectionId }, 10_000)
     send(EVENTS.connectionsChanged)
   })
   handle(IPC.connectionsDuplicate, (id) => {
-    const copy = connections.duplicate(parseInput(connectionIdSchema, id))
+    const copy = requireData().connections.duplicate(parseInput(connectionIdSchema, id))
     send(EVENTS.connectionsChanged)
     return copy
   })
   handle(IPC.connectionsTest, async (input) => {
-    const { config, secrets } = connections.preview(parseInput(connectionInputSchema, input))
+    const { config, secrets } = requireData().connections.preview(
+      parseInput(connectionInputSchema, input)
+    )
     return passThrough(
       await engine.request({ kind: 'test', config, secrets, timeoutMs: 45_000 }, 60_000)
     )
@@ -340,6 +359,8 @@ async function start() {
   })
   handle(IPC.dbQuery, async (raw) => {
     const request: QueryRequest = parseInput(queryRequestSchema, raw)
+    // The account that ran the query keeps it in its history, even if it signs out meanwhile.
+    const current = requireData()
     const { config, secrets } = resolveConnection(request.connectionId)
     const { rowLimit, queryTimeoutSeconds } = settings.get()
     const timeoutMs = queryTimeoutSeconds * 1000
@@ -357,7 +378,7 @@ async function start() {
     )
     if (request.source !== 'preview') {
       try {
-        workspace.addHistory({
+        current.workspace.addHistory({
           connectionId: request.connectionId,
           connectionName: config.name,
           text: request.text,
@@ -378,7 +399,7 @@ async function start() {
     }
     if (envelope.ok && request.connectionId !== 'sample') {
       try {
-        connections.touch(request.connectionId)
+        current.connections.touch(request.connectionId)
       } catch {
         // Last-used time is cosmetic.
       }
@@ -391,13 +412,19 @@ async function start() {
 
   // ── History and saved queries ────────────────────────────────────────
   handle(IPC.historyList, (query) =>
-    workspace.listHistory(parseInput(historyQuerySchema, query ?? {}))
+    requireData().workspace.listHistory(parseInput(historyQuerySchema, query ?? {}))
   )
-  handle(IPC.historyRemove, (id) => workspace.removeHistory(parseInput(recordIdSchema, id)))
-  handle(IPC.historyClear, () => workspace.clearHistory())
-  handle(IPC.savedList, () => workspace.listSaved())
-  handle(IPC.savedSave, (input) => workspace.saveQuery(parseInput(savedQueryInputSchema, input)))
-  handle(IPC.savedRemove, (id) => workspace.removeSaved(parseInput(recordIdSchema, id)))
+  handle(IPC.historyRemove, (id) =>
+    requireData().workspace.removeHistory(parseInput(recordIdSchema, id))
+  )
+  handle(IPC.historyClear, () => requireData().workspace.clearHistory())
+  handle(IPC.savedList, () => requireData().workspace.listSaved())
+  handle(IPC.savedSave, (input) =>
+    requireData().workspace.saveQuery(parseInput(savedQueryInputSchema, input))
+  )
+  handle(IPC.savedRemove, (id) =>
+    requireData().workspace.removeSaved(parseInput(recordIdSchema, id))
+  )
 
   // ── Files and clipboard ──────────────────────────────────────────────
   handle(IPC.filesExport, async (raw) => {
@@ -482,11 +509,7 @@ async function start() {
   app.on('before-quit', () => {
     updater.stop()
     engine.stop()
-    try {
-      workspace.close()
-    } catch {
-      // Already closed.
-    }
+    data?.close()
   })
   logger.info(`Supported database types: ${Object.keys(DB_TYPE_INFO).length}`)
 }

@@ -5,13 +5,11 @@ const distDir = path.resolve(__dirname, '..')
 
 export const paths = {
   userData: () => app.getPath('userData'),
-  connections: () => path.join(app.getPath('userData'), 'connections.json'),
-  /** Connection file written by desktop releases before 0.9. */
-  legacyConnections: () => path.join(app.getPath('userData'), 'local-connections.json'),
   settings: () => path.join(app.getPath('userData'), 'settings.json'),
   windowState: () => path.join(app.getPath('userData'), 'window-state.json'),
   account: () => path.join(app.getPath('userData'), 'account.json'),
-  workspaceDb: () => path.join(app.getPath('userData'), 'workspace.db'),
+  /** Each account's connections and history live in their own folder under here. */
+  accounts: () => path.join(app.getPath('userData'), 'accounts'),
   resources: () =>
     app.isPackaged ? process.resourcesPath : path.resolve(distDir, '..', 'resources'),
   sampleDatabase: () => path.join(paths.resources(), 'sample', 'acme-store.db'),

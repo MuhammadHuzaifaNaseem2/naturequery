@@ -1,7 +1,10 @@
 // Stands in for the user's web browser during the E2E test: opens the
-// desktop sign-in page, logs in through the real login form, chooses Allow,
-// and records the naturequery:// link the page opens. Nothing is shown.
+// desktop sign-in page, logs in through the real login form (unless this
+// browser profile is already logged in), chooses Allow, and records the
+// naturequery:// link the page opens. Nothing is shown.
 //   electron browser.cjs <outFile> <screenshotDir> <authorizeUrl>
+// NQ_E2E_EMAIL, NQ_E2E_PASSWORD and NQ_E2E_BROWSER_PROFILE pick the account
+// and the browser profile.
 // Electron refuses to start when a URL argument is followed by other arguments.
 const { app, BrowserWindow, session } = require('electron')
 const fs = require('node:fs')
@@ -14,11 +17,14 @@ const log = (message) => fs.appendFileSync(logFile, `${new Date().toISOString()}
 log(`start ${JSON.stringify(process.argv.slice(-3))}`)
 process.on('uncaughtException', (error) => log(`uncaught ${error.stack}`))
 console.log = (...args) => log(args.join(' '))
-const email = 'desktop.e2e@example.com'
-const password = 'E2e-Test-Password-2026!'
+const email = process.env.NQ_E2E_EMAIL || 'desktop.e2e@example.com'
+const password = process.env.NQ_E2E_PASSWORD || 'E2e-Test-Password-2026!'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-app.setPath('userData', path.join(path.dirname(outFile), 'browser-profile'))
+app.setPath(
+  'userData',
+  process.env.NQ_E2E_BROWSER_PROFILE || path.join(path.dirname(outFile), 'browser-profile')
+)
 
 app.whenReady().then(async () => {
   const done = (code, message) => {
@@ -58,22 +64,30 @@ app.whenReady().then(async () => {
     }
 
     await win.loadURL(authorizeUrl)
-    await waitFor(`location.pathname === '/login' && !!document.querySelector('input[name=email]')`, 'login page')
-    const callback = await run(`new URLSearchParams(location.search).get('callbackUrl')`)
-    console.log(`login callbackUrl: ${callback}`)
-    if (!callback || !callback.includes('challenge=')) throw new Error('The login page lost the sign-in request')
+    const approvalShown = `location.pathname === '/desktop/authorize' && document.body.innerText.includes('Sign in to NatureQuery Desktop')`
+    await waitFor(
+      `(location.pathname === '/login' && !!document.querySelector('input[name=email]')) || (${approvalShown})`,
+      'login or approval page'
+    )
+    if (await run(`location.pathname === '/login'`)) {
+      const callback = await run(`new URLSearchParams(location.search).get('callbackUrl')`)
+      console.log(`login callbackUrl: ${callback}`)
+      if (!callback || !callback.includes('challenge=')) throw new Error('The login page lost the sign-in request')
 
-    await run(`(() => {
-      const set = (selector, value) => {
-        const input = document.querySelector(selector)
-        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
-        setter.call(input, value)
-        input.dispatchEvent(new Event('input', { bubbles: true }))
-      }
-      set('input[name=email]', ${JSON.stringify(email)})
-      set('input[name=password]', ${JSON.stringify(password)})
-      document.querySelector('form button[type=submit]').click()
-    })()`)
+      await run(`(() => {
+        const set = (selector, value) => {
+          const input = document.querySelector(selector)
+          const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+          setter.call(input, value)
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        set('input[name=email]', ${JSON.stringify(email)})
+        set('input[name=password]', ${JSON.stringify(password)})
+        document.querySelector('form button[type=submit]').click()
+      })()`)
+    } else {
+      console.log('already logged in on the website')
+    }
 
     await waitFor(`location.pathname === '/desktop/authorize' && document.body.innerText.includes('Sign in to NatureQuery Desktop')`, 'approval page')
     const text = await run('document.body.innerText')

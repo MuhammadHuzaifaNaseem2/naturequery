@@ -3,12 +3,7 @@ import { ArrowUp, CircleHelp, MessageSquarePlus, ShieldAlert, Sparkles, X } from
 import { DB_TYPE_INFO } from '@shared/db-types'
 import { Button, ErrorNotice, IconButton, Spinner } from '../../components/ui'
 import { api } from '../../lib/nq'
-import {
-  askTab,
-  dismissAssistantMessage,
-  newConversation,
-  startSignIn,
-} from '../../store/assistant'
+import { askTab, dismissAssistantMessage, newConversation } from '../../store/assistant'
 import { setTabQuestion, useApp, useConnection, type QueryTab } from '../../store/app-store'
 
 const SAMPLE_QUESTIONS = [
@@ -42,30 +37,9 @@ export function AskBar({ tab }: { tab: QueryTab }) {
     element.style.height = `${Math.min(element.scrollHeight, 96)}px`
   }, [tab.question])
 
-  if (!connection) return null
+  // The workspace only shows for a signed-in account.
+  if (!connection || auth.status !== 'signed-in') return null
   const label = DB_TYPE_INFO[connection.type].label
-
-  if (auth.status !== 'signed-in') {
-    return (
-      <div className="flex shrink-0 items-center gap-3 border-b border-border/70 bg-primary/[0.04] px-3 py-2.5">
-        <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-        <p className="min-w-0 flex-1 text-[12.5px] leading-snug text-muted-foreground">
-          <span className="font-medium text-foreground">Ask in plain English.</span> Sign in to your
-          NatureQuery account to turn questions into {label} queries. Only your question and the
-          structure of your tables (names, columns, types and approximate sizes) are sent. The data
-          in them stays on this computer.
-        </p>
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={() => void startSignIn()}
-          disabled={auth.status === 'pending'}
-        >
-          {auth.status === 'pending' ? 'Waiting for browser…' : 'Sign in'}
-        </Button>
-      </div>
-    )
-  }
 
   const plan = auth.plan
   const remaining =

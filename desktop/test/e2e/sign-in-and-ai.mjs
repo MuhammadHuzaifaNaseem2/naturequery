@@ -49,17 +49,22 @@ function run(command, args, { env, timeout }) {
   })
 }
 
-for (const dir of [profile, path.join(work, 'browser-profile')]) fs.rmSync(dir, { recursive: true, force: true })
+const browserProfile = path.join(work, 'browser-profile')
+const secondBrowserProfile = path.join(work, 'browser-profile-2')
+for (const dir of [profile, browserProfile, secondBrowserProfile]) fs.rmSync(dir, { recursive: true, force: true })
 fs.mkdirSync(shots, { recursive: true })
 for (const file of [openedLog, linkFile]) fs.rmSync(file, { force: true })
 
-// 1. Test user in the throwaway database.
-const userId = execFileSync('node', [path.join(here, 'seed-user.cjs')], {
-  cwd: webRoot,
-  env: { ...process.env, DATABASE_URL: testDb },
-  encoding: 'utf8',
-}).trim()
-step('seed test user', !!userId)
+// 1. Two test users in the throwaway database.
+const seed = (...args) =>
+  execFileSync('node', [path.join(here, 'seed-user.cjs'), ...args], {
+    cwd: webRoot,
+    env: { ...process.env, DATABASE_URL: testDb },
+    encoding: 'utf8',
+  }).trim()
+const userId = seed()
+const secondUserId = seed('desktop.e2e.second@example.com', 'Second Tester')
+step('seed test users', !!userId && !!secondUserId)
 
 // 2. Website ready.
 let ready = false
@@ -100,39 +105,51 @@ const clickContaining = (text) =>
   $(`(() => { const b = [...document.querySelectorAll('button')].find((el) => el.textContent.includes(${JSON.stringify(text)}) && !el.disabled); if (!b) return false; b.click(); return true })()`)
 const bodyText = () => $('document.body.innerText')
 const until = (js, timeout) => app.waitFor(`!!(${js})`, timeout)
+const workspaceHidden = () =>
+  $(`!document.querySelector('[role=tablist]') && !document.querySelector('aside[aria-label=Navigation]')`)
 
-try {
-  await until(`document.querySelector('dialog[open]')`)
-  await $(`document.querySelector('dialog[open] [aria-label=Close]')?.click()`)
-  await sleep(400)
-
-  // 4. Sign in.
-  await until(`[...document.querySelectorAll('button')].some((b) => b.textContent.includes('Sign in for AI'))`)
-  await clickButton('Sign in for AI')
-  await until(`document.querySelector('dialog[open]')?.innerText.includes('Waiting for your browser')`)
-  await app.screenshot(path.join(shots, '01-sign-in-dialog.png'))
+/** Signs in the way a person does: browser page, Allow, then the app link. */
+async function signInThroughBrowser(email, browserDir) {
+  for (const file of [openedLog, linkFile]) fs.rmSync(file, { force: true })
+  await until(`[...document.querySelectorAll('button')].some((b) => b.textContent.includes('Sign in with your browser'))`, 15_000)
+  await clickButton('Sign in with your browser')
+  await until(`document.body.innerText.includes('Waiting for your browser')`)
   for (let i = 0; i < 50 && !fs.existsSync(openedLog); i++) await sleep(200)
-  const authorizeUrl = fs.readFileSync(openedLog, 'utf8').trim().split('\n').at(-1)
-  step('desktop opens the approval page', authorizeUrl.startsWith(`${appSite}/desktop/authorize?challenge=`))
-
+  const authorizeUrl = fs.existsSync(openedLog) ? fs.readFileSync(openedLog, 'utf8').trim().split('\n').at(-1) : ''
   const browser = await run(electronExe, [path.join(here, 'browser.cjs'), linkFile, shots, authorizeUrl], {
-    env: childEnv(),
+    env: { ...childEnv(), NQ_E2E_EMAIL: email, NQ_E2E_BROWSER_PROFILE: browserDir },
     timeout: 180_000,
   })
-  console.log(browser.stdout.trim())
   const link = fs.existsSync(linkFile) ? fs.readFileSync(linkFile, 'utf8').trim() : ''
-  step('browser login, approval and app link', link.startsWith('naturequery://auth?code=nqd_code_'), browser.stderr?.trim().slice(0, 300))
+  // The browser opens the link: Windows starts a second copy, which hands it over.
+  const second = link
+    ? await run(electronExe, [desktopDir, link], {
+        env: { ...childEnv(), NATUREQUERY_USER_DATA: profile, NATUREQUERY_API_URL: appSite },
+        timeout: 30_000,
+      })
+    : { status: null }
+  return { authorizeUrl, browser, link, second }
+}
 
-  // 5. The browser opens the link: Windows starts a second copy, which hands it over.
-  const second = await run(electronExe, [desktopDir, link], {
-    env: { ...childEnv(), NATUREQUERY_USER_DATA: profile, NATUREQUERY_API_URL: appSite },
-    timeout: 30_000,
-  })
-  step('second instance hands the link over and exits', second.status === 0, `exit ${second.status}`)
+try {
+  // 4. The app opens on the sign-in screen, with nothing of the workspace.
+  await until(`document.body.innerText.includes('Welcome to NatureQuery')`, 20_000)
+  step('app opens on the sign-in screen', await workspaceHidden())
+  await app.screenshot(path.join(shots, '01-sign-in-screen.png'))
+
+  // 5. Sign in.
+  const first = await signInThroughBrowser('desktop.e2e@example.com', browserProfile)
+  step('desktop opens the approval page', first.authorizeUrl.startsWith(`${appSite}/desktop/authorize?challenge=`))
+  console.log(first.browser.stdout.trim())
+  step('browser login, approval and app link', first.link.startsWith('naturequery://auth?code=nqd_code_'), first.browser.stderr?.trim().slice(0, 300))
+  step('second instance hands the link over and exits', first.second.status === 0, `exit ${first.second.status}`)
   await until(`document.body.innerText.includes('E2E Tester')`, 30_000)
-  await sleep(600)
   step('desktop shows the signed-in account', true)
+  // The first sign-in on a computer shows how to get started.
+  await until(`document.querySelector('dialog[open]')`)
   await app.screenshot(path.join(shots, '02-signed-in.png'))
+  await $(`document.querySelector('dialog[open] [aria-label=Close]')?.click()`)
+  await sleep(400)
 
   // 6. Ask a question on the sample database.
   await clickContaining('Acme Store')
@@ -239,7 +256,12 @@ try {
   await app.screenshot(path.join(shots, '09-account-menu.png'))
   if (!signOutItem) throw new Error('The account menu has no "Sign out" item')
   await app.mouseClick(signOutItem.x, signOutItem.y)
-  await until(`[...document.querySelectorAll('button')].some((b) => b.textContent.includes('Sign in for AI'))`, 15_000)
+  await until(`document.body.innerText.includes('Welcome to NatureQuery')`, 15_000)
+  step(
+    'sign-out closes the workspace and shows the sign-in screen',
+    (await workspaceHidden()) && !(await bodyText()).includes('E2E Tester')
+  )
+  await app.screenshot(path.join(shots, '10-signed-out.png'))
   // The dev server compiles each route on first use, so allow a few seconds.
   let after = ''
   for (let i = 0; i < 30 && after !== '0'; i++) {
@@ -254,6 +276,37 @@ try {
     hop.withToken >= 6,
     `${hop.withToken} of ${hop.requests} redirected requests carried the sign-in token`
   )
+
+  // 12. A second account on the same computer sees only its own workspace.
+  const other = await signInThroughBrowser('desktop.e2e.second@example.com', secondBrowserProfile)
+  await until(`document.body.innerText.includes('Second Tester')`, 30_000)
+  await sleep(800)
+  const secondView = await bodyText()
+  // No open tabs, and none of the first account's queries in the recent history.
+  step(
+    "a second account does not see the first account's work",
+    other.link.startsWith('naturequery://') &&
+      !(await $(`!!document.querySelector('[role=tablist]')`)) &&
+      !secondView.includes('total_spent'),
+    other.browser.stderr?.trim().slice(0, 200)
+  )
+  await app.screenshot(path.join(shots, '11-second-account.png'))
+  await $(`[...document.querySelectorAll('button')].find((b) => b.textContent.includes('Second Tester')).click()`)
+  await sleep(300)
+  await clickButton('Sign out')
+  await until(`document.body.innerText.includes('Welcome to NatureQuery')`, 15_000)
+
+  // 13. Signing in again brings back the first account's tabs.
+  const again = await signInThroughBrowser('desktop.e2e@example.com', browserProfile)
+  await until(`document.body.innerText.includes('E2E Tester')`, 30_000)
+  await sleep(800)
+  step(
+    "signing in again brings back the account's tabs",
+    again.link.startsWith('naturequery://') &&
+      (await $(`[...document.querySelectorAll('[role=tab]')].some((tab) => tab.textContent.includes('Acme Store'))`)),
+    again.browser.stdout.trim().split('\n').at(-1)
+  )
+  await app.screenshot(path.join(shots, '12-signed-in-again.png'))
 
   const problems = app.consoleMessages.filter((m) => /^(error|EXCEPTION)/.test(m))
   step('no console errors in the app', problems.length === 0, problems.slice(0, 3).join(' | '))

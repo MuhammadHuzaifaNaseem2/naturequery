@@ -4,7 +4,6 @@ import type { HistoryEntry } from '@shared/types'
 import { DbIcon } from '../../components/brand'
 import { formatRelativeTime, truncate } from '../../lib/format'
 import { api } from '../../lib/nq'
-import { startSignIn } from '../../store/assistant'
 import {
   connectionLabel,
   findConnection,
@@ -108,16 +107,9 @@ export function HomeView() {
             icon={<Sparkles className="h-5 w-5" />}
             tone="bg-accent/15 text-accent"
             title="Ask in plain English"
-            description={
-              user
-                ? 'Describe what you want to know and NatureQuery writes the SQL for you.'
-                : 'Sign in to your NatureQuery account to turn questions into SQL.'
-            }
-            action={user ? 'Ask a question' : 'Sign in'}
-            onClick={() => {
-              if (!user) return void startSignIn()
-              openTab(recentConnections[0]?.id ?? 'sample', { mode: 'ask' })
-            }}
+            description="Describe what you want to know and NatureQuery writes the SQL for you."
+            action="Ask a question"
+            onClick={() => openTab(recentConnections[0]?.id ?? 'sample', { mode: 'ask' })}
           />
         </div>
 

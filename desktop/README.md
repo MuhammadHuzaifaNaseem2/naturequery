@@ -45,13 +45,20 @@ Sign-in and AI:
 - Tokens are sealed like passwords (`account.json`). Access tokens last an hour
   and refresh tokens rotate on every use. Requests use Chromium's network stack,
   so system proxies and company certificates work.
-- AI requests (`/api/desktop/ai/*`) send the question and table and column
-  names, never result rows unless the user allows it for summaries.
+- AI requests (`/api/desktop/ai/*`) send the question and the table structure
+  (names, columns, types, keys and approximate row counts), never result rows
+  unless the user allows it for summaries.
+- The app requires sign-in. The workspace opens only for a signed-in account;
+  signing out closes it, stops the database engine (ending every connection and
+  SSH tunnel) and returns to the sign-in screen (`src/main/account-data.ts`).
 
 Data stored on the user's computer, in `%APPDATA%\NatureQuery`:
-`connections.json` (secrets sealed), `account.json` (sign-in, sealed), `settings.json`, `window-state.json`,
-`workspace.db` (query history and saved queries, SQLite) and `logs/`.
-Connections saved by desktop 0.1 to 0.2 are imported on first start.
+`account.json` (sign-in, sealed), `settings.json`, `window-state.json`, `logs/`, and
+one folder per account under `accounts/<account id>/` holding `connections.json`
+(secrets sealed) and `workspace.db` (query history and saved queries, SQLite).
+Open tabs are kept per account in the window's local storage. Data from versions
+before sign-in was required, including connections saved by desktop 0.1 to 0.2,
+moves into the first account that signs in.
 
 ## Develop
 

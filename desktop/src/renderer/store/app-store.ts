@@ -70,7 +70,6 @@ export type DialogState =
   | { kind: 'shortcuts' }
   | { kind: 'save-query'; tabId: string }
   | { kind: 'confirm-remove-connection'; connection: ConnectionInfo }
-  | { kind: 'sign-in' }
   | null
 
 interface AppState {
@@ -91,7 +90,9 @@ interface AppState {
   schemaPanelOpen: boolean
 }
 
-const TABS_KEY = 'nq.tabs.v1'
+/** Open tabs from versions before sign-in was required, shared by everyone on the computer. */
+const EARLIER_TABS_KEY = 'nq.tabs.v1'
+const tabsKey = (userId: string) => `${EARLIER_TABS_KEY}:${userId}`
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)')
 
 export const useApp = create<AppState>(() => ({
@@ -161,24 +162,56 @@ export function updateTab(
 // ─── Startup ─────────────────────────────────────────────────────────
 
 export async function initialize(): Promise<void> {
-  const [info, settings, connections, sample, auth] = await Promise.all([
+  const [info, settings, sample, auth] = await Promise.all([
     api.app.info(),
     api.settings.get(),
-    api.connections.list(),
     api.app.sampleConnection(),
     api.auth.state().catch((): AuthState => ({ status: 'signed-out' })),
   ])
-  set({ info, settings, connections, sample, auth })
+  set({ info, settings, sample, auth })
   applyTheme(settings.theme)
   systemDark.addEventListener('change', () => applyTheme(get().settings.theme))
-  restoreTabs()
   api.connections.onChanged(() => void refreshConnections())
   api.auth.onChanged(onAuthChanged)
   api.updates.onStatus(onUpdateStatus)
+  if (auth.status === 'signed-in') await openWorkspace(auth.user.id)
+  set({ ready: true })
+}
+
+function signedInUserId(): string | null {
+  const auth = get().auth
+  return auth.status === 'signed-in' ? auth.user.id : null
+}
+
+/** Loads the signed-in account's connections and the tabs it had open. */
+async function openWorkspace(userId: string) {
+  let connections: ConnectionInfo[] = []
+  try {
+    connections = await api.connections.list()
+  } catch (error) {
+    const appError = asAppError(error)
+    toast.error(appError.message, { description: appError.hint })
+  }
+  // Signed out, or another account signed in, while loading.
+  if (signedInUserId() !== userId) return
+  set({ connections })
+  restoreTabs(userId)
   set({
-    ready: true,
-    dialog: settings.onboardingCompleted ? null : { kind: 'welcome' },
     view: get().tabs.length ? 'workspace' : 'home',
+    dialog: get().settings.onboardingCompleted ? null : { kind: 'welcome' },
+  })
+}
+
+/** Clears everything that belongs to the account that signed out. */
+function closeWorkspace() {
+  set({
+    connections: [],
+    schemas: {},
+    tabs: [],
+    activeTabId: null,
+    view: 'home',
+    dialog: null,
+    paletteOpen: false,
   })
 }
 
@@ -204,16 +237,19 @@ function onUpdateStatus(status: UpdateStatus) {
   }
 }
 
+/**
+ * Signing in opens that account's workspace; signing out closes it and the
+ * sign-in screen takes over the window. Errors such as an expired sign-in are
+ * shown on that screen.
+ */
 function onAuthChanged(state: AuthState) {
-  const previous = get().auth
+  const before = signedInUserId()
+  const after = state.status === 'signed-in' ? state.user.id : null
+  if (before && before !== after) saveTabsNow(before)
   set({ auth: state })
-  if (state.status === 'signed-in' && previous.status !== 'signed-in') {
-    toast.success(`Signed in as ${state.user.email}`, {
-      description: 'You can now ask questions in plain English.',
-    })
-    if (get().dialog?.kind === 'sign-in') set({ dialog: null })
-  }
-  if (state.status === 'signed-out' && state.error) toast.error(state.error)
+  if (before === after) return
+  closeWorkspace()
+  if (after) void openWorkspace(after)
 }
 
 export function applyTheme(theme: ThemeName) {
@@ -233,7 +269,10 @@ export async function updateSettings(patch: Partial<Settings>) {
 // ─── Connections and schema ──────────────────────────────────────────
 
 export async function refreshConnections() {
+  const userId = signedInUserId()
+  if (!userId) return
   const connections = await api.connections.list()
+  if (signedInUserId() !== userId) return
   set((state) => {
     const ids = new Set(connections.map((connection) => connection.id).concat('sample'))
     const tabs = state.tabs.filter((tab) => ids.has(tab.connectionId))
@@ -428,33 +467,45 @@ export async function cancelTab(id: string) {
 let persistTimer: ReturnType<typeof setTimeout> | undefined
 export function persistTabs() {
   clearTimeout(persistTimer)
-  persistTimer = setTimeout(() => {
-    const { tabs, activeTabId } = get()
-    try {
-      localStorage.setItem(
-        TABS_KEY,
-        JSON.stringify({
-          activeTabId,
-          tabs: tabs.map(({ id, connectionId, title, mode, sql, question, savedQueryId }) => ({
-            id,
-            connectionId,
-            title,
-            mode,
-            sql,
-            question,
-            savedQueryId,
-          })),
-        })
-      )
-    } catch {
-      // Storage full or unavailable; tabs simply will not be restored.
-    }
-  }, 400)
+  const userId = signedInUserId()
+  if (userId) persistTimer = setTimeout(() => saveTabsNow(userId), 400)
 }
 
-function restoreTabs() {
+/** Saves the open tabs for this account, so they come back at its next sign-in. */
+function saveTabsNow(userId: string) {
+  clearTimeout(persistTimer)
+  const { tabs, activeTabId } = get()
   try {
-    const raw = localStorage.getItem(TABS_KEY)
+    localStorage.setItem(
+      tabsKey(userId),
+      JSON.stringify({
+        activeTabId,
+        tabs: tabs.map(({ id, connectionId, title, mode, sql, question, savedQueryId }) => ({
+          id,
+          connectionId,
+          title,
+          mode,
+          sql,
+          question,
+          savedQueryId,
+        })),
+      })
+    )
+  } catch {
+    // Storage full or unavailable; tabs simply will not be restored.
+  }
+}
+
+function restoreTabs(userId: string) {
+  const key = tabsKey(userId)
+  try {
+    // The first account to sign in after updating keeps the tabs that were open before.
+    const earlier = localStorage.getItem(EARLIER_TABS_KEY)
+    if (earlier !== null) {
+      if (localStorage.getItem(key) === null) localStorage.setItem(key, earlier)
+      localStorage.removeItem(EARLIER_TABS_KEY)
+    }
+    const raw = localStorage.getItem(key)
     if (!raw) return
     const saved = JSON.parse(raw) as { activeTabId: string | null; tabs: Partial<QueryTab>[] }
     const tabs: QueryTab[] = (saved.tabs ?? [])
@@ -480,7 +531,7 @@ function restoreTabs() {
     const active = tabs.find((tab) => tab.id === activeTabId)
     if (active) void loadSchema(active.connectionId)
   } catch {
-    localStorage.removeItem(TABS_KEY)
+    localStorage.removeItem(key)
   }
 }
 

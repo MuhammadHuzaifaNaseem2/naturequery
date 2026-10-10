@@ -4,6 +4,7 @@ import { RotateCcw } from 'lucide-react'
 import { Button, Spinner } from './components/ui'
 import { isDarkTheme } from './lib/theme'
 import { api } from './lib/nq'
+import { SignInScreen } from './features/account/SignInScreen'
 import { CommandPalette } from './features/command/CommandPalette'
 import { DialogHost } from './features/dialogs/Dialogs'
 import { HistoryView } from './features/history/HistoryView'
@@ -79,6 +80,8 @@ function useGlobalShortcuts() {
       const mod = api.platform === 'darwin' ? event.metaKey : event.ctrlKey
       if (!mod || event.altKey) return
       const state = useApp.getState()
+      // The workspace and its shortcuts only exist for a signed-in account.
+      if (state.auth.status !== 'signed-in') return
       const active = state.tabs.find((tab) => tab.id === state.activeTabId)
       const key = event.key.toLowerCase()
       const inEditor = event.target instanceof Element && !!event.target.closest('.cm-editor')
@@ -127,12 +130,33 @@ function useGlobalShortcuts() {
 export function App() {
   const ready = useApp((state) => state.ready)
   const theme = useApp((state) => state.resolvedTheme)
+  const signedIn = useApp((state) => state.auth.status === 'signed-in')
   useGlobalShortcuts()
 
   if (!ready) {
     return (
       <div className="flex h-full items-center justify-center">
         <Spinner className="h-5 w-5" />
+      </div>
+    )
+  }
+
+  const toaster = (
+    <Toaster
+      position="bottom-right"
+      theme={isDarkTheme(theme) ? 'dark' : 'light'}
+      closeButton
+      duration={4500}
+    />
+  )
+
+  // Nothing of the workspace is shown until an account signs in.
+  if (!signedIn) {
+    return (
+      <div className="flex h-full flex-col">
+        <TitleBar minimal />
+        <SignInScreen />
+        {toaster}
       </div>
     )
   }
@@ -151,13 +175,7 @@ export function App() {
       <StatusBar />
       <DialogHost />
       <CommandPalette />
-      <Toaster
-        position="bottom-right"
-        theme={isDarkTheme(theme) ? 'dark' : 'light'}
-        richColors
-        closeButton
-        duration={4500}
-      />
+      {toaster}
     </div>
   )
 }

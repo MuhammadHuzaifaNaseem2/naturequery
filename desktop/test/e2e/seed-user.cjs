@@ -1,4 +1,5 @@
-// Creates (or resets) the E2E test user in the throwaway test database.
+// Creates (or resets) an E2E test user in the throwaway test database.
+//   node seed-user.cjs [email] [name]
 const path = require('node:path')
 const { createRequire } = require('node:module')
 // @prisma/client and bcrypt come from the website's node_modules.
@@ -12,14 +13,15 @@ if (!/127\.0\.0\.1:55442\/naturequery_test/.test(process.env.DATABASE_URL || '')
 }
 
 const prisma = new PrismaClient()
-const email = 'desktop.e2e@example.com'
+const email = process.argv[2] || 'desktop.e2e@example.com'
+const name = process.argv[3] || 'E2E Tester'
 
 async function main() {
   const password = await bcrypt.hash('E2e-Test-Password-2026!', 10)
   const user = await prisma.user.upsert({
     where: { email },
-    update: { password, emailVerified: new Date(), loginAttempts: 0, lockedUntil: null, onboardingCompleted: true },
-    create: { email, name: 'E2E Tester', password, emailVerified: new Date(), onboardingCompleted: true },
+    update: { name, password, emailVerified: new Date(), loginAttempts: 0, lockedUntil: null, onboardingCompleted: true },
+    create: { email, name, password, emailVerified: new Date(), onboardingCompleted: true },
   })
   await prisma.desktopSession.deleteMany({ where: { userId: user.id } })
   await prisma.usageRecord.deleteMany({ where: { userId: user.id } })

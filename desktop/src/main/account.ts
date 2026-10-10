@@ -67,9 +67,9 @@ function base64url(bytes: number): string {
   return crypto.randomBytes(bytes).toString('base64url')
 }
 
-function signedOutError(message = 'Sign in to NatureQuery to use AI features.'): NqError {
+function signedOutError(message = 'Sign in to NatureQuery to continue.'): NqError {
   return new NqError('SIGNED_OUT', message, {
-    hint: 'Your SQL workspace, connections and history keep working without an account.',
+    hint: 'Your connections and history are kept for your account on this computer.',
   })
 }
 
@@ -269,8 +269,8 @@ export function createAccount(options: AccountOptions) {
           error instanceof NqError &&
           (error.code === 'VALIDATION' || error.code === 'SIGNED_OUT')
         ) {
-          signOutLocally('You were signed out. Sign in again to use AI features.')
-          throw signedOutError('You were signed out. Sign in again to use AI features.')
+          signOutLocally('You were signed out. Sign in again to continue.')
+          throw signedOutError('You were signed out. Sign in again to continue.')
         }
         throw error
       } finally {
@@ -289,7 +289,7 @@ export function createAccount(options: AccountOptions) {
       await refresh()
       response = await send(path, { body, token: session!.accessToken, timeoutMs })
       if (response.status === 401) {
-        signOutLocally('You were signed out. Sign in again to use AI features.')
+        signOutLocally('You were signed out. Sign in again to continue.')
         throw signedOutError()
       }
     }

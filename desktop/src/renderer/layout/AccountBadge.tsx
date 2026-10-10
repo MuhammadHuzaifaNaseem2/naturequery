@@ -1,30 +1,13 @@
-import { LogIn, LogOut, Sparkles, UserRound } from 'lucide-react'
+import { LogOut, Sparkles, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Menu } from '../components/ui'
 import { api } from '../lib/nq'
-import { openDialog, useApp } from '../store/app-store'
-import { startSignIn } from '../store/assistant'
+import { useApp } from '../store/app-store'
 
 export function AccountBadge() {
   const auth = useApp((state) => state.auth)
-
-  if (auth.status !== 'signed-in') {
-    return (
-      <button
-        type="button"
-        onClick={() =>
-          auth.status === 'pending' ? openDialog({ kind: 'sign-in' }) : void startSignIn()
-        }
-        className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground disabled:opacity-60"
-      >
-        <Sparkles className="h-4 w-4 text-primary" />
-        <span className="flex-1">
-          {auth.status === 'pending' ? 'Waiting for sign-in…' : 'Sign in for AI'}
-        </span>
-        <LogIn className="h-3.5 w-3.5" />
-      </button>
-    )
-  }
+  // The workspace, and this badge with it, only shows for a signed-in account.
+  if (auth.status !== 'signed-in') return null
 
   const plan = auth.plan
   const initial = (auth.user.name || auth.user.email).trim().charAt(0).toUpperCase()
@@ -71,12 +54,9 @@ export function AccountBadge() {
         {
           label: 'Sign out',
           icon: <LogOut className="h-4 w-4" />,
+          // The account area changing is the confirmation; no message needed.
           onSelect: () =>
-            void api.auth.signOut().then(
-              () =>
-                toast.success('Signed out. Your connections and history stay on this computer.'),
-              (error) => toast.error((error as Error).message)
-            ),
+            void api.auth.signOut().catch((error) => toast.error((error as Error).message)),
         },
       ]}
     />

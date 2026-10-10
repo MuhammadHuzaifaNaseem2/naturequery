@@ -22,13 +22,33 @@ Updates: NatureQuery checks for new versions and asks before downloading one.
 The update installs when you restart the app. You can turn checks off in
 **Settings, Updates**.
 
-## 2. Try the sample database
+## 2. Sign in
+
+NatureQuery opens on a sign-in screen, because your connections and history
+belong to your NatureQuery account.
+
+1. Choose **Sign in with your browser**. Your browser opens naturequery.app;
+   sign in, or create a free account, then choose **Allow**.
+2. The browser sends you back to the app. If it does not, copy the code shown
+   on the page, paste it into the app and choose **Continue**.
+
+Each account has its own connections, history, saved queries and open tabs on
+this computer. To sign out, choose your name at the bottom left, then **Sign
+out**: NatureQuery closes your work, disconnects from your databases and
+returns to the sign-in screen. Someone else who signs in on the same computer
+sees only their own work. For complete separation, each person should also use
+their own Windows account.
+
+If you used NatureQuery before sign-in was required, your connections and
+history move into the first account that signs in.
+
+## 3. Try the sample database
 
 Choose **Acme Store (sample)** in the sidebar. It is a small store database with
 customers, products and orders, built into the app, so you can try queries,
 charts and exports before connecting your own data.
 
-## 3. Connect your database
+## 4. Connect your database
 
 Choose **Connect your first database** (or **+** next to Connections), pick the
 database type, fill in the form and choose **Test connection**. When the test
@@ -173,31 +193,28 @@ Enter the local data center name; `nodetool status` shows it.
   databases on the internet. Certificates installed on your PC by your IT team
   are trusted automatically.
 
-## 4. Ask questions in plain English
+## 5. Ask questions in plain English
 
-1. Choose **Sign in for AI**. Your browser opens naturequery.app; sign in (or
-   create a free account) and choose **Allow**. The browser sends you back to
-   the app. If it does not, copy the code shown on the page into the app.
-2. In a query tab, choose **Ask** and type a question, for example
+1. In a query tab, choose **Ask** and type a question, for example
    _"Top 10 customers by revenue this year"_, then press Enter.
-3. NatureQuery writes the query, shows it in the editor and runs it. You can
+2. NatureQuery writes the query, shows it in the editor and runs it. You can
    edit it and press **Run** again. To look at queries before they run, turn on
    **Settings, AI assistant, Review SQL before it runs**.
-4. Ask follow-ups such as _"only last month"_ to refine the result, or choose
+3. Ask follow-ups such as _"only last month"_ to refine the result, or choose
    **New question** to start over.
 
-Also available when signed in:
+Also available:
 
 - **Fix with AI** appears when the database rejects a query. It suggests a
   corrected query and runs it. **Undo AI fix** puts your query back.
 - **Explain** describes any query in plain language.
 - **Summarize** describes the result for business readers.
 
-Writing queries yourself never needs an account and has no limit. The Free plan
+Writing queries yourself has no limit. The Free plan
 includes 50 AI questions a month (only questions that produce a query count);
 paid plans have no monthly limit. The account menu shows how many you have left.
 
-## 5. Privacy and security
+## 6. Privacy and security
 
 **Stays on this computer**
 
@@ -229,17 +246,17 @@ password. You can see and sign out every computer that is signed in under
 **Settings, Security** on naturequery.app. Changing your password signs out all
 of them.
 
-## 6. Everyday use
+## 7. Everyday use
 
 - **Results**: switch between **Table** and **Chart**; **Copy** pastes into
   Excel; **Export** saves Excel, CSV or JSON files.
 - **Row limit and time limit**: queries return up to 1,000 rows and stop after
   60 seconds by default. Change both in **Settings**.
 - **History** keeps every query you ran; **Saved queries** keeps the ones you
-  name. Both stay on this computer.
+  name. Both stay on this computer and belong to your account.
 - **Ctrl+K** opens the command palette; **Ctrl+Enter** runs the query.
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 | Message                                                 | What to do                                                                                                                             |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -250,6 +267,7 @@ of them.
 | The identity of the SSH server has changed              | The jump server's key changed. Confirm with IT that this is expected, then remove and re-enter the SSH settings.                       |
 | This Snowflake account requires multi-factor sign-in    | Use a programmatic access token or key pair sign-in.                                                                                   |
 | You have used all AI questions this month               | Upgrade, or keep writing queries yourself (always free).                                                                               |
+| You were signed out. Sign in again to continue.         | Your sign-in ended, for example after a password change. Sign in again: your connections and history are still there.                  |
 | Your antivirus blocks or removes NatureQuery            | New apps are sometimes flagged by mistake. Ask IT to allow `%LOCALAPPDATA%\Programs\NatureQuery` and tell us the detection name.       |
 
 **Sending logs to support:** choose **Settings, Show log files**, and attach
@@ -257,7 +275,7 @@ of them.
 
 **Support:** https://naturequery.app/contact
 
-## 8. Uninstall
+## 9. Uninstall
 
 Open Windows **Settings, Apps**, find **NatureQuery** and choose **Uninstall**.
 Your connections and history stay in `%APPDATA%\NatureQuery` in case you

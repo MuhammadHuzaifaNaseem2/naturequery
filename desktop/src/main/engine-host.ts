@@ -15,9 +15,15 @@ export function createEngineHost(enginePath: string) {
   let child: UtilityProcess | null = null
   let nextId = 1
   let stopping = false
+  // Engines ended on purpose (sign-out), so their exit is not logged as a crash.
+  const retired = new WeakSet<UtilityProcess>()
   const pending = new Map<
     number,
-    { resolve: (envelope: Envelope<unknown>) => void; timer: NodeJS.Timeout }
+    {
+      resolve: (envelope: Envelope<unknown>) => void
+      timer: NodeJS.Timeout
+      proc: UtilityProcess
+    }
   >()
 
   function start(): UtilityProcess {
@@ -40,18 +46,23 @@ export function createEngineHost(enginePath: string) {
     })
     proc.on('exit', (code) => {
       if (child === proc) child = null
-      if (!stopping) engineLogger.error(`Database engine exited with code ${code}`)
-      for (const entry of pending.values()) {
+      const intended = stopping || retired.has(proc)
+      if (!intended) engineLogger.error(`Database engine exited with code ${code}`)
+      // Only requests sent to this engine fail; a newer engine keeps working.
+      for (const [id, entry] of pending) {
+        if (entry.proc !== proc) continue
         clearTimeout(entry.timer)
+        pending.delete(id)
         entry.resolve(
-          fail({
-            code: 'ENGINE_CRASHED',
-            message: 'The database engine stopped unexpectedly.',
-            hint: 'Try again. If it keeps happening, restart NatureQuery and send the log file to support.',
-          })
+          intended
+            ? fail({ code: 'CANCELED', message: 'The query was stopped.' })
+            : fail({
+                code: 'ENGINE_CRASHED',
+                message: 'The database engine stopped unexpectedly.',
+                hint: 'Try again. If it keeps happening, restart NatureQuery and send the log file to support.',
+              })
         )
       }
-      pending.clear()
     })
     child = proc
     return proc
@@ -74,13 +85,21 @@ export function createEngineHost(enginePath: string) {
           })
         )
       }, timeoutMs)
-      pending.set(id, { resolve: resolve as (envelope: Envelope<unknown>) => void, timer })
+      pending.set(id, { resolve: resolve as (envelope: Envelope<unknown>) => void, timer, proc })
       proc.postMessage({ id, request: message })
     })
   }
 
   return {
     request,
+    /** Closes every database connection and tunnel; the next request starts a fresh engine. */
+    closeAll() {
+      const proc = child
+      if (!proc) return
+      child = null
+      retired.add(proc)
+      proc.kill()
+    },
     stop() {
       stopping = true
       child?.kill()

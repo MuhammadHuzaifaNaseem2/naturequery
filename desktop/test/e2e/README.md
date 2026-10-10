@@ -4,11 +4,15 @@ Runs the real desktop app against the website running on this computer and a
 throwaway PostgreSQL database, then checks the whole flow a customer goes
 through:
 
-1. "Sign in for AI" opens the approval page (recorded, not opened in your browser).
-2. A hidden browser window logs in through the real login form and chooses Allow.
-3. The `naturequery://` link is handed to the running app by a second copy, as Windows does.
-4. Questions, a follow-up, Explain, Summarize, Fix with AI, a declined request to
-   delete data, plan counting, and sign-out revoking the server session.
+1. The app opens on the sign-in screen, with nothing of the workspace showing.
+2. "Sign in with your browser" opens the approval page (recorded, not opened in your browser).
+3. A hidden browser window logs in through the real login form and chooses Allow.
+4. The `naturequery://` link is handed to the running app by a second copy, as Windows does.
+5. Questions, a follow-up, Explain, Summarize, Fix with AI, a declined request to
+   delete data, plan counting, and sign-out (with a real mouse click) closing the
+   workspace and revoking the server session.
+6. A second account signs in on the same computer and sees none of the first
+   account's work; the first account then signs in again and gets its tabs back.
 
 The app reaches the website through a local redirect to another host, the same
 way naturequery.app redirects to www.naturequery.app. Run this test after every

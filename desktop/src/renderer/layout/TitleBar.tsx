@@ -4,7 +4,8 @@ import { Logo } from '../components/brand'
 import { IconButton, Kbd, Menu, modKey } from '../components/ui'
 import { openDialog, togglePalette, useApp } from '../store/app-store'
 
-export function TitleBar() {
+/** `minimal` is for the sign-in screen: no search, only help that works without an account. */
+export function TitleBar({ minimal = false }: { minimal?: boolean }) {
   const info = useApp((state) => state.info)
   const isMac = api.platform === 'darwin'
   const site = info?.apiBaseUrl ?? 'https://naturequery.app'
@@ -26,16 +27,18 @@ export function TitleBar() {
       </div>
 
       <div className="flex flex-1 justify-center">
-        <button
-          type="button"
-          onClick={() => togglePalette(true)}
-          className="no-drag flex h-7 w-full max-w-[440px] items-center gap-2 rounded-md border border-border/80 bg-background/50 px-2.5 text-left text-[12.5px] text-muted-foreground transition-colors hover:border-border hover:bg-background"
-        >
-          <Search className="h-3.5 w-3.5" />
-          <span className="flex-1 truncate">Search connections, tables and commands</span>
-          <Kbd>{modKey()}</Kbd>
-          <Kbd>K</Kbd>
-        </button>
+        {!minimal && (
+          <button
+            type="button"
+            onClick={() => togglePalette(true)}
+            className="no-drag flex h-7 w-full max-w-[440px] items-center gap-2 rounded-md border border-border/80 bg-background/50 px-2.5 text-left text-[12.5px] text-muted-foreground transition-colors hover:border-border hover:bg-background"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="flex-1 truncate">Search connections, tables and commands</span>
+            <Kbd>{modKey()}</Kbd>
+            <Kbd>K</Kbd>
+          </button>
+        )}
       </div>
 
       <div className="no-drag flex items-center gap-0.5">
@@ -47,11 +50,15 @@ export function TitleBar() {
             </IconButton>
           )}
           items={[
-            {
-              label: 'Keyboard shortcuts',
-              icon: <Keyboard className="h-4 w-4" />,
-              onSelect: () => openDialog({ kind: 'shortcuts' }),
-            },
+            ...(minimal
+              ? []
+              : [
+                  {
+                    label: 'Keyboard shortcuts',
+                    icon: <Keyboard className="h-4 w-4" />,
+                    onSelect: () => openDialog({ kind: 'shortcuts' }),
+                  },
+                ]),
             {
               label: 'Help center',
               icon: <FileText className="h-4 w-4" />,

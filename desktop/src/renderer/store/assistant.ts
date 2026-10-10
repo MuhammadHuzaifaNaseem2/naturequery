@@ -1,19 +1,11 @@
 import { toast } from 'sonner'
 import { api, asAppError } from '../lib/nq'
-import {
-  findTab,
-  openDialog,
-  persistTabs,
-  runTab,
-  updateTab,
-  useApp,
-  type QueryTab,
-} from './app-store'
+import { findTab, persistTabs, runTab, updateTab, useApp, type QueryTab } from './app-store'
 
 /**
  * Plain-English features: asking questions, fixing failed queries,
- * explaining queries and summarizing results. All of them need a signed-in
- * NatureQuery account; everything else in the app works without one.
+ * explaining queries and summarizing results. The whole app needs a signed-in
+ * NatureQuery account; these also call NatureQuery's AI service.
  */
 
 const get = useApp.getState
@@ -22,9 +14,8 @@ function signedIn(): boolean {
   return get().auth.status === 'signed-in'
 }
 
-/** Opens the browser to sign in, with a dialog that explains what happens next. */
+/** Opens the sign-in page in the browser; the sign-in screen shows what to do next. */
 export async function startSignIn(): Promise<void> {
-  openDialog({ kind: 'sign-in' })
   try {
     await api.auth.signIn()
   } catch (error) {

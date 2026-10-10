@@ -7,7 +7,6 @@ import {
   History,
   Home,
   Keyboard,
-  LogIn,
   LogOut,
   Plus,
   Search,
@@ -31,7 +30,7 @@ import {
   useActiveTab,
   useApp,
 } from '../../store/app-store'
-import { explainTab, startSignIn } from '../../store/assistant'
+import { explainTab } from '../../store/assistant'
 
 interface Item {
   id: string
@@ -46,7 +45,6 @@ export function CommandPalette() {
   const open = useApp((state) => state.paletteOpen)
   const connections = useApp((state) => state.connections)
   const sample = useApp((state) => state.sample)
-  const signedIn = useApp((state) => state.auth.status === 'signed-in')
   const activeTab = useActiveTab()
   const schema = useApp((state) =>
     activeTab ? state.schemas[activeTab.connectionId]?.snapshot : undefined
@@ -145,21 +143,13 @@ export function CommandPalette() {
         icon: <Keyboard className="h-4 w-4" />,
         run: close(() => openDialog({ kind: 'shortcuts' })),
       },
-      signedIn
-        ? {
-            id: 'sign-out',
-            group: 'Actions',
-            label: 'Sign out of NatureQuery',
-            icon: <LogOut className="h-4 w-4" />,
-            run: close(() => void api.auth.signOut().catch(() => {})),
-          }
-        : {
-            id: 'sign-in',
-            group: 'Actions',
-            label: 'Sign in to use AI',
-            icon: <LogIn className="h-4 w-4" />,
-            run: close(() => void startSignIn()),
-          },
+      {
+        id: 'sign-out',
+        group: 'Actions',
+        label: 'Sign out of NatureQuery',
+        icon: <LogOut className="h-4 w-4" />,
+        run: close(() => void api.auth.signOut().catch(() => {})),
+      },
       ...[...connections, ...(sample ? [sample] : [])].map((connection) => ({
         id: `connection-${connection.id}`,
         group: 'Connections',
@@ -206,7 +196,7 @@ export function CommandPalette() {
       }
     }
     return all
-  }, [connections, sample, saved, activeTab, schema, signedIn])
+  }, [connections, sample, saved, activeTab, schema])
 
   const term = query.trim().toLowerCase()
   const visible = useMemo(() => {
