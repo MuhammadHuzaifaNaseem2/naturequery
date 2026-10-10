@@ -133,4 +133,45 @@ describe('reading model replies', () => {
       highlights: [],
     })
   })
+
+  it('repairs summaries with broken JSON instead of showing the raw reply', () => {
+    // A real reply: the highlights list is never closed.
+    const missingBracket =
+      '{"summary":"The query returns the top three customers by total spending.","highlights":["Result contains three rows","Customers are ranked by total_spent in descending order","Only orders with status \'completed\' or \'paid\' are included","The data is grouped by customer ID and name"}'
+    expect(parseInsightsReply(missingBracket)).toEqual({
+      summary: 'The query returns the top three customers by total spending.',
+      highlights: [
+        'Result contains three rows',
+        'Customers are ranked by total_spent in descending order',
+        "Only orders with status 'completed' or 'paid' are included",
+        'The data is grouped by customer ID and name',
+      ],
+    })
+    expect(
+      parseInsightsReply('```json\n{"summary": "Up 12%.", "highlights": ["North leads",],}\n```')
+    ).toEqual({ summary: 'Up 12%.', highlights: ['North leads'] })
+    // Cut off before the end.
+    expect(parseInsightsReply('{"summary": "Up 12%.", "highlights": ["North leads", "So')).toEqual({
+      summary: 'Up 12%.',
+      highlights: ['North leads', 'So'],
+    })
+    // Extra closing brackets after the object.
+    expect(parseInsightsReply('{"summary": "Up 12%.", "highlights": ["North"] }}]')).toEqual({
+      summary: 'Up 12%.',
+      highlights: ['North'],
+    })
+    // Missing commas cannot be repaired, but the fields are still picked out.
+    expect(
+      parseInsightsReply('{"summary": "Two \\"top\\" regions." "highlights": ["North" "South"]}')
+    ).toEqual({ summary: 'Two "top" regions.', highlights: ['North', 'South'] })
+  })
+
+  it('reads bulleted text summaries and rejects replies without a summary', () => {
+    expect(parseInsightsReply('Sales grew.\n- North leads\n* South fell\n2. West flat')).toEqual({
+      summary: 'Sales grew.',
+      highlights: ['North leads', 'South fell', 'West flat'],
+    })
+    expect(() => parseInsightsReply('{"highlights": ["North"]}')).toThrow(UnusableReplyError)
+    expect(() => parseInsightsReply('  ')).toThrow(UnusableReplyError)
+  })
 })

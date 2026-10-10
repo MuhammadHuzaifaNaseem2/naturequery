@@ -434,24 +434,131 @@ export function parseExplainReply(raw: string): string {
   return stripWrapping(raw)
 }
 
+/**
+ * Reads a summary reply. Models sometimes return slightly broken JSON (a
+ * missing bracket, a trailing comma, a cut-off ending), so the reply is
+ * repaired or picked apart rather than shown to the user as raw JSON.
+ */
 export function parseInsightsReply(raw: string): { summary: string; highlights: string[] } {
   const text = stripWrapping(raw)
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start !== -1 && end > start) {
-    try {
-      const parsed = JSON.parse(text.slice(start, end + 1)) as {
-        summary?: unknown
-        highlights?: unknown
-      }
-      const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : ''
-      const highlights = Array.isArray(parsed.highlights)
-        ? parsed.highlights.filter((item): item is string => typeof item === 'string').slice(0, 4)
-        : []
-      if (summary) return { summary, highlights }
-    } catch {
-      // Fall back to the plain text below.
+  if (!text.includes('{')) return plainInsights(text)
+
+  const parsed = readJsonObject(text)
+  if (parsed && typeof parsed.summary === 'string' && parsed.summary.trim()) {
+    const highlights = Array.isArray(parsed.highlights) ? parsed.highlights : []
+    return {
+      summary: parsed.summary.trim(),
+      highlights: highlights
+        .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+        .map((item) => item.trim())
+        .slice(0, 4),
     }
   }
-  return { summary: text.slice(0, 600), highlights: [] }
+  const summary = jsonStringField(text, 'summary')
+  if (summary) return { summary, highlights: jsonStringList(text, 'highlights').slice(0, 4) }
+  throw new UnusableReplyError('The AI summary could not be read.')
+}
+
+/** Plain-text summaries: lines starting with a bullet are highlights. */
+function plainInsights(text: string): { summary: string; highlights: string[] } {
+  const summary: string[] = []
+  const highlights: string[] = []
+  for (const line of text.split('\n')) {
+    const bullet = /^\s*(?:[-*•]|\d+[.)])\s+(.+)$/.exec(line)
+    if (bullet) highlights.push(bullet[1].trim())
+    else if (line.trim()) summary.push(line.trim())
+  }
+  if (!summary.length && !highlights.length) {
+    throw new UnusableReplyError('The AI summary could not be read.')
+  }
+  return {
+    summary: (summary.length ? summary.join(' ') : highlights.shift()!).slice(0, 600),
+    highlights: highlights.slice(0, 4),
+  }
+}
+
+/** The first JSON object in a reply, with one repair attempt if it does not parse. */
+function readJsonObject(text: string): Record<string, unknown> | null {
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  const candidates = [end > start ? text.slice(start, end + 1) : '', repairJson(text.slice(start))]
+  for (const candidate of candidates) {
+    try {
+      const value: unknown = JSON.parse(candidate)
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        return value as Record<string, unknown>
+      }
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null
+}
+
+/**
+ * Closes brackets and strings the model left open and drops trailing commas.
+ * Only used for summaries: guessing where a bracket belongs could change what
+ * a query does, so queries must parse as they are.
+ */
+function repairJson(text: string): string {
+  const closers: string[] = []
+  let out = ''
+  let inString = false
+  let escaped = false
+  const close = (closer: string) => {
+    out = out.replace(/,\s*$/, '') + closer
+  }
+  for (const char of text) {
+    if (inString) {
+      out += char
+      if (escaped) escaped = false
+      else if (char === '\\') escaped = true
+      else if (char === '"') inString = false
+    } else if (char === '"') {
+      inString = true
+      out += char
+    } else if (char === '{' || char === '[') {
+      closers.push(char === '{' ? '}' : ']')
+      out += char
+    } else if (char === '}' || char === ']') {
+      // Ignore a closing bracket that matches nothing that is open.
+      if (!closers.includes(char)) continue
+      while (closers.at(-1) !== char) close(closers.pop()!)
+      close(closers.pop()!)
+      if (!closers.length) return out
+    } else {
+      out += char
+    }
+  }
+  if (inString) out += '"'
+  while (closers.length) close(closers.pop()!)
+  return out
+}
+
+function unescapeJsonString(value: string): string {
+  try {
+    return JSON.parse(`"${value}"`) as string
+  } catch {
+    return value
+  }
+}
+
+/** A string field from text that is not valid JSON, for example `"summary": "..."`. */
+function jsonStringField(text: string, key: string): string {
+  const match = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`).exec(text)
+  return match ? unescapeJsonString(match[1]).trim() : ''
+}
+
+/** The strings of a list field from text that is not valid JSON. */
+function jsonStringList(text: string, key: string): string[] {
+  const start = new RegExp(`"${key}"\\s*:\\s*\\[`).exec(text)
+  if (!start) return []
+  const items: string[] = []
+  const item = /\s*,?\s*"((?:[^"\\]|\\.)*)"/y
+  item.lastIndex = start.index + start[0].length
+  for (let match = item.exec(text); match; match = item.exec(text)) {
+    const value = unescapeJsonString(match[1]).trim()
+    if (value) items.push(value)
+  }
+  return items
 }

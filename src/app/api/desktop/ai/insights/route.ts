@@ -1,7 +1,17 @@
 import { z } from 'zod'
 import { aiFailure, complete } from '@/lib/desktop/ai'
-import { desktopJson, isResponse, readJson, requireDesktopUser } from '@/lib/desktop/http'
-import { buildInsightsMessages, parseInsightsReply } from '@/lib/desktop/prompts'
+import {
+  desktopError,
+  desktopJson,
+  isResponse,
+  readJson,
+  requireDesktopUser,
+} from '@/lib/desktop/http'
+import {
+  buildInsightsMessages,
+  parseInsightsReply,
+  UnusableReplyError,
+} from '@/lib/desktop/prompts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -45,6 +55,9 @@ export async function POST(request: Request) {
     )
     return desktopJson(parseInsightsReply(reply))
   } catch (error) {
+    if (error instanceof UnusableReplyError) {
+      return desktopError(502, 'ai_unusable', `${error.message} Try again.`)
+    }
     return aiFailure(error)
   }
 }
