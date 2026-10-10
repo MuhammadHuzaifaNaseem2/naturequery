@@ -497,7 +497,15 @@ function LoginForm() {
         </p>
         <p>
           {t('auth.login.noAccount')}{' '}
-          <Link href="/register" className="text-primary hover:underline font-medium">
+          {/* New accounts continue where sign-in was going, for example NatureQuery Desktop. */}
+          <Link
+            href={
+              callbackUrl === '/dashboard'
+                ? '/register'
+                : `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            }
+            className="text-primary hover:underline font-medium"
+          >
             {t('auth.login.signUp')}
           </Link>
         </p>

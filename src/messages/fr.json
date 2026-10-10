@@ -121,6 +121,7 @@
       "verified": "Email vérifié",
       "verifiedMessage": "Votre email a été vérifié avec succès. Vous pouvez maintenant utiliser toutes les fonctionnalités.",
       "goToDashboard": "Aller au tableau de bord",
+      "continueToDesktop": "Continuer vers NatureQuery Desktop",
       "failed": "Échec de la vérification"
     }
   },

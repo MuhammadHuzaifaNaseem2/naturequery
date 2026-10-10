@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AppLogo } from '@/components/AppLogo'
 import Link from 'next/link'
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { AuthLayout } from '@/components/AuthLayout'
 import { useOAuthProviders } from '@/hooks/useOAuthProviders'
+import { safeCallbackUrl } from '@/lib/safe-redirect'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -30,6 +31,9 @@ function RegisterForm() {
   const { t } = useTranslation()
   const router = useRouter()
   const oauthProviders = useOAuthProviders()
+  // Where to continue after signing up, for example NatureQuery Desktop's sign-in.
+  const requested = useSearchParams().get('callbackUrl')
+  const callbackUrl = requested ? safeCallbackUrl(requested) : null
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -57,7 +61,7 @@ function RegisterForm() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, callbackUrl: callbackUrl ?? undefined }),
       })
 
       const result = await response.json()
@@ -79,7 +83,7 @@ function RegisterForm() {
 
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     setIsLoading(true)
-    await signIn(provider, { callbackUrl: '/onboarding' })
+    await signIn(provider, { callbackUrl: callbackUrl ?? '/onboarding' })
   }
 
   // Password strength indicator
@@ -313,7 +317,10 @@ function RegisterForm() {
       {/* Sign In Link */}
       <p className="text-center text-sm text-muted-foreground mt-6">
         {t('auth.register.hasAccount')}{' '}
-        <Link href="/login" className="text-primary hover:underline font-medium">
+        <Link
+          href={callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'}
+          className="text-primary hover:underline font-medium"
+        >
           {t('auth.register.signIn')}
         </Link>
       </p>

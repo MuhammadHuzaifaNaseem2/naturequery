@@ -7,11 +7,15 @@ import { AppLogo } from '@/components/AppLogo'
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { verifyEmail } from '@/actions/auth-email'
 import { useTranslation } from '@/contexts/LocaleContext'
+import { safeCallbackUrl } from '@/lib/safe-redirect'
 
 function VerifyEmailContent() {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
   const token = searchParams.get('token') || ''
+  // Set when the account was created from NatureQuery Desktop's sign-in.
+  const next = safeCallbackUrl(searchParams.get('next'))
+  const toDesktop = next.startsWith('/desktop/authorize')
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [error, setError] = useState('')
 
@@ -47,8 +51,10 @@ function VerifyEmailContent() {
         <p className="text-sm text-muted-foreground mb-6">
           {t('auth.verifyEmail.verifiedMessage')}
         </p>
-        <Link href="/dashboard" className="btn-primary text-sm">
-          {t('auth.verifyEmail.goToDashboard')}
+        <Link href={next} className="btn-primary text-sm">
+          {toDesktop
+            ? t('auth.verifyEmail.continueToDesktop')
+            : t('auth.verifyEmail.goToDashboard')}
         </Link>
       </div>
     )
@@ -75,12 +81,16 @@ export default function VerifyEmailPage() {
             <AppLogo size="lg" />
           </Link>
         </div>
-        <Suspense fallback={<div className="card p-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>}>
+        <Suspense
+          fallback={
+            <div className="card p-8 flex justify-center">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+          }
+        >
           <VerifyEmailContent />
         </Suspense>
       </div>
     </div>
   )
 }
-
-

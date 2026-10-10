@@ -99,8 +99,13 @@ async function sendEmail(
 
 // ---------- Send functions ----------
 
-export async function sendVerificationEmail(email: string, token: string): Promise<string> {
-  const verifyUrl = `${appUrl}/verify-email?token=${token}`
+export async function sendVerificationEmail(
+  email: string,
+  token: string,
+  next?: string
+): Promise<string> {
+  // `next` brings people back to where they signed up, for example NatureQuery Desktop's sign-in.
+  const verifyUrl = `${appUrl}/verify-email?token=${token}${next ? `&next=${encodeURIComponent(next)}` : ''}`
 
   if (!isEmailConfigured()) {
     console.log(`\n📧 [DEV] Verification email for ${email}`)
@@ -112,13 +117,13 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     <p>Welcome to NatureQuery!</p>
     <p>Please verify your email address by clicking the button below:</p>
     <p style="text-align:center; margin: 24px 0;">
-      <a href="${verifyUrl}" class="btn">Verify Email</a>
+      <a href="${verifyUrl.replace(/&/g, '&amp;')}" class="btn">Verify Email</a>
     </p>
     <p style="font-size:13px; color:#71717a;">If you didn't create an account, you can safely ignore this email.</p>
-    <p style="font-size:12px; color:#a1a1aa; word-break:break-all;">Or copy this link: ${verifyUrl}</p>
+    <p style="font-size:12px; color:#a1a1aa; word-break:break-all;">Or copy this link: ${verifyUrl.replace(/&/g, '&amp;')}</p>
   `)
 
-  await sendEmail(email, 'Verify your email — NatureQuery', html)
+  await sendEmail(email, 'Verify your email for NatureQuery', html)
   return verifyUrl
 }
 
@@ -141,7 +146,7 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
     <p style="font-size:12px; color:#a1a1aa; word-break:break-all;">Or copy this link: ${resetUrl}</p>
   `)
 
-  await sendEmail(email, 'Reset your password — NatureQuery', html)
+  await sendEmail(email, 'Reset your NatureQuery password', html)
   return resetUrl
 }
 
@@ -169,7 +174,7 @@ export async function sendTeamInviteEmail(
     <p style="font-size:12px; color:#a1a1aa; word-break:break-all;">Or copy this link: ${inviteUrl}</p>
   `)
 
-  await sendEmail(email, `You're invited to ${teamName} — NatureQuery`, html)
+  await sendEmail(email, `You're invited to ${teamName} on NatureQuery`, html)
   return inviteUrl
 }
 
@@ -322,8 +327,8 @@ export async function sendScheduleNotificationEmail(
 ): Promise<void> {
   const isSuccess = status === 'success'
   const subject = isSuccess
-    ? `Scheduled query "${scheduleName}" ran successfully — NatureQuery`
-    : `Scheduled query "${scheduleName}" failed — NatureQuery`
+    ? `Your scheduled query "${scheduleName}" ran successfully`
+    : `Your scheduled query "${scheduleName}" failed`
 
   if (!isEmailConfigured()) {
     console.log(`[DEV] Schedule notification for ${email}: ${scheduleName} → ${status}`)

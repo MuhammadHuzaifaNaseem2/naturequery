@@ -121,6 +121,7 @@
       "verified": "Email Verified",
       "verifiedMessage": "Your email has been verified successfully. You can now use all features.",
       "goToDashboard": "Go to Dashboard",
+      "continueToDesktop": "Continue to NatureQuery Desktop",
       "failed": "Verification Failed"
     }
   },

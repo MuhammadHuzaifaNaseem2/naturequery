@@ -121,6 +121,7 @@
       "verified": "メール確認完了",
       "verifiedMessage": "メールアドレスが正常に確認されました。すべての機能をご利用いただけます。",
       "goToDashboard": "ダッシュボードへ",
+      "continueToDesktop": "NatureQuery Desktop に進む",
       "failed": "確認に失敗しました"
     }
   },

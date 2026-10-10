@@ -121,6 +121,7 @@
       "verified": "Correo verificado",
       "verifiedMessage": "Tu correo ha sido verificado exitosamente. Ahora puedes usar todas las funciones.",
       "goToDashboard": "Ir al panel de control",
+      "continueToDesktop": "Continuar a NatureQuery Desktop",
       "failed": "Verificación fallida"
     }
   },
