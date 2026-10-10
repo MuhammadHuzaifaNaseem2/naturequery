@@ -51,3 +51,10 @@ npm run test:e2e
 
 Screenshots of each step are saved in `%TEMP%\nq-desktop-e2e\shots`. Remove the
 database afterwards with `docker rm -f nq-web-db`.
+
+## Microsoft Store screenshots
+
+With the same setup running, `node test/e2e/store-screenshots.mjs` signs in a demo
+account (Jordan Lee), adds example connections that are never connected to, asks
+real questions on the sample database and saves six 1920 x 1080 screenshots to
+`desktop/store/screenshots/`. It makes about three AI requests.
