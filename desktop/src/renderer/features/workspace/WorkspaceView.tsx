@@ -159,24 +159,21 @@ export function WorkspaceView() {
     )
   }, [hasTab, saved, setHeight])
 
-  // When the AI writes or fixes a query, make the editor tall enough to show all of it.
-  // Depends only on the texts, so running the query does not cancel the measurement.
+  // When a whole query arrives at once (the AI wrote or fixed it, Format, a paste),
+  // make the editor tall enough to show all of it. Typing one line at a time does
+  // not resize anything. Depends only on the texts, so running the query does not
+  // cancel the measurement.
   const tabId = tab?.id
-  const tabSql = tab?.sql
+  const tabSql = tab?.sql ?? ''
+  const lines = tabSql.split('\n').length
   const aiSql = tab?.aiChange?.after ?? tab?.conversation.at(-1)?.sql
-  const lastAi = useRef<{ tabId?: string; sql?: string }>({})
+  const last = useRef<{ tabId?: string; aiSql?: string; lines: number }>({ lines: 0 })
   useEffect(() => {
-    const previous = lastAi.current
-    lastAi.current = { tabId, sql: aiSql }
-    if (
-      !tabId ||
-      tabId !== previous.tabId ||
-      !aiSql ||
-      aiSql === previous.sql ||
-      aiSql !== tabSql
-    ) {
-      return
-    }
+    const previous = last.current
+    last.current = { tabId, aiSql, lines }
+    if (!tabId || tabId !== previous.tabId) return
+    const aiWrote = !!aiSql && aiSql !== previous.aiSql && aiSql === tabSql
+    if (!aiWrote && lines <= previous.lines + 1) return
     const frame = requestAnimationFrame(() => {
       const scroller = editorArea.current?.querySelector<HTMLElement>('.cm-scroller')
       const rect = container.current?.getBoundingClientRect()
@@ -187,7 +184,7 @@ export function WorkspaceView() {
       setHeight((value) => Math.max(value, Math.min(max, value + hidden + 8)))
     })
     return () => cancelAnimationFrame(frame)
-  }, [tabId, aiSql, tabSql, setHeight])
+  }, [tabId, aiSql, tabSql, lines, setHeight])
 
   if (!tab) return <HomeView />
 

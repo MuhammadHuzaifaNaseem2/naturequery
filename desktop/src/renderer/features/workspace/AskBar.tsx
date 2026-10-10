@@ -51,8 +51,9 @@ export function AskBar({ tab }: { tab: QueryTab }) {
         <Sparkles className="h-4 w-4 shrink-0 text-primary" aria-hidden />
         <p className="min-w-0 flex-1 text-[12.5px] leading-snug text-muted-foreground">
           <span className="font-medium text-foreground">Ask in plain English.</span> Sign in to your
-          NatureQuery account to turn questions into {label} queries. Only your question and table
-          names are sent; your data stays on this computer.
+          NatureQuery account to turn questions into {label} queries. Only your question and the
+          structure of your tables (names, columns, types and approximate sizes) are sent. The data
+          in them stays on this computer.
         </p>
         <Button
           size="sm"
