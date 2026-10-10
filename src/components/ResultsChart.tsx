@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   BarChart,
   Bar,
@@ -146,6 +147,18 @@ export function ResultsChart({
   const [showBrush, setShowBrush] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const chartRef = useRef<HTMLDivElement>(null)
+
+  // Escape leaves full screen.
+  useEffect(() => {
+    if (!isFullscreen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      setIsFullscreen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isFullscreen])
 
   const CHART_COLORS = COLOR_PALETTES[palette]
 
@@ -306,16 +319,15 @@ export function ResultsChart({
   }
 
   const containerClass = isFullscreen
-    ? 'fixed inset-4 z-50 bg-card rounded-xl shadow-2xl p-6 animate-scaleIn'
+    ? 'fixed inset-x-4 bottom-4 z-50 bg-card rounded-xl shadow-2xl p-6 animate-scaleIn'
     : 'space-y-4'
 
-  return (
-    <div className={containerClass}>
-      {/* Fullscreen backdrop */}
-      {isFullscreen && (
-        <div className="fixed inset-0 bg-black/50 z-40" onClick={toggleFullscreen} />
-      )}
-
+  const chart = (
+    <div
+      className={containerClass}
+      // Apps with their own title bar (NatureQuery Desktop) set --app-titlebar-height.
+      style={isFullscreen ? { top: 'calc(var(--app-titlebar-height, 0px) + 1rem)' } : undefined}
+    >
       {/* Controls — hidden in compact/widget mode */}
       <div
         className={clsx(
@@ -408,9 +420,10 @@ export function ResultsChart({
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            title="Toggle Fullscreen"
+            title={isFullscreen ? 'Close full screen (Esc)' : 'Full screen'}
+            aria-label={isFullscreen ? 'Close full screen' : 'Full screen'}
           >
-            <Maximize2 className="w-4 h-4" />
+            {isFullscreen ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <div className="relative group">
             <button
@@ -803,16 +816,16 @@ export function ResultsChart({
           Showing first 100 of {rows.length} rows in chart.
         </p>
       )}
-
-      {/* Fullscreen close button */}
-      {isFullscreen && (
-        <button
-          onClick={toggleFullscreen}
-          className="absolute top-4 right-4 p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      )}
     </div>
+  )
+
+  if (!isFullscreen) return chart
+  // Full screen sits above the whole page, with the backdrop behind the chart.
+  return createPortal(
+    <>
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={toggleFullscreen} />
+      {chart}
+    </>,
+    document.body
   )
 }
