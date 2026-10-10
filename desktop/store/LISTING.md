@@ -36,11 +36,21 @@ The link to share: https://apps.microsoft.com/detail/9N6PJDWJRLFM
 
 ## 3. Age ratings
 
-Fill in the questionnaire with the app type **Productivity / utility** (not a
-game). NatureQuery has no violence, sexual content, gambling or user-to-user
-chat, does not share the user's location, and sells nothing inside the app
-(plans are bought on the website). It does collect account details (name and
-email) to sign in.
+IARC questionnaire answers (submitted 2026-10-11):
+
+- App type: **All Other App Types**.
+- Ratings-relevant content in the download: No. Users interact with each other: No.
+- Online content: **Yes** (the AI writes text; IARC lists "generated AI content"
+  as an example). Violence, sexual content, offensive language, drugs: all No.
+- Age-restricted products: No. Shares location: No.
+- Purchase of digital goods: **Yes** (Upgrade opens the website to buy a plan).
+  Random items or loot boxes: No. Cash rewards or NFTs: No.
+- Web browser or search engine: No. News or education: No.
+- Ratings from a ratings board or physical media: No.
+
+Result: ESRB Everyone, PEGI 3, IARC 3+, Microsoft 3+, USK Everyone, Brazil 14,
+with the interactive element "In-App Purchases". The IARC terms checkbox is a
+personal statement, so the account owner ticks it.
 
 ## 4. Packages
 
@@ -62,7 +72,7 @@ Type a question such as "Which 10 customers spent the most this year?" and Natur
 Safe by design
 - NatureQuery runs read-only queries, so your data is not changed.
 - Database passwords are encrypted with your Windows account and never leave your computer.
-- When you ask a question, only your question and the structure of your tables (names, columns, types and approximate sizes) are sent to NatureQuery's AI service. Your data stays on your computer.
+- When you ask a question, NatureQuery's AI service receives your question and the structure of your tables (names, columns, types and approximate sizes), never the data in them. AI summaries use result rows only if you turn that on.
 
 More than questions
 - Fix with AI corrects a query when the database reports an error.
@@ -77,10 +87,21 @@ NatureQuery uses generative AI to write queries, explanations and summaries from
 NatureQuery needs a free NatureQuery account. The Free plan includes 50 AI questions a month, and paid plans have no monthly limit. Writing queries yourself is always unlimited.
 ```
 
-### What's new in this version
+### Short description
 
 ```
-The first release of NatureQuery in the Microsoft Store.
+Ask your databases questions in plain English. NatureQuery writes the query, runs it read-only on your computer and shows the answer as a table or chart. Works with PostgreSQL, MySQL, SQL Server, Oracle, MongoDB, Snowflake, BigQuery and more.
+```
+
+### What's new in this version
+
+Leave empty for the first submission, as Partner Center asks. For later
+versions, describe the changes.
+
+### Developed by
+
+```
+NatureQuery
 ```
 
 ### Product features (one per field)
@@ -133,19 +154,23 @@ with the end-to-end test setup (see `test/e2e/README.md`).
 
 ## 6. Submission options
 
+**Publishing hold options:** "Publish this submission as soon as it passes
+certification" (the default).
+
 ### Notes for certification
 
-Create the reviewer account first (see "Reviewer account" below), then paste
-this and fill in the email and password:
+These now live on a separate page: **Additional Testing Information** in the
+left menu (under Supplemental info). Paste this into **Description**, which
+must not contain passwords. Then add the test account under **Credentials**
+with **New credential**, as two Name and Value pairs: `Email` with the reviewer
+email, and `Password` with the reviewer password.
 
 ```
-NatureQuery requires a free NatureQuery account. Please use this test account:
-Email: <reviewer email>
-Password: <reviewer password>
+NatureQuery requires a free NatureQuery account. The test account's email and password are in the Credentials section of this page.
 
 How to sign in:
 1. Open NatureQuery and choose "Sign in with your browser".
-2. In the browser, sign in with the test account above and choose "Allow".
+2. In the browser, sign in with the test account and choose "Allow".
 3. The browser hands you back to NatureQuery. If the browser asks whether to open NatureQuery, allow it. If it does not return to the app, copy the code shown on the page, paste it into NatureQuery and choose "Continue".
 
 What to try:
@@ -160,10 +185,11 @@ NatureQuery connects directly to databases on the user's own computer and networ
 
 ### Restricted capability: runFullTrust
 
-When Partner Center asks why the package needs `runFullTrust`:
+On the **Submission options** page, under "Why do you need the runFullTrust
+capability" (500 characters at most):
 
 ```
-NatureQuery is a desktop app built with Electron. It needs full trust to run its database engine as a separate desktop process and to connect directly to databases on the user's computer and local network.
+NatureQuery is a desktop app built with Electron. It needs full trust to run its database engine as a separate desktop process and to connect directly to databases on the user's computer and local network, such as PostgreSQL, SQL Server and MySQL servers in the office.
 ```
 
 ## Reviewer account
@@ -177,4 +203,5 @@ Google sign-in.
 2. Choose a strong password that you use nowhere else.
 3. Open the verification email in the naturequery.team inbox and verify.
 4. Sign in once on the website to check that the account works.
-5. Put the email and password only into **Notes for certification**.
+5. Put the email and password only into the **Credentials** section of
+   Additional Testing Information.
