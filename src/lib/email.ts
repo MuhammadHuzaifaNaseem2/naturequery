@@ -262,6 +262,49 @@ export async function sendContactEmail(input: {
   })
 }
 
+export const AI_REPORT_REASON_LABELS = {
+  wrong: 'Wrong or misleading',
+  offensive: 'Offensive or inappropriate',
+  harmful: 'Could cause harm',
+  other: 'Something else',
+} as const
+
+export type AiReportReason = keyof typeof AI_REPORT_REASON_LABELS
+
+/** Tells the team that someone reported an AI answer in NatureQuery Desktop. */
+export async function sendAiReportEmail(input: {
+  reporterEmail: string
+  reporterName?: string | null
+  kind: 'query' | 'explanation' | 'summary'
+  reason: AiReportReason
+  comment: string
+  question: string
+  content: string
+}): Promise<void> {
+  if (!isEmailConfigured()) throw new Error('No email provider configured')
+
+  const recipient = process.env.CONTACT_EMAIL || 'hello@naturequery.app'
+  const reason = AI_REPORT_REASON_LABELS[input.reason]
+  const block = (value: string) =>
+    `<div style="white-space:pre-wrap; border:1px solid #e4e4e7; border-radius:8px; padding:12px; font-family:monospace; font-size:12px;">${escapeHtml(value)}</div>`
+  const html = baseTemplate(`
+    <p><strong>An AI answer was reported in NatureQuery Desktop</strong></p>
+    <p><strong>From:</strong> ${escapeHtml(input.reporterName || input.reporterEmail)} (${escapeHtml(input.reporterEmail)})</p>
+    <p><strong>Answer type:</strong> ${escapeHtml(input.kind)}</p>
+    <p><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+    ${input.comment ? `<p><strong>Comment:</strong></p>${block(input.comment)}` : ''}
+    ${input.question ? `<p><strong>What the AI was asked:</strong></p>${block(input.question)}` : ''}
+    <p><strong>AI answer:</strong></p>
+    ${block(input.content)}
+    <p style="font-size:13px; color:#71717a;">The report is also in the audit log (action AI_OUTPUT_REPORTED).</p>
+  `)
+
+  await sendEmail(recipient, `[NatureQuery] AI answer reported: ${reason}`, html, {
+    replyTo: input.reporterEmail,
+    rateLimitKey: `ai-report:${input.reporterEmail}`,
+  })
+}
+
 function renderResultTable(result: ScheduleEmailResult): string {
   const { rows, fields, rowCount, executionTimeMs, truncated } = result
   const preview = rows.slice(0, EMAIL_PREVIEW_ROWS)

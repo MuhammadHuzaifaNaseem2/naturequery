@@ -40,6 +40,7 @@ describe.skipIf(!enabled)('desktop sign-in', async () => {
   const meRoute = await import('@/app/api/desktop/me/route')
   const logoutRoute = await import('@/app/api/desktop/logout/route')
   const generateRoute = await import('@/app/api/desktop/ai/generate/route')
+  const reportRoute = await import('@/app/api/desktop/ai/report/route')
 
   let userId = ''
 
@@ -185,6 +186,33 @@ describe.skipIf(!enabled)('desktop sign-in', async () => {
     expect(await overLimit.json()).toMatchObject({
       error: 'plan_limit',
       plan: { queryLimit: 50, queriesUsed: 50 },
+    })
+
+    // Reporting an AI answer is kept in the audit log for review.
+    const report = (body: unknown, headers: Record<string, string> = auth) =>
+      reportRoute.POST(new Request('http://localhost/api/desktop/ai/report', json(body, headers)))
+    const reported = {
+      kind: 'summary',
+      reason: 'offensive',
+      comment: 'Rude wording',
+      question: 'How many customers?',
+      content: 'An inappropriate summary',
+    }
+    expect((await report(reported, {})).status).toBe(401)
+    expect((await report({ ...reported, reason: 'boring' })).status).toBe(400)
+    expect((await report({ ...reported, content: ' ' })).status).toBe(400)
+    const accepted = await report(reported)
+    expect(accepted.status).toBe(202)
+    expect(await accepted.json()).toEqual({ received: true })
+    const entry = await prisma.auditLog.findFirst({
+      where: { userId, action: 'AI_OUTPUT_REPORTED' },
+    })
+    expect(entry).toMatchObject({ resource: 'desktopAi' })
+    expect(entry?.metadata).toMatchObject({
+      kind: 'summary',
+      reason: 'offensive',
+      comment: 'Rude wording',
+      content: 'An inappropriate summary',
     })
 
     const logout = await logoutRoute.POST(
