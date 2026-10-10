@@ -194,6 +194,12 @@ export default function FAQPage() {
               Pricing
             </Link>
             <Link
+              href="/download"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Download
+            </Link>
+            <Link
               href="/about"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >

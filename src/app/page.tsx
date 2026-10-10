@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AppLogo } from '@/components/AppLogo'
+import { StoreBadge } from '@/components/StoreBadge'
 import {
   Sparkles,
   Database,
@@ -12,6 +13,7 @@ import {
   Check,
   BarChart3,
   Globe,
+  MonitorDown,
 } from 'lucide-react'
 
 const FEATURES = [
@@ -139,6 +141,12 @@ export default function LandingPage() {
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Pricing
+            </Link>
+            <Link
+              href="/download"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Download
             </Link>
             <Link
               href="/about"
@@ -412,6 +420,29 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Desktop app */}
+      <section className="py-20 border-t border-border/50">
+        <div className="max-w-6xl mx-auto px-6 grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              <MonitorDown className="w-3.5 h-3.5" />
+              NatureQuery Desktop for Windows
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight mb-3">
+              Databases on your office network?
+            </h2>
+            <p className="text-muted-foreground max-w-2xl">
+              The Windows app connects from your PC to databases a website can&apos;t reach, and
+              keeps your passwords on your computer.{' '}
+              <Link href="/download" className="text-primary hover:underline">
+                Learn more
+              </Link>
+            </p>
+          </div>
+          <StoreBadge />
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-24 bg-gradient-to-br from-primary/10 via-background to-accent/10">
         <div className="max-w-3xl mx-auto px-6 text-center">
@@ -448,6 +479,11 @@ export default function LandingPage() {
                 <li>
                   <Link href="/pricing" className="hover:text-foreground transition-colors">
                     Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/download" className="hover:text-foreground transition-colors">
+                    Download for Windows
                   </Link>
                 </li>
                 <li>

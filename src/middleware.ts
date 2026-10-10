@@ -11,6 +11,7 @@ const PUBLIC_EXACT = new Set([
   '/forgot-password',
   '/reset-password',
   '/pricing',
+  '/download',
   '/features',
   '/terms',
   '/privacy',
