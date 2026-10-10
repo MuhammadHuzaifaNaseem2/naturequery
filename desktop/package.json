@@ -103,6 +103,9 @@
       "icon": "build/icon.png"
     },
     "appx": {
+      "identityName": "NatureQuery.NatureQuery",
+      "publisher": "CN=9D19EAD4-7685-458B-ABD7-4216760EF54D",
+      "publisherDisplayName": "NatureQuery",
       "applicationId": "NatureQuery",
       "displayName": "NatureQuery",
       "backgroundColor": "transparent",
