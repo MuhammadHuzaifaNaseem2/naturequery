@@ -204,15 +204,26 @@ export async function inviteTeamMember(
     return { success: false, error: 'Insufficient permissions' }
   }
 
-  // Check plan limits for team members
-  const limitCheck = await checkPlanLimits(session.user.id, 'TEAM_INVITE')
+  // Seats come from the team owner's plan, whoever sends the invite: members
+  // share that plan, so an admin's own plan must not add seats.
+  const owner = await prisma.teamMember.findFirst({
+    where: { teamId: vTeamId, role: 'OWNER', status: 'ACCEPTED' },
+    select: { userId: true },
+  })
+  if (!owner) return { success: false, error: 'This team has no owner' }
+  const byOwner = owner.userId === session.user.id
+  const limitCheck = await checkPlanLimits(owner.userId, 'TEAM_INVITE')
   if (!limitCheck.allowed) {
     return {
       success: false,
       error:
         limitCheck.limit === 0
-          ? 'Team collaboration is not available on the Free plan. Upgrade to Pro to invite members.'
-          : `Team member limit reached (${limitCheck.current}/${limitCheck.limit}). Upgrade your plan for more members.`,
+          ? byOwner
+            ? 'Team collaboration is not available on the Free plan. Upgrade to Pro to invite members.'
+            : "The team owner's plan does not include team members. Ask the owner to upgrade to Pro."
+          : byOwner
+            ? `Team member limit reached (${limitCheck.current}/${limitCheck.limit}). Upgrade your plan for more members.`
+            : `This team has used all ${limitCheck.limit} seats in the owner's plan. Ask the owner to upgrade for more.`,
     }
   }
 
@@ -222,13 +233,13 @@ export async function inviteTeamMember(
 
   // Check if already a member
   const existing = await prisma.teamMember.findUnique({
-    where: { userId_teamId: { userId: user.id, teamId } },
+    where: { userId_teamId: { userId: user.id, teamId: vTeamId } },
   })
   if (existing) return { success: false, error: 'User is already a team member' }
 
   // They default to PENDING in the schema
   const member = await prisma.teamMember.create({
-    data: { userId: user.id, teamId, role, status: 'PENDING' },
+    data: { userId: user.id, teamId: vTeamId, role: vRole, status: 'PENDING' },
     include: { user: { select: { id: true, name: true, email: true, image: true } } },
   })
 

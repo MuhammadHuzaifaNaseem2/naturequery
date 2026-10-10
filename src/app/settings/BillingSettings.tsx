@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Download,
   Receipt,
+  Users,
 } from 'lucide-react'
 import {
   getUserSubscription,
@@ -230,6 +231,17 @@ export function BillingSettings() {
         <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
+        </div>
+      )}
+
+      {sub.teamPlan && (
+        <div className="card p-4 flex items-start gap-3 border-primary/20 bg-primary/5">
+          <Users className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-sm">
+            Your plan comes from the <span className="font-semibold">{sub.teamPlan.teamName}</span>{' '}
+            team. Its {sub.teamPlan.planName} plan covers your AI questions and features in
+            NatureQuery and NatureQuery Desktop, so you don&apos;t need a plan of your own.
+          </p>
         </div>
       )}
 
@@ -454,12 +466,12 @@ export function BillingSettings() {
           {
             label: 'Queries / month',
             current: usage?.queries.current,
-            limit: sub.limits.queriesPerMonth,
+            limit: sub.effectiveLimits.queriesPerMonth,
           },
           {
             label: 'Connections',
             current: usage?.connections.current,
-            limit: sub.limits.connections,
+            limit: sub.effectiveLimits.connections,
           },
           {
             label: 'Team Members',

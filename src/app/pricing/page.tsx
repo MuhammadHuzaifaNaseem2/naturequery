@@ -129,7 +129,7 @@ const COMPARISON = [
   {
     category: 'Team & Admin',
     features: [
-      { name: 'Team members', free: false, pro: '5', enterprise: 'Unlimited' },
+      { name: 'Team members who share your plan', free: false, pro: '5', enterprise: 'Unlimited' },
       { name: 'Role-based access', free: false, pro: true, enterprise: true },
       { name: 'API access', free: false, pro: true, enterprise: true },
       { name: 'Audit logs', free: false, pro: false, enterprise: true },

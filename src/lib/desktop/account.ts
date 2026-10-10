@@ -8,6 +8,8 @@ export interface DesktopPlanUsage {
   queriesUsed: number
   /** When the monthly allowance starts over. */
   periodEndsAt: string
+  /** Set when the plan comes from a team the user has joined. */
+  teamName?: string
 }
 
 function startOfMonth(now = new Date()): Date {
@@ -35,6 +37,7 @@ export async function desktopPlanUsage(userId: string): Promise<DesktopPlanUsage
     queryLimit: check.limit,
     queriesUsed: used,
     periodEndsAt: next.toISOString(),
+    ...(check.teamName ? { teamName: check.teamName } : {}),
   }
 }
 

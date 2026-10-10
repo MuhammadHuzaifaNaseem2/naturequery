@@ -217,6 +217,11 @@ Writing queries yourself has no limit. The Free plan
 includes 50 AI questions a month (only questions that produce a query count);
 paid plans have no monthly limit. The account menu shows how many you have left.
 
+A company needs only one paid plan: the person who pays creates a team on
+naturequery.app (**Settings, Team**) and invites colleagues, and everyone who
+accepts uses that plan, up to its number of team members (5 on Pro, unlimited
+on Enterprise).
+
 ## 6. Privacy and security
 
 **Stays on this computer**

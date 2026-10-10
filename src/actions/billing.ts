@@ -16,6 +16,7 @@ import {
   effectiveSubscriptionPlan,
   subscriptionLifecycleUpdate,
 } from '@/lib/billing-lifecycle'
+import { betterTeamPlan } from '@/lib/team-plan'
 
 async function requireUser() {
   const session = await auth()
@@ -45,6 +46,8 @@ export async function getUserSubscription() {
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
       limits: PLANS['ENTERPRISE'].limits,
+      effectiveLimits: PLANS['ENTERPRISE'].limits,
+      teamPlan: null,
       billingEnabled: isLemonSqueezyEnabled(),
     }
   }
@@ -62,6 +65,9 @@ export async function getUserSubscription() {
   }
 
   const plan = PLANS[effectivePlan]
+  // A team the user joined can provide a better plan than their own.
+  const team = await betterTeamPlan(user.id!, effectivePlan)
+  const teamLimits = team ? PLANS[team.plan].limits : null
   return {
     plan: effectivePlan,
     planName:
@@ -72,6 +78,11 @@ export async function getUserSubscription() {
     cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
     trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
     limits: plan.limits,
+    /** The limits that apply: a team plan's, except seats, which follow the user's own plan. */
+    effectiveLimits: teamLimits
+      ? { ...teamLimits, teamMembers: plan.limits.teamMembers }
+      : plan.limits,
+    teamPlan: team ? { teamName: team.teamName, planName: PLANS[team.plan].name } : null,
     billingEnabled: isLemonSqueezyEnabled(),
     subscriptionId: sub.stripeSubscriptionId ?? null,
   }

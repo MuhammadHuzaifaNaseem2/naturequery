@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { PLANS, type PlanKey } from '@/lib/lemonsqueezy'
 import { effectiveSubscriptionPlan } from '@/lib/billing-lifecycle'
+import { betterTeamPlan } from '@/lib/team-plan'
 
 export type LimitedAction =
   | 'QUERY'
@@ -20,6 +21,8 @@ export interface LimitCheckResult {
   current: number
   limit: number // -1 means unlimited
   planName: string
+  /** Set when the plan comes from a team the user has joined. */
+  teamName?: string
 }
 
 export async function checkPlanLimits(
@@ -32,41 +35,51 @@ export async function checkPlanLimits(
     return { allowed: true, current: 0, limit: -1, planName: 'Admin' }
   }
 
-  // Get or create subscription (FREE by default)
+  const applied = await appliedPlan(userId, action)
+  const result = await limitFor(userId, action, PLANS[applied.plan])
+  return applied.teamName ? { ...result, teamName: applied.teamName } : result
+}
+
+/** The user's own plan from their subscription (FREE by default). */
+async function ownPlan(userId: string): Promise<PlanKey> {
   let sub = await prisma.subscription.findUnique({ where: { userId } })
   if (!sub) {
     sub = await prisma.subscription.create({
       data: { userId, plan: 'FREE', status: 'ACTIVE' },
     })
   }
-
-  // If subscription is past due, canceled, or incomplete — enforce FREE limits.
-  // Also check if trial has expired — auto-downgrade to FREE.
-  let effectivePlan = effectiveSubscriptionPlan(sub) as PlanKey
-
-  if (sub.status === 'TRIALING') {
-    if (sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
-      // Trial expired — downgrade to FREE in database
-      await prisma.subscription.update({
-        where: { userId },
-        data: { plan: 'FREE', status: 'ACTIVE', trialEndsAt: null },
-      })
-      effectivePlan = 'FREE'
-    }
-  } else if (sub.status !== 'ACTIVE') {
-    // Cancelled subscriptions retain plan benefits until paid period ends.
-    // PAST_DUE / INCOMPLETE / expired-CANCELED → enforce FREE limits.
-    const stillInPaidPeriod =
-      sub.status === 'CANCELED' &&
-      sub.currentPeriodEnd &&
-      new Date(sub.currentPeriodEnd) > new Date()
-    if (!stillInPaidPeriod) {
-      effectivePlan = 'FREE'
-    }
+  if (sub.status === 'TRIALING' && sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
+    // Trial expired — downgrade to FREE in database
+    await prisma.subscription.update({
+      where: { userId },
+      data: { plan: 'FREE', status: 'ACTIVE', trialEndsAt: null },
+    })
+    return 'FREE'
   }
+  // Cancelled subscriptions retain plan benefits until the paid period ends;
+  // PAST_DUE, INCOMPLETE and expired CANCELED subscriptions get FREE limits.
+  return effectiveSubscriptionPlan(sub) as PlanKey
+}
 
-  const plan = PLANS[effectivePlan]
+/** Creating teams and inviting people depend on the user's own plan. */
+const OWN_PLAN_ONLY: ReadonlySet<LimitedAction> = new Set(['TEAM_CREATE', 'TEAM_INVITE'])
 
+/** The plan whose limits apply: the user's own, or a better one from a team they joined. */
+async function appliedPlan(
+  userId: string,
+  action: LimitedAction
+): Promise<{ plan: PlanKey; teamName?: string }> {
+  const own = await ownPlan(userId)
+  if (OWN_PLAN_ONLY.has(action)) return { plan: own }
+  const team = await betterTeamPlan(userId, own)
+  return team ? { plan: team.plan, teamName: team.teamName } : { plan: own }
+}
+
+async function limitFor(
+  userId: string,
+  action: LimitedAction,
+  plan: (typeof PLANS)[PlanKey]
+): Promise<LimitCheckResult> {
   switch (action) {
     case 'QUERY': {
       const limit = plan.limits.queriesPerMonth
@@ -192,36 +205,12 @@ export async function checkAndRecordQuery(userId: string): Promise<LimitCheckRes
     return { allowed: true, current: 0, limit: -1, planName: 'Admin' }
   }
 
-  let sub = await prisma.subscription.findUnique({ where: { userId } })
-  if (!sub) {
-    sub = await prisma.subscription.create({
-      data: { userId, plan: 'FREE', status: 'ACTIVE' },
-    })
-  }
-
-  let effectivePlan = effectiveSubscriptionPlan(sub) as PlanKey
-  if (sub.status === 'TRIALING' && sub.trialEndsAt && new Date(sub.trialEndsAt) < new Date()) {
-    await prisma.subscription.update({
-      where: { userId },
-      data: { plan: 'FREE', status: 'ACTIVE', trialEndsAt: null },
-    })
-    effectivePlan = 'FREE'
-  } else if (sub.status !== 'ACTIVE' && sub.status !== 'TRIALING') {
-    // Cancelled subscriptions retain plan benefits until paid period ends.
-    const stillInPaidPeriod =
-      sub.status === 'CANCELED' &&
-      sub.currentPeriodEnd &&
-      new Date(sub.currentPeriodEnd) > new Date()
-    if (!stillInPaidPeriod) {
-      effectivePlan = 'FREE'
-    }
-  }
-
-  const plan = PLANS[effectivePlan]
+  const { plan: planKey, teamName } = await appliedPlan(userId, 'QUERY')
+  const plan = PLANS[planKey]
   const limit = plan.limits.queriesPerMonth
   if (limit === -1) {
     await prisma.usageRecord.create({ data: { userId, action: 'QUERY' } })
-    return { allowed: true, current: 0, limit: -1, planName: plan.name }
+    return { allowed: true, current: 0, limit: -1, planName: plan.name, teamName }
   }
 
   const startOfMonth = new Date()
@@ -234,10 +223,10 @@ export async function checkAndRecordQuery(userId: string): Promise<LimitCheckRes
       where: { userId, action: 'QUERY', createdAt: { gte: startOfMonth } },
     })
     if (count >= limit) {
-      return { allowed: false, current: count, limit, planName: plan.name }
+      return { allowed: false, current: count, limit, planName: plan.name, teamName }
     }
     await tx.usageRecord.create({ data: { userId, action: 'QUERY' } })
-    return { allowed: true, current: count + 1, limit, planName: plan.name }
+    return { allowed: true, current: count + 1, limit, planName: plan.name, teamName }
   })
 }
 

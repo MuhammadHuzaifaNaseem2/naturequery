@@ -31,6 +31,7 @@ export function AccountBadge() {
             {plan && (
               <span className="block truncate text-[11px] leading-tight text-muted-foreground">
                 {plan.planName}
+                {plan.teamName ? ` · ${plan.teamName}` : ''}
                 {plan.queryLimit > 0
                   ? ` · ${plan.queriesUsed} of ${plan.queryLimit} AI questions`
                   : ''}

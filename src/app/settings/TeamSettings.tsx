@@ -67,7 +67,11 @@ export function TeamSettings({ userId }: { userId: string }) {
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
 
   // Confirmation Modals
-  const [memberToRemove, setMemberToRemove] = useState<{ teamId: string; memberId: string; name: string } | null>(null)
+  const [memberToRemove, setMemberToRemove] = useState<{
+    teamId: string
+    memberId: string
+    name: string
+  } | null>(null)
   const [teamToDelete, setTeamToDelete] = useState<{ id: string; name: string } | null>(null)
 
   // Invite state
@@ -143,7 +147,11 @@ export function TeamSettings({ userId }: { userId: string }) {
     }
   }
 
-  async function handleRoleChange(teamId: string, memberId: string, role: 'ADMIN' | 'MEMBER' | 'VIEWER') {
+  async function handleRoleChange(
+    teamId: string,
+    memberId: string,
+    role: 'ADMIN' | 'MEMBER' | 'VIEWER'
+  ) {
     const result = await updateMemberRole(teamId, memberId, role)
     if (result.success) {
       await loadTeams()
@@ -203,13 +211,17 @@ export function TeamSettings({ userId }: { userId: string }) {
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-2">Remove Member</h3>
               <p className="text-sm text-muted-foreground">
-                Are you sure you want to remove <span className="font-medium text-foreground">{memberToRemove.name}</span> from the team? They will immediately lose access to all shared connections and queries.
+                Are you sure you want to remove{' '}
+                <span className="font-medium text-foreground">{memberToRemove.name}</span> from the
+                team? They will immediately lose access to all shared connections and queries.
               </p>
             </div>
             <div className="px-6 py-4 bg-secondary/50 flex justify-end gap-3 rounded-b-xl">
-              <button onClick={() => setMemberToRemove(null)} className="btn-secondary text-sm">Cancel</button>
-              <button 
-                onClick={() => handleRemoveMember(memberToRemove.teamId, memberToRemove.memberId)} 
+              <button onClick={() => setMemberToRemove(null)} className="btn-secondary text-sm">
+                Cancel
+              </button>
+              <button
+                onClick={() => handleRemoveMember(memberToRemove.teamId, memberToRemove.memberId)}
                 className="btn-primary bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent text-sm"
               >
                 Remove
@@ -228,15 +240,19 @@ export function TeamSettings({ userId }: { userId: string }) {
                 Delete Team
               </h3>
               <p className="text-sm text-muted-foreground">
-                Are you absolutely sure you want to delete <span className="font-medium text-foreground">"{teamToDelete.name}"</span>? 
-                This will permanently delete the team and remove access for all {teams.find(t => t.id === teamToDelete.id)?.members.length} members. 
-                This action cannot be undone.
+                Are you absolutely sure you want to delete{' '}
+                <span className="font-medium text-foreground">"{teamToDelete.name}"</span>? This
+                will permanently delete the team and remove access for all{' '}
+                {teams.find((t) => t.id === teamToDelete.id)?.members.length} members. This action
+                cannot be undone.
               </p>
             </div>
             <div className="px-6 py-4 bg-secondary/50 flex justify-end gap-3 rounded-b-xl">
-              <button onClick={() => setTeamToDelete(null)} className="btn-secondary text-sm">Cancel</button>
-              <button 
-                onClick={() => handleDeleteTeam(teamToDelete.id)} 
+              <button onClick={() => setTeamToDelete(null)} className="btn-secondary text-sm">
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteTeam(teamToDelete.id)}
                 className="btn-primary bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent text-sm"
               >
                 Delete Forever
@@ -255,16 +271,27 @@ export function TeamSettings({ userId }: { userId: string }) {
           </h4>
           <div className="space-y-2">
             {invites.map((inv) => (
-              <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 bg-background rounded-md p-3 border border-border shadow-sm">
+              <div
+                key={inv.id}
+                className="flex flex-wrap items-center justify-between gap-3 bg-background rounded-md p-3 border border-border shadow-sm"
+              >
                 <div>
                   <p className="text-sm font-medium">{inv.team.name}</p>
-                  {inv.team.description && <p className="text-xs text-muted-foreground">{inv.team.description}</p>}
+                  {inv.team.description && (
+                    <p className="text-xs text-muted-foreground">{inv.team.description}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleRespondToInvite(inv.teamId, true)} className="btn-primary text-xs py-1.5 px-3">
+                  <button
+                    onClick={() => handleRespondToInvite(inv.teamId, true)}
+                    className="btn-primary text-xs py-1.5 px-3"
+                  >
                     Accept
                   </button>
-                  <button onClick={() => handleRespondToInvite(inv.teamId, false)} className="btn-secondary text-xs py-1.5 px-3 text-destructive hover:bg-destructive/10">
+                  <button
+                    onClick={() => handleRespondToInvite(inv.teamId, false)}
+                    className="btn-secondary text-xs py-1.5 px-3 text-destructive hover:bg-destructive/10"
+                  >
                     Decline
                   </button>
                 </div>
@@ -298,8 +325,16 @@ export function TeamSettings({ userId }: { userId: string }) {
             className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div className="flex gap-2">
-            <button onClick={handleCreateTeam} disabled={creating || !newTeamName.trim()} className="btn-primary text-sm">
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            <button
+              onClick={handleCreateTeam}
+              disabled={creating || !newTeamName.trim()}
+              className="btn-primary text-sm"
+            >
+              {creating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
               Create
             </button>
             <button onClick={() => setShowCreate(false)} className="btn-secondary text-sm">
@@ -314,7 +349,9 @@ export function TeamSettings({ userId }: { userId: string }) {
         <div className="text-center py-8">
           <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">No teams yet</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">Create a team to collaborate with others.</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Create a team to collaborate with others.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -337,16 +374,26 @@ export function TeamSettings({ userId }: { userId: string }) {
                       <h4 className="font-medium text-sm">{team.name}</h4>
                       <p className="text-xs text-muted-foreground">
                         {team.members.length} member{team.members.length !== 1 ? 's' : ''} &middot;{' '}
-                        {team._count.connections} connection{team._count.connections !== 1 ? 's' : ''} &middot;{' '}
-                        {team._count.queries} quer{team._count.queries !== 1 ? 'ies' : 'y'}
+                        {team._count.connections} connection
+                        {team._count.connections !== 1 ? 's' : ''} &middot; {team._count.queries}{' '}
+                        quer{team._count.queries !== 1 ? 'ies' : 'y'}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={clsx('text-xs font-medium capitalize', ROLE_COLORS[userRole as keyof typeof ROLE_COLORS])}>
+                    <span
+                      className={clsx(
+                        'text-xs font-medium capitalize',
+                        ROLE_COLORS[userRole as keyof typeof ROLE_COLORS]
+                      )}
+                    >
                       {userRole.toLowerCase()}
                     </span>
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
                   </div>
                 </button>
 
@@ -359,10 +406,14 @@ export function TeamSettings({ userId }: { userId: string }) {
                     {/* Members */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <h5 className="text-xs font-semibold uppercase text-muted-foreground">Members</h5>
+                        <h5 className="text-xs font-semibold uppercase text-muted-foreground">
+                          Members
+                        </h5>
                         {canManage && (
                           <button
-                            onClick={() => setInviteTeamId(inviteTeamId === team.id ? null : team.id)}
+                            onClick={() =>
+                              setInviteTeamId(inviteTeamId === team.id ? null : team.id)
+                            }
                             className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                           >
                             <UserPlus className="w-3 h-3" />
@@ -383,31 +434,54 @@ export function TeamSettings({ userId }: { userId: string }) {
                           />
                           <select
                             value={inviteRole}
-                            onChange={(e) => setInviteRole(e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER')}
+                            onChange={(e) =>
+                              setInviteRole(e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER')
+                            }
                             className="px-2 py-1.5 bg-secondary border border-border rounded-lg text-sm"
                           >
                             <option value="MEMBER">Member</option>
                             <option value="ADMIN">Admin</option>
                             <option value="VIEWER">Viewer</option>
                           </select>
-                          <button onClick={handleInvite} disabled={inviting} className="btn-primary text-sm py-1.5">
+                          <button
+                            onClick={handleInvite}
+                            disabled={inviting}
+                            className="btn-primary text-sm py-1.5"
+                          >
                             {inviting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Add'}
                           </button>
                         </div>
                       )}
+                      {inviteTeamId === team.id && (
+                        <p className="text-xs text-muted-foreground -mt-1 mb-3">
+                          People who accept use the team owner&apos;s plan in NatureQuery and
+                          NatureQuery Desktop, for as many seats as that plan includes.
+                        </p>
+                      )}
 
                       <div className="space-y-2">
                         {team.members.map((member) => {
-                          const RoleIcon = ROLE_ICONS[member.role as keyof typeof ROLE_ICONS] || UserCircle
+                          const RoleIcon =
+                            ROLE_ICONS[member.role as keyof typeof ROLE_ICONS] || UserCircle
                           return (
-                            <div key={member.id} className="flex items-center justify-between py-1.5">
+                            <div
+                              key={member.id}
+                              className="flex items-center justify-between py-1.5"
+                            >
                               <div className="flex items-center gap-2">
                                 <RoleIcon
-                                  className={clsx('w-4 h-4', ROLE_COLORS[member.role as keyof typeof ROLE_COLORS])}
+                                  className={clsx(
+                                    'w-4 h-4',
+                                    ROLE_COLORS[member.role as keyof typeof ROLE_COLORS]
+                                  )}
                                 />
-                                <span className="text-sm">{member.user.name || member.user.email}</span>
+                                <span className="text-sm">
+                                  {member.user.name || member.user.email}
+                                </span>
                                 {member.user.name && (
-                                  <span className="text-xs text-muted-foreground">{member.user.email}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {member.user.email}
+                                  </span>
                                 )}
                                 {member.status === 'PENDING' && (
                                   <span className="ml-2 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-medium uppercase tracking-wide border border-border">
@@ -416,12 +490,18 @@ export function TeamSettings({ userId }: { userId: string }) {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                {canManage && member.role !== 'OWNER' && member.user.id !== userId ? (
+                                {canManage &&
+                                member.role !== 'OWNER' &&
+                                member.user.id !== userId ? (
                                   <>
                                     <select
                                       value={member.role}
                                       onChange={(e) =>
-                                        handleRoleChange(team.id, member.id, e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER')
+                                        handleRoleChange(
+                                          team.id,
+                                          member.id,
+                                          e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER'
+                                        )
                                       }
                                       className="px-2 py-1 bg-secondary border border-border rounded text-xs"
                                     >
@@ -430,11 +510,13 @@ export function TeamSettings({ userId }: { userId: string }) {
                                       <option value="VIEWER">Viewer</option>
                                     </select>
                                     <button
-                                      onClick={() => setMemberToRemove({ 
-                                        teamId: team.id, 
-                                        memberId: member.id, 
-                                        name: member.user.name || member.user.email 
-                                      })}
+                                      onClick={() =>
+                                        setMemberToRemove({
+                                          teamId: team.id,
+                                          memberId: member.id,
+                                          name: member.user.name || member.user.email,
+                                        })
+                                      }
                                       className="p-1 hover:bg-destructive/10 rounded transition-colors"
                                       title="Remove member"
                                     >

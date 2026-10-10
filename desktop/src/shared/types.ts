@@ -324,6 +324,8 @@ export interface PlanUsage {
   queryLimit: number
   queriesUsed: number
   periodEndsAt?: string
+  /** Set when the plan comes from a team the user has joined. */
+  teamName?: string
 }
 
 export type AuthState =

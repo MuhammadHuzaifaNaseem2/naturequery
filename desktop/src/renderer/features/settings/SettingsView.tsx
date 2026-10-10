@@ -210,7 +210,9 @@ export function SettingsView() {
                 </p>
                 <p className="truncate text-[12px] text-muted-foreground">
                   {auth.user.email}
-                  {auth.plan ? ` · ${auth.plan.planName} plan` : ''}
+                  {auth.plan
+                    ? ` · ${auth.plan.planName} plan${auth.plan.teamName ? ` from the ${auth.plan.teamName} team` : ''}`
+                    : ''}
                 </p>
               </div>
               <div className="flex gap-2">
