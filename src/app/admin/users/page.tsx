@@ -1,55 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback, Fragment } from 'react'
+import { toast } from 'sonner'
+import { clsx } from 'clsx'
+import { Search, ChevronLeft, ChevronRight, ChevronDown, Loader2, RefreshCw } from 'lucide-react'
 import {
-  Search, Shield, ShieldCheck, ShieldOff, CheckCircle2, Clock,
-  ChevronLeft, ChevronRight, ChevronDown, Loader2, Users, Database,
-  Activity, RefreshCw,
-} from 'lucide-react'
-import {
-  getAdminUsers, updateUserRole,
-  type AdminUserInfo, type AdminUserFilters,
+  getAdminUsers,
+  updateUserRole,
+  type AdminUserInfo,
+  type AdminUserFilters,
 } from '@/actions/admin'
-import { useAdminClasses, useAdminTheme } from '../AdminThemeProvider'
-
-// ─── Badges ──────────────────────────────────────────────────────────────
-
-function PlanBadge({ plan }: { plan: string }) {
-  const t = useAdminClasses()
-  const cls = t.badge[plan as keyof typeof t.badge] || t.badge.FREE
-  return <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-md border uppercase tracking-wider ${cls}`}>{plan}</span>
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const t = useAdminClasses()
-  const cls = t.badge[role as keyof typeof t.badge] || t.badge.VIEWER
-  return <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-md border uppercase tracking-wider ${cls}`}>{role}</span>
-}
-
-// ─── Toast ───────────────────────────────────────────────────────────────
-
-function Toast({ message, type }: { message: string; type: 'success' | 'error' }) {
-  return (
-    <div className={`fixed bottom-4 right-4 px-4 py-2.5 rounded-lg shadow-xl text-white text-sm font-medium z-50 animate-slideUp ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
-      {message}
-    </div>
-  )
-}
-
-// ─── Time Ago ────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const days = Math.floor(diff / 86400000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return `${days}d ago`
-  if (days < 30) return `${Math.floor(days / 7)}w ago`
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`
-  return `${Math.floor(days / 365)}y ago`
-}
-
-// ─── Main Page ───────────────────────────────────────────────────────────
+import { AdminTitle, Chip, formatDay, timeAgo } from '../admin-ui'
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserInfo[]>([])
@@ -63,12 +24,6 @@ export default function AdminUsersPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null)
   const [savingRole, setSavingRole] = useState(false)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-
-  const showToast = useCallback((message: string, type: 'success' | 'error') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3000)
-  }, [])
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -83,14 +38,16 @@ export default function AdminUsersPage() {
       setTotal(res.data.total)
       setTotalPages(res.data.totalPages)
     } else {
-      showToast(res.error || 'Failed to load users', 'error')
+      toast.error(res.error || 'Could not load people. Try Refresh.')
     }
     setLoading(false)
-  }, [page, searchTerm, roleFilter, planFilter, showToast])
+  }, [page, searchTerm, roleFilter, planFilter])
 
-  useEffect(() => { loadUsers() }, [loadUsers])
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
-  // Debounced search
+  // Search after typing stops
   const [searchInput, setSearchInput] = useState('')
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -100,52 +57,74 @@ export default function AdminUsersPage() {
     return () => clearTimeout(timer)
   }, [searchInput])
 
+  // The role chip in the row shows the change, so success needs no toast.
   async function handleRoleChange(userId: string, newRole: string) {
     setSavingRole(true)
     const res = await updateUserRole(userId, newRole as 'ADMIN' | 'ANALYST' | 'VIEWER')
     if (res.success) {
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
-      showToast(`Role updated to ${newRole}`, 'success')
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
     } else {
-      showToast(res.error || 'Failed to update role', 'error')
+      toast.error(res.error || 'Could not change the role.')
     }
     setChangingRoleId(null)
     setSavingRole(false)
   }
 
-  const t = useAdminClasses()
-  const { isDark } = useAdminTheme()
-
   return (
     <div className="space-y-5">
-      {toast && <Toast message={toast.message} type={toast.type} />}
-
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className={`text-xl font-bold ${t.text}`}>All Users</h2>
-          <p className={`text-sm mt-0.5 ${t.textMuted}`}>{total} registered accounts</p>
-        </div>
-        <button onClick={loadUsers} className={`flex items-center gap-2 px-3 py-2 text-xs rounded-xl border transition-colors ${t.btnSecondary}`}>
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+      <AdminTitle
+        title="People"
+        description={`${total.toLocaleString()} ${total === 1 ? 'account' : 'accounts'}`}
+      >
+        <button onClick={loadUsers} disabled={loading} className="btn-secondary h-9 text-xs">
+          <RefreshCw className={clsx('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
+          Refresh
         </button>
-      </div>
+      </AdminTitle>
 
       {/* Filters */}
-      <div className={`rounded-xl border ${t.card} p-4 flex flex-wrap gap-3 items-center`}>
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${t.textSubtle}`} />
-          <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Search name or email..."
-            className={`w-full border rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 transition-all ${t.input}`} />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <input
+            id="admin-people-search"
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by name or email"
+            aria-label="Search by name or email"
+            className="input pl-9"
+          />
         </div>
-        <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(1) }} className={`border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 ${t.select}`}>
-          <option value="">All Roles</option>
+        <select
+          id="admin-people-role"
+          value={roleFilter}
+          onChange={(e) => {
+            setRoleFilter(e.target.value)
+            setPage(1)
+          }}
+          aria-label="Role"
+          className="input w-auto"
+        >
+          <option value="">All roles</option>
           <option value="ADMIN">Admin</option>
           <option value="ANALYST">Analyst</option>
           <option value="VIEWER">Viewer</option>
         </select>
-        <select value={planFilter} onChange={e => { setPlanFilter(e.target.value); setPage(1) }} className={`border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/50 ${t.select}`}>
-          <option value="">All Plans</option>
+        <select
+          id="admin-people-plan"
+          value={planFilter}
+          onChange={(e) => {
+            setPlanFilter(e.target.value)
+            setPage(1)
+          }}
+          aria-label="Plan"
+          className="input w-auto"
+        >
+          <option value="">All plans</option>
           <option value="FREE">Free</option>
           <option value="PRO">Pro</option>
           <option value="ENTERPRISE">Enterprise</option>
@@ -153,118 +132,165 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Table */}
-      <div className={`rounded-xl border ${t.card} overflow-hidden`}>
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        {loading && users.length === 0 ? (
+          <div className="flex items-center gap-2 px-5 py-12 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            Loading people…
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center py-16">
-            <Users className={`w-10 h-10 mx-auto mb-3 ${t.textTiny}`} />
-            <p className={`text-sm ${t.textMuted}`}>No users found</p>
-          </div>
+          <p className="px-5 py-12 text-center text-sm text-muted-foreground">
+            No one matches these filters.
+          </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="data-table">
               <thead>
-                <tr className={`border-b ${t.tableHead}`}>
-                  {['User', 'Role', 'Plan', 'Security', 'Queries', 'Connections', 'Joined'].map((h, i) => (
-                    <th key={h} className={`p-4 text-[10px] font-semibold uppercase tracking-wider ${i >= 4 && i <= 5 ? 'text-right' : ''}`}>{h}</th>
-                  ))}
+                <tr>
+                  <th>Person</th>
+                  <th>Role</th>
+                  <th>Plan</th>
+                  <th>Two-factor</th>
+                  <th className="!text-right">Questions</th>
+                  <th className="!text-right">Connections</th>
+                  <th>Joined</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${t.tableRow.split(' ')[1]}`}>
-                {users.map(user => (
-                  <Fragment key={user.id}>
-                    <tr onClick={() => setExpandedId(expandedId === user.id ? null : user.id)} className={`transition-colors cursor-pointer group ${t.tableRow.split(' ')[0]}`}>
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 shadow-sm">
-                            {user.name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <p className={`text-sm font-semibold truncate ${t.text}`}>{user.name || 'No name'}</p>
-                            <p className={`text-[11px] truncate ${t.textMuted}`}>{user.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4" onClick={e => e.stopPropagation()}>
-                        {changingRoleId === user.id ? (
-                          <div className="flex items-center gap-1.5">
-                            <select defaultValue={user.role} onChange={e => handleRoleChange(user.id, e.target.value)} disabled={savingRole}
-                              className={`border rounded-lg px-2 py-1 text-xs focus:outline-none ${t.select}`} autoFocus onBlur={() => !savingRole && setChangingRoleId(null)}>
-                              <option value="ADMIN">ADMIN</option>
-                              <option value="ANALYST">ANALYST</option>
-                              <option value="VIEWER">VIEWER</option>
-                            </select>
-                            {savingRole && <Loader2 className="w-3 h-3 animate-spin text-purple-500" />}
-                          </div>
-                        ) : (
-                          <button onClick={() => setChangingRoleId(user.id)} className="hover:opacity-75 transition-opacity" title="Click to change role">
-                            <RoleBadge role={user.role} />
-                          </button>
-                        )}
-                      </td>
-                      <td className="p-4"><PlanBadge plan={user.plan} /></td>
-                      <td className="p-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <span title={user.twoFactorEnabled ? '2FA Enabled' : '2FA Disabled'}>
-                            {user.twoFactorEnabled ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <ShieldOff className={`w-4 h-4 ${t.textTiny}`} />}
-                          </span>
-                          <span title={user.onboardingCompleted ? 'Onboarded' : 'Not onboarded'}>
-                            {user.onboardingCompleted ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Clock className={`w-4 h-4 ${t.textTiny}`} />}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-right"><span className={`text-sm font-bold stat-number ${t.text}`}>{user.queryCount}</span></td>
-                      <td className="p-4 text-right"><span className={`text-sm ${t.textMuted}`}>{user.connectionCount}</span></td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs ${t.textMuted}`}>{timeAgo(user.createdAt)}</span>
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${t.textTiny} ${expandedId === user.id ? 'rotate-180' : ''}`} />
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedId === user.id && (
-                      <tr key={`${user.id}-detail`}>
-                        <td colSpan={7} className={`border-b ${t.tableExpanded}`}>
-                          <div className="p-5 animate-slideDown">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              {[
-                                { label: 'User ID', value: user.id, mono: true },
-                                { label: 'Plan Status', value: user.planStatus },
-                                { label: 'Monthly Queries', value: String(user.queryCount) },
-                                { label: 'Connections', value: String(user.connectionCount) },
-                                { label: '2FA', value: user.twoFactorEnabled ? 'Enabled' : 'Disabled' },
-                                { label: 'Onboarding', value: user.onboardingCompleted ? 'Completed' : 'Pending' },
-                                { label: 'Joined', value: new Date(user.createdAt).toLocaleDateString() },
-                                { label: 'Email', value: user.email },
-                              ].map(({ label, value, mono }) => (
-                                <div key={label}>
-                                  <p className={`text-[10px] uppercase tracking-wider mb-1 ${t.textSubtle}`}>{label}</p>
-                                  <p className={`text-xs truncate ${mono ? 'font-mono' : ''} ${t.textMuted}`}>{value}</p>
-                                </div>
-                              ))}
+              <tbody>
+                {users.map((user) => {
+                  const expanded = expandedId === user.id
+                  return (
+                    <Fragment key={user.id}>
+                      <tr
+                        onClick={() => setExpandedId(expanded ? null : user.id)}
+                        className="cursor-pointer"
+                        aria-expanded={expanded}
+                      >
+                        <td>
+                          <p className="max-w-[260px] truncate font-medium">
+                            {user.name || 'No name'}
+                          </p>
+                          <p className="max-w-[260px] truncate text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </td>
+                        <td onClick={(e) => e.stopPropagation()}>
+                          {changingRoleId === user.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <select
+                                defaultValue={user.role}
+                                onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                                disabled={savingRole}
+                                aria-label={`Role for ${user.email}`}
+                                className="input h-8 w-auto py-1 text-xs"
+                                autoFocus
+                                onBlur={() => !savingRole && setChangingRoleId(null)}
+                              >
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="ANALYST">ANALYST</option>
+                                <option value="VIEWER">VIEWER</option>
+                              </select>
+                              {savingRole && (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                              )}
                             </div>
-                          </div>
+                          ) : (
+                            <button
+                              onClick={() => setChangingRoleId(user.id)}
+                              className="rounded focus-ring"
+                              title="Change role"
+                              aria-label={`Change role for ${user.email}, now ${user.role}`}
+                            >
+                              <Chip value={user.role} />
+                            </button>
+                          )}
+                        </td>
+                        <td>
+                          <Chip value={user.plan} />
+                        </td>
+                        <td className="text-muted-foreground">
+                          {user.twoFactorEnabled ? 'On' : 'Off'}
+                        </td>
+                        <td className="text-right font-mono">{user.queryCount.toLocaleString()}</td>
+                        <td className="text-right font-mono text-muted-foreground">
+                          {user.connectionCount}
+                        </td>
+                        <td>
+                          <span className="flex items-center gap-2 whitespace-nowrap font-mono text-xs text-muted-foreground">
+                            {timeAgo(user.createdAt)}
+                            <ChevronDown
+                              className={clsx(
+                                'h-3.5 w-3.5 transition-transform',
+                                expanded && 'rotate-180'
+                              )}
+                              aria-hidden
+                            />
+                          </span>
                         </td>
                       </tr>
-                    )}
-                  </Fragment>
-                ))}
+                      {expanded && (
+                        <tr className="hover:!bg-transparent">
+                          <td colSpan={7} className="bg-secondary/40">
+                            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 py-2 md:grid-cols-4">
+                              {[
+                                { label: 'User ID', value: user.id, mono: true },
+                                { label: 'Plan status', value: user.planStatus },
+                                { label: 'Questions this month', value: String(user.queryCount) },
+                                { label: 'Connections', value: String(user.connectionCount) },
+                                {
+                                  label: 'Two-factor',
+                                  value: user.twoFactorEnabled ? 'On' : 'Off',
+                                },
+                                {
+                                  label: 'Onboarding',
+                                  value: user.onboardingCompleted ? 'Finished' : 'Not finished',
+                                },
+                                { label: 'Joined', value: formatDay(user.createdAt) },
+                                { label: 'Email', value: user.email },
+                              ].map(({ label, value, mono }) => (
+                                <div key={label} className="min-w-0">
+                                  <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+                                    {label}
+                                  </dt>
+                                  <dd
+                                    className={clsx('mt-0.5 truncate text-xs', mono && 'font-mono')}
+                                  >
+                                    {value}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         )}
         {totalPages > 1 && (
-          <div className={`flex items-center justify-between px-4 py-3 border-t ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-            <p className={`text-xs ${t.textMuted}`}>Page {page} of {totalPages} · {total} users</p>
+          <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+            <p className="font-mono text-[11px] tabular-nums text-muted-foreground">
+              Page {page} of {totalPages} · {total.toLocaleString()} people
+            </p>
             <div className="flex items-center gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className={`p-1.5 rounded-lg transition-colors disabled:cursor-not-allowed ${t.pagination}`}>
-                <ChevronLeft className="w-4 h-4" />
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="btn-ghost h-8 w-8 p-0"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
               </button>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className={`p-1.5 rounded-lg transition-colors disabled:cursor-not-allowed ${t.pagination}`}>
-                <ChevronRight className="w-4 h-4" />
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="btn-ghost h-8 w-8 p-0"
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>

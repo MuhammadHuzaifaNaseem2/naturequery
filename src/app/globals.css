@@ -396,21 +396,24 @@
   color: hsl(var(--signal-ink));
 }
 
-/* Data tables: mono column labels, hairline rows, figures that line up. */
-.data-table {
-  @apply w-full text-sm;
-}
+/* Data tables: mono column labels and hairline rows. Figures go in mono cells, which
+   line up on their own; tabular figures here would also widen the dots in emails. */
+@layer components {
+  .data-table {
+    @apply w-full text-sm;
+  }
 
-.data-table th {
-  @apply sticky top-0 bg-card font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground text-left px-4 py-2.5 border-b border-border;
-}
+  .data-table th {
+    @apply sticky top-0 bg-card font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground text-left px-4 py-2.5 border-b border-border;
+  }
 
-.data-table td {
-  @apply px-4 py-2.5 border-b border-border/70 tabular-nums;
-}
+  .data-table td {
+    @apply px-4 py-2.5 border-b border-border/70;
+  }
 
-.data-table tr:hover {
-  @apply bg-secondary/60;
+  .data-table tr:hover {
+    @apply bg-secondary/60;
+  }
 }
 
 /* Code block styles */
@@ -453,9 +456,12 @@
   }
 }
 
-/* Input styles */
-.input {
-  @apply w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus-ring placeholder:text-muted-foreground;
+/* Input styles — in @layer components so utilities such as `pl-9` or `w-auto` on an
+   input can override its padding and width */
+@layer components {
+  .input {
+    @apply w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus-ring placeholder:text-muted-foreground;
+  }
 }
 
 /* Card styles: a surface with a hairline edge; no shadow unless it floats. */

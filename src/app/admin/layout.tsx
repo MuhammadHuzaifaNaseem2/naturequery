@@ -1,9 +1,8 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Shield } from 'lucide-react'
 import SignOutButton from '@/components/SignOutButton'
-import AdminThemeProvider from './AdminThemeProvider'
+import AdminShell from './AdminShell'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -17,37 +16,39 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (session.user.role !== 'ADMIN') {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-950 text-white flex-col gap-6">
-        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-          <Shield className="w-8 h-8 text-red-400" />
-        </div>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-neutral-500">You do not have permission to view this page.</p>
-        </div>
-        <div className="p-4 bg-neutral-900 rounded-xl border border-neutral-800 font-mono text-sm text-neutral-500 flex flex-col gap-1.5">
-          <div>
-            User: <span className="text-neutral-300">{session.user.email}</span>
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+        <div className="w-full max-w-md">
+          <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            Admin console
+          </p>
+          <h1 className="mt-3 font-serif text-[2rem] font-normal leading-tight tracking-[-0.02em]">
+            This account can&apos;t open the admin console.
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            Only accounts with the Admin role can see it. If you need access, ask an admin to change
+            your role.
+          </p>
+          <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg border border-border bg-card p-4 font-mono text-xs">
+            <dt className="text-muted-foreground">Signed in as</dt>
+            <dd className="truncate">{session.user.email}</dd>
+            <dt className="text-muted-foreground">Role</dt>
+            <dd>{session.user.role || 'None'}</dd>
+          </dl>
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <Link href="/dashboard" className="btn-primary">
+              Back to the dashboard
+            </Link>
+            <div className="w-auto">
+              <SignOutButton />
+            </div>
           </div>
-          <div>
-            Role: <span className="text-neutral-300">{session.user.role || 'None'}</span>
-          </div>
         </div>
-        <div className="flex gap-3">
-          <Link
-            href="/"
-            className="px-5 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors text-sm"
-          >
-            Return to App
-          </Link>
-          <SignOutButton />
-        </div>
-      </div>
+      </main>
     )
   }
 
   return (
-    <AdminThemeProvider
+    <AdminShell
       user={{
         name: session.user.name,
         email: session.user.email,
@@ -55,6 +56,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       }}
     >
       {children}
-    </AdminThemeProvider>
+    </AdminShell>
   )
 }

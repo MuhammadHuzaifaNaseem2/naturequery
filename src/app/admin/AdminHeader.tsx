@@ -1,78 +1,77 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Shield, ChevronRight, Sun, Moon, Bell } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { useAdminTheme, useAdminClasses } from './AdminThemeProvider'
-
-const PAGE_META: Record<string, { title: string; description: string }> = {
-  '/admin':             { title: 'Overview',            description: 'System metrics and activity' },
-  '/admin/users':       { title: 'User Management',     description: 'Manage users, roles and permissions' },
-  '/admin/connections': { title: 'Database Connections', description: 'Monitor all database connections' },
-}
+import { clsx } from 'clsx'
+import { Sun, Moon } from 'lucide-react'
+import { useTheme } from '@/components/ThemeProvider'
+import { ADMIN_NAV, isAdminNavActive } from './AdminSidebar'
 
 export default function AdminHeader() {
   const pathname = usePathname()
-  const { isDark, toggle } = useAdminTheme()
-  const t = useAdminClasses()
-  const page = PAGE_META[pathname] || { title: 'Admin', description: '' }
-
-  const [time, setTime] = useState('')
-  const [date, setDate] = useState('')
-
-  useEffect(() => {
-    function tick() {
-      const now = new Date()
-      setTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
-      setDate(now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }))
-    }
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [])
+  const { resolvedTheme, setTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+  const current = ADMIN_NAV.find((item) => isAdminNavActive(pathname, item.href, item.exact))
 
   return (
-    <header className={`border-b ${t.header} px-6 lg:px-8 py-3.5 backdrop-blur-sm transition-colors duration-200`}>
-      <div className="flex items-center justify-between gap-4">
-
-        {/* Left: breadcrumb + title */}
-        <div>
-          <div className={`flex items-center gap-1.5 text-[11px] mb-1 ${t.textSubtle}`}>
-            <Shield className="w-3 h-3" />
-            <span>Admin</span>
-            <ChevronRight className="w-3 h-3 opacity-50" />
-            <span className="text-purple-500 font-medium">{page.title}</span>
-          </div>
-          <h1 className={`text-lg font-bold leading-none ${t.text}`}>{page.title}</h1>
-          {page.description && (
-            <p className={`text-xs mt-0.5 ${t.textMuted}`}>{page.description}</p>
+    <header className="border-b border-border bg-background">
+      <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex min-w-0 items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em]"
+        >
+          <span className="text-muted-foreground">Admin</span>
+          <span className="text-muted-foreground/50" aria-hidden>
+            /
+          </span>
+          <span className="truncate text-foreground" aria-current="page">
+            {current?.label ?? 'Console'}
+          </span>
+        </nav>
+        <button
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          className="btn-ghost h-8 w-8 p-0"
+          title={isDark ? 'Use the light theme' : 'Use the dark theme'}
+          aria-label={isDark ? 'Use the light theme' : 'Use the dark theme'}
+        >
+          {isDark ? (
+            <Sun className="h-4 w-4" aria-hidden />
+          ) : (
+            <Moon className="h-4 w-4" aria-hidden />
           )}
-        </div>
-
-        {/* Right: clock + theme toggle */}
-        <div className="flex items-center gap-2">
-          {/* Live clock */}
-          <div className={`hidden md:flex flex-col items-end px-3 py-1.5 rounded-xl border ${isDark ? 'bg-neutral-800/40 border-neutral-700/50' : 'bg-slate-100 border-slate-200'} transition-colors`}>
-            <span className={`text-xs font-mono font-semibold tabular-nums ${t.text}`}>{time}</span>
-            <span className={`text-[10px] ${t.textSubtle}`}>{date}</span>
-          </div>
-
-          {/* System status */}
-          <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border ${isDark ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className={`text-[11px] font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>All systems operational</span>
-          </div>
-
-          {/* Theme toggle */}
-          <button
-            onClick={toggle}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-neutral-800/40 border-neutral-700/50 text-neutral-400 hover:text-white hover:bg-neutral-800' : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-        </div>
+        </button>
       </div>
+
+      {/* On phones the sidebar is hidden, so its links sit here */}
+      <nav
+        aria-label="Admin"
+        className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2 md:hidden"
+      >
+        {ADMIN_NAV.map((item) => {
+          const active = isAdminNavActive(pathname, item.href, item.exact)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? 'page' : undefined}
+              className={clsx(
+                'whitespace-nowrap rounded-md px-2.5 py-1 text-sm transition-colors',
+                active
+                  ? 'bg-secondary font-medium text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+        <Link
+          href="/dashboard"
+          className="whitespace-nowrap rounded-md px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Dashboard
+        </Link>
+      </nav>
     </header>
   )
 }
