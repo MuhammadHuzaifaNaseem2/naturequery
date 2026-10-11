@@ -12,9 +12,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  Trophy,
   Sparkles,
-  PartyPopper,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import {
@@ -32,11 +30,36 @@ interface ChecklistStep {
 }
 
 const STEPS: ChecklistStep[] = [
-  { key: 'connectedDb', icon: Database, titleKey: 'onboarding.checklist.steps.connectedDb', descriptionKey: 'onboarding.checklist.steps.connectedDbDesc' },
-  { key: 'askedFirstQuestion', icon: MessageSquare, titleKey: 'onboarding.checklist.steps.askedFirstQuestion', descriptionKey: 'onboarding.checklist.steps.askedFirstQuestionDesc' },
-  { key: 'pinnedChart', icon: Pin, titleKey: 'onboarding.checklist.steps.pinnedChart', descriptionKey: 'onboarding.checklist.steps.pinnedChartDesc' },
-  { key: 'invitedTeamMember', icon: Users, titleKey: 'onboarding.checklist.steps.invitedTeamMember', descriptionKey: 'onboarding.checklist.steps.invitedTeamMemberDesc' },
-  { key: 'setupSchedule', icon: Clock, titleKey: 'onboarding.checklist.steps.setupSchedule', descriptionKey: 'onboarding.checklist.steps.setupScheduleDesc' },
+  {
+    key: 'connectedDb',
+    icon: Database,
+    titleKey: 'onboarding.checklist.steps.connectedDb',
+    descriptionKey: 'onboarding.checklist.steps.connectedDbDesc',
+  },
+  {
+    key: 'askedFirstQuestion',
+    icon: MessageSquare,
+    titleKey: 'onboarding.checklist.steps.askedFirstQuestion',
+    descriptionKey: 'onboarding.checklist.steps.askedFirstQuestionDesc',
+  },
+  {
+    key: 'pinnedChart',
+    icon: Pin,
+    titleKey: 'onboarding.checklist.steps.pinnedChart',
+    descriptionKey: 'onboarding.checklist.steps.pinnedChartDesc',
+  },
+  {
+    key: 'invitedTeamMember',
+    icon: Users,
+    titleKey: 'onboarding.checklist.steps.invitedTeamMember',
+    descriptionKey: 'onboarding.checklist.steps.invitedTeamMemberDesc',
+  },
+  {
+    key: 'setupSchedule',
+    icon: Clock,
+    titleKey: 'onboarding.checklist.steps.setupSchedule',
+    descriptionKey: 'onboarding.checklist.steps.setupScheduleDesc',
+  },
 ]
 
 interface OnboardingChecklistProps {
@@ -66,7 +89,9 @@ export function OnboardingChecklist({
 
   // Listen for checklist events from the dashboard
   useEffect(() => {
-    const handleChecklistEvent = (e: CustomEvent<{ item: keyof Omit<ChecklistState, 'dismissed'> }>) => {
+    const handleChecklistEvent = (
+      e: CustomEvent<{ item: keyof Omit<ChecklistState, 'dismissed'> }>
+    ) => {
       setState((prev) => {
         if (!prev || prev[e.detail.item]) return prev
         return { ...prev, [e.detail.item]: true }
@@ -98,17 +123,21 @@ export function OnboardingChecklist({
 
   if (allDone && showConfetti) {
     return (
-      <div className="mb-2 p-3 rounded-lg bg-gradient-to-r from-primary/10 via-accent/10 to-success/10 border border-primary/20 animate-fadeIn">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-            <PartyPopper className="w-5 h-5 text-white" />
+      <div className="mb-2 rounded-lg border border-border bg-card p-3 animate-fadeIn">
+        <div className="flex items-start gap-2.5">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">{t('onboarding.checklist.allSet')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t('onboarding.checklist.allSetDescription')}
+            </p>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold">{t('onboarding.checklist.allSet')}</p>
-            <p className="text-xs text-muted-foreground">{t('onboarding.checklist.allSetDescription')}</p>
-          </div>
-          <button onClick={handleDismiss} className="p-1.5 hover:bg-secondary rounded-lg transition-colors">
-            <X className="w-4 h-4 text-muted-foreground" />
+          <button
+            onClick={handleDismiss}
+            aria-label={t('onboarding.checklist.dismiss')}
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -117,67 +146,53 @@ export function OnboardingChecklist({
 
   return (
     <div className="mb-2 animate-fadeIn">
-      <div className="bg-card border border-border/60 rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         {/* Header */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors"
+          aria-expanded={!isCollapsed}
+          className="w-full px-3 pb-2.5 pt-3 text-left transition-colors hover:bg-secondary/40"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
-              <Trophy className="w-4 h-4 text-white" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-semibold">{t('onboarding.checklist.gettingStarted')}</p>
-              <p className="text-[10px] text-muted-foreground">{completedCount}/{totalSteps} {t('onboarding.checklist.completed')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Progress ring */}
-            <div className="relative w-9 h-9">
-              <svg className="w-9 h-9 transform -rotate-90">
-                <circle
-                  cx="18" cy="18" r="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  className="text-secondary"
-                />
-                <circle
-                  cx="18" cy="18" r="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeDasharray={`${2 * Math.PI * 14}`}
-                  strokeDashoffset={`${2 * Math.PI * 14 * (1 - progress / 100)}`}
-                  strokeLinecap="round"
-                  className="text-primary transition-all duration-500"
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-primary">
-                {progress}%
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">{t('onboarding.checklist.gettingStarted')}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                {completedCount}/{totalSteps}
               </span>
-            </div>
-            {isCollapsed ? (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
-            )}
-          </div>
+              {isCollapsed ? (
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+              ) : (
+                <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+              )}
+            </span>
+          </span>
+          {/* Progress */}
+          <span
+            className="mt-2.5 block h-[3px] overflow-hidden rounded-full bg-secondary"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+            aria-label={`${completedCount} of ${totalSteps} ${t('onboarding.checklist.completed')}`}
+          >
+            <span
+              className="block h-full rounded-full bg-primary transition-[width] duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </span>
         </button>
 
         {/* Steps */}
         {!isCollapsed && (
-          <div className="px-4 pb-3 space-y-1">
+          <div className="space-y-0.5 border-t border-border px-1.5 pb-2 pt-1.5">
             {STEPS.map((step) => {
               const done = state[step.key]
-              const Icon = step.icon
               return (
                 <div
                   key={step.key}
                   className={clsx(
-                    'flex items-start gap-3 p-2.5 rounded-lg transition-all',
-                    done ? 'opacity-60' : 'hover:bg-secondary/40 cursor-pointer'
+                    'flex items-start gap-2.5 rounded-md px-2 py-2 transition-colors',
+                    done ? 'text-muted-foreground' : 'cursor-pointer hover:bg-secondary/60'
                   )}
                   onClick={() => {
                     if (done) return
@@ -186,35 +201,36 @@ export function OnboardingChecklist({
                     if (step.key === 'invitedTeamMember') onInviteTeam?.()
                   }}
                 >
-                  <div className="mt-0.5">
-                    {done ? (
-                      <CheckCircle2 className="w-5 h-5 text-success" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-muted-foreground/40" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={clsx('text-xs font-medium', done && 'line-through text-muted-foreground')}>
+                  {done ? (
+                    <CheckCircle2
+                      className="mt-px h-4 w-4 flex-shrink-0 text-primary"
+                      aria-hidden
+                    />
+                  ) : (
+                    <Circle
+                      className="mt-px h-4 w-4 flex-shrink-0 text-muted-foreground/50"
+                      aria-hidden
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className={clsx('text-xs font-medium', done && 'line-through')}>
                       {t(step.titleKey as any)}
                     </p>
                     {!done && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{t(step.descriptionKey as any)}</p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                        {t(step.descriptionKey as any)}
+                      </p>
                     )}
                   </div>
-                  {!done && (
-                    <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-3 h-3 text-primary" />
-                    </div>
-                  )}
                 </div>
               )
             })}
 
             {/* Dismiss link */}
-            <div className="flex justify-end pt-1">
+            <div className="flex justify-end px-2 pt-1">
               <button
                 onClick={handleDismiss}
-                className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                className="text-[11px] text-muted-foreground transition-colors hover:text-foreground"
               >
                 {t('onboarding.checklist.dismiss')}
               </button>

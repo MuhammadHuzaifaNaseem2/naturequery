@@ -93,7 +93,7 @@ export function AuthorizeDesktop({ valid, challenge, state, deviceName, account 
           <AppLogo size="lg" />
         </div>
 
-        <section className="rounded-2xl border border-border bg-card text-card-foreground shadow-sm p-7">
+        <section className="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-7">
           {(step.kind === 'confirm' || step.kind === 'working') && (
             <>
               <div className="flex items-center gap-3 mb-5">
@@ -163,7 +163,7 @@ export function AuthorizeDesktop({ valid, challenge, state, deviceName, account 
 
           {step.kind === 'approved' && (
             <>
-              <div className="h-11 w-11 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-4">
+              <div className="h-11 w-11 rounded-full bg-success/10 text-success flex items-center justify-center mb-4">
                 <Check className="h-5 w-5" aria-hidden />
               </div>
               <h1 className="text-lg font-semibold mb-1">You are signed in</h1>

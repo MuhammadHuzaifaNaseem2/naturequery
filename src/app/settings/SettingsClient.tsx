@@ -65,41 +65,42 @@ export default function SettingsClient({
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3 sm:gap-4">
+      <header className="border-b border-border bg-background">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-2">
           <button
             onClick={() => router.push('/dashboard')}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors flex-shrink-0"
-            title={t('common.back')}
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" aria-hidden />
+            {t('dashboard.title')}
           </button>
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold truncate">{t('settings.title')}</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">
-              Manage your account, teams, and API access
-            </p>
-          </div>
+          <span className="text-muted-foreground/50" aria-hidden>
+            /
+          </span>
+          <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            {t('settings.title')}
+          </span>
         </div>
       </header>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col lg:flex-row gap-6 lg:gap-12">
         {/* Sidebar Navigation — horizontal scroll on mobile, vertical on desktop */}
-        <nav className="lg:w-48 lg:flex-shrink-0">
+        <nav className="lg:w-48 lg:flex-shrink-0" aria-label={t('settings.title')}>
           <div className="flex lg:block gap-1 lg:gap-0 lg:space-y-1 overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0 lg:overflow-visible pb-2 lg:pb-0">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
+                aria-current={activeTab === id ? 'page' : undefined}
                 className={clsx(
-                  'flex items-center gap-2 lg:gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 lg:w-full',
+                  'flex items-center gap-2 lg:gap-2.5 px-3 py-2 rounded-md text-sm transition-colors whitespace-nowrap flex-shrink-0 lg:w-full',
                   activeTab === id
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                    ? 'bg-secondary text-foreground font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                 )}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4" aria-hidden />
                 {label}
               </button>
             ))}
@@ -108,6 +109,9 @@ export default function SettingsClient({
 
         {/* Tab Content */}
         <div className="flex-1 min-w-0">
+          <h1 className="mb-6 font-serif text-[2rem] font-normal leading-tight tracking-[-0.015em]">
+            {TABS.find((tab) => tab.id === activeTab)?.label}
+          </h1>
           {activeTab === 'profile' && session?.user && (
             <ProfileSettings
               user={{
@@ -123,11 +127,11 @@ export default function SettingsClient({
             <SecurityClient
               initialTwoFactorEnabled={initialTwoFactorEnabled}
               desktopSessions={desktopSessions}
+              embedded
             />
           )}
           {activeTab === 'language' && (
-            <div className="bg-card border border-border rounded-xl p-6">
-              <h2 className="text-lg font-semibold mb-2">{t('settings.language.title')}</h2>
+            <div className="bg-card border border-border rounded-lg p-6">
               <p className="text-sm text-muted-foreground mb-6">
                 {t('settings.language.selectLanguage')}
               </p>

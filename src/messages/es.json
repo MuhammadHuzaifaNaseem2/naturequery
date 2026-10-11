@@ -317,7 +317,7 @@
       "instant": "Instantáneo",
       "format": "Formatear",
       "template": "Plantilla",
-      "aiFixIt": "Corrección IA",
+      "aiFixIt": "Corregir con IA",
       "askAi": "Preguntar a IA",
       "sqlEditor": "Editor SQL",
       "sqlEditorDescription": "Escribe y ejecuta SQL directamente con resaltado de sintaxis completo",
@@ -325,7 +325,25 @@
       "schemaInsights": "Perspectivas del esquema",
       "conversation": "Conversación",
       "conversationExchange": "intercambio",
-      "conversationExchanges": "intercambios"
+      "conversationExchanges": "intercambios",
+      "stepAsk": "Tu pregunta",
+      "stepWrites": "NatureQuery escribe",
+      "stepAnswer": "La respuesta",
+      "modeQuestion": "Lenguaje natural",
+      "modeSql": "SQL",
+      "followUpOne": "Continúa tu última pregunta",
+      "followUpMany": "Continúa tus últimas {{count}} preguntas",
+      "startOver": "Empezar de nuevo",
+      "questionsToTry": "Preguntas para probar",
+      "checkedReadOnly": "Solo lectura. Se revisa antes de ejecutarse.",
+      "performance": "Rendimiento",
+      "emptyLabel": "Empieza aquí",
+      "emptyTitle": "Conecta una base de datos,",
+      "emptyTitleRest": "o prueba primero la tienda de ejemplo.",
+      "emptyBody": "Para escribir una consulta, NatureQuery lee los nombres de tablas y columnas, no tus datos. Solo ejecuta SQL de lectura.",
+      "worksWith": "Compatible con",
+      "tryDemoDatabase": "Probar la base de datos de ejemplo",
+      "csvOrExcel": "y archivos CSV o Excel"
     },
     "header": {
       "queryWorkspace": "Espacio de trabajo de consultas",
@@ -404,7 +422,8 @@
       "searchPlaceholder": "Buscar en historial...",
       "allStatus": "Todos los estados",
       "historyNoResults": "No se encontraron resultados para tu búsqueda/filtros.",
-      "exportHistory": "Exportar"
+      "exportHistory": "Exportar",
+      "newQuestion": "Nueva pregunta"
     },
     "schemaBrowser": {
       "noSchemaLoaded": "No hay esquema cargado",
@@ -657,12 +676,15 @@
       "askPlain": "Pregunta en lenguaje sencillo",
       "askPlainExample": "Muéstrame todos los pedidos de la semana pasada",
       "instantResults": "Obtén resultados al instante",
-      "instantResultsSub": "La IA genera y ejecuta la consulta por ti"
+      "instantResultsSub": "La IA genera y ejecuta la consulta por ti",
+      "label": "Bienvenida",
+      "skipSetup": "Omitir la configuración"
     },
     "step1": {
       "title": "Conecta tu base de datos",
       "subtitle": "Agrega tu primera conexión de base de datos para comenzar.",
-      "skip": "Omitir por ahora"
+      "skip": "Omitir por ahora",
+      "label": "Tus datos"
     },
     "step2": {
       "title": "Prueba tu primera consulta",
@@ -678,7 +700,8 @@
       "dbConnected": "Tu base de datos está conectada. Ve al panel de control para empezar a hacer preguntas.",
       "noDatabase": "Ve al panel de control para conectar una base de datos y empezar a consultar con lenguaje natural.",
       "tryAsking": "Intenta preguntar algo como:",
-      "exampleQuery": "Muéstrame todos los clientes que se registraron este mes"
+      "exampleQuery": "Muéstrame todos los clientes que se registraron este mes",
+      "label": "Listo"
     },
     "checklist": {
       "gettingStarted": "Primeros pasos",
@@ -698,7 +721,8 @@
         "setupSchedule": "Configura un informe programado",
         "setupScheduleDesc": "Automatiza consultas recurrentes con entrega por correo."
       }
-    }
+    },
+    "progress": "Paso {{step}} de {{total}}"
   },
   "pages": {
     "notFound": {

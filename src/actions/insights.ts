@@ -4,7 +4,7 @@ import { QueryResultRow } from './db'
 import { DatabaseSchema } from './db'
 import { getGroqClient, withKeyRotation } from '@/lib/groq-keys'
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface KeyFinding {
   type: 'positive' | 'negative' | 'neutral' | 'warning'
@@ -78,7 +78,7 @@ export interface AnalyzeResult {
   error?: string
 }
 
-// â”€â”€â”€ Statistical Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Statistical Analysis ───────────────────────────────────────────────────
 
 function calculateStatistics(rows: QueryResultRow[], fields: string[]): FieldStatistics[] {
   return fields.map((field) => {
@@ -254,7 +254,7 @@ function recommendChart(
   const categoricalFields = statistics.filter((s) => s.type === 'categorical' || s.type === 'text')
   const dateFields = statistics.filter((s) => s.type === 'date')
 
-  // Time series data â†’ Line chart
+  // Time series data → Line chart
   if (dateFields.length > 0 && numericFields.length > 0) {
     return {
       type: 'line',
@@ -265,7 +265,7 @@ function recommendChart(
     }
   }
 
-  // Few categories with numeric values â†’ Bar chart
+  // Few categories with numeric values → Bar chart
   if (categoricalFields.length > 0 && numericFields.length > 0) {
     const primaryCategorical = categoricalFields[0]
     if (primaryCategorical.uniqueCount <= 15) {
@@ -279,7 +279,7 @@ function recommendChart(
     }
   }
 
-  // Proportions with few categories â†’ Pie chart
+  // Proportions with few categories → Pie chart
   if (categoricalFields.length === 1 && numericFields.length === 1) {
     const cat = categoricalFields[0]
     if (cat.uniqueCount <= 8 && cat.uniqueCount >= 2) {
@@ -293,7 +293,7 @@ function recommendChart(
     }
   }
 
-  // Two numeric fields â†’ Scatter plot
+  // Two numeric fields → Scatter plot
   if (numericFields.length >= 2 && categoricalFields.length === 0) {
     return {
       type: 'scatter',
@@ -304,7 +304,7 @@ function recommendChart(
     }
   }
 
-  // Cumulative or flowing data â†’ Area chart
+  // Cumulative or flowing data → Area chart
   if (numericFields.length === 1 && rows.length > 10) {
     return {
       type: 'area',
@@ -351,7 +351,7 @@ function calculateDataQualityScore(statistics: FieldStatistics[]): number {
   return Math.round(totalScore / fieldCount)
 }
 
-// â”€â”€â”€ AI-Powered Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AI-Powered Analysis ────────────────────────────────────────────────────
 
 const INSIGHTS_SYSTEM_PROMPT = `You are a data analyst AI. Analyze the provided query results and generate insights.
 
@@ -483,7 +483,7 @@ function generateMockAIInsights(
   return { summary, keyFindings, followUpQuestions }
 }
 
-// â”€â”€â”€ Main Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Export ────────────────────────────────────────────────────────────
 
 export async function analyzeResults(request: AnalyzeRequest): Promise<AnalyzeResult> {
   try {

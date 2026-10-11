@@ -33,32 +33,26 @@ export function PlanLimitModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-scaleIn"
+        className="relative w-full max-w-md bg-card border border-border rounded-lg shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] overflow-hidden animate-fadeIn"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top accent bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-primary to-accent" />
-
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          aria-label="Close"
+          className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="p-8">
-          {/* Icon */}
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-5">
-            <Lock className="w-7 h-7 text-amber-500" />
-          </div>
+        <div className="p-6">
+          <Lock className="w-5 h-5 mb-3 text-warning" aria-hidden />
 
-          {/* Text */}
-          <h2 className="text-xl font-bold mb-2">{title}</h2>
+          <h2 className="text-lg font-semibold mb-1.5">{title}</h2>
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{description}</p>
 
           {/* Plan comparison */}

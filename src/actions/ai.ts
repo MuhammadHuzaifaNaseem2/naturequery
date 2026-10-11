@@ -46,7 +46,7 @@ function parseGroqError(error: unknown): string {
       }
       if (inner) return inner
     } catch {
-      // JSON parse failed â€” fall through
+      // JSON parse failed — fall through
     }
   }
 
@@ -93,15 +93,15 @@ STRICT RULES:
 
 1. OUTPUT: Return ONLY the raw SQL query. No explanations, no markdown, no code blocks. Just pure SQL ending with a semicolon.
 
-2. ALLOWED: SELECT statements ONLY â€” JOINs, GROUP BY, ORDER BY, HAVING, LIMIT, OFFSET, DISTINCT, aggregates (COUNT, SUM, AVG, MIN, MAX), CASE WHEN, CTEs, subqueries, UNION/INTERSECT/EXCEPT.
+2. ALLOWED: SELECT statements ONLY — JOINs, GROUP BY, ORDER BY, HAVING, LIMIT, OFFSET, DISTINCT, aggregates (COUNT, SUM, AVG, MIN, MAX), CASE WHEN, CTEs, subqueries, UNION/INTERSECT/EXCEPT.
 
 3. PROHIBITED: DROP, DELETE, UPDATE, INSERT, ALTER, CREATE, TRUNCATE, GRANT, REVOKE, EXECUTE, comments.
 
-4. JOINS â€” CRITICAL:
+4. JOINS — CRITICAL:
    - ALWAYS check the RELATIONSHIPS section at the bottom of the schema for foreign keys.
    - When a question references data from multiple tables (e.g. "orders by city"), you MUST JOIN the tables using the foreign key relationships.
-   - Example: if orders.customer_id â†’ customers.id and the user asks about city, JOIN orders with customers.
-   - NEVER reference a column on a table that doesn't have it â€” check the column list.
+   - Example: if orders.customer_id → customers.id and the user asks about city, JOIN orders with customers.
+   - NEVER reference a column on a table that doesn't have it — check the column list.
    - Prefer explicit JOIN ... ON syntax over implicit WHERE joins.
 
 5. COLUMN AWARENESS:
@@ -127,8 +127,8 @@ STRICT RULES:
    - NEVER hallucinate column values that do not appear in the schema.
 
 9. BUSINESS CONTEXT DEFAULTS:
-   - "revenue", "sales", "income", "earnings" â†’ SUM of the amount/total column WHERE the status column (if it exists) = a completed/paid/success value. Check schema for exact status values (e.g. 'completed', 'paid', 'success', 'delivered'). If no status column exists, sum all rows but add a SQL comment noting the assumption.
-   - "active users/customers" â†’ users/customers who have at least one associated order/transaction.
+   - "revenue", "sales", "income", "earnings" → SUM of the amount/total column WHERE the status column (if it exists) = a completed/paid/success value. Check schema for exact status values (e.g. 'completed', 'paid', 'success', 'delivered'). If no status column exists, sum all rows but add a SQL comment noting the assumption.
+   - "active users/customers" → users/customers who have at least one associated order/transaction.
    - When a business metric is ambiguous, add a SQL comment explaining the assumption made (e.g. -- assuming revenue = completed orders only).
 
 DATABASE SCHEMA:
@@ -180,7 +180,7 @@ function generateMockSQL(question: string, schema: DatabaseSchema): string {
 }
 
 /**
- * Core SQL generation logic â€” no auth check.
+ * Core SQL generation logic — no auth check.
  * Used by both the server action (with NextAuth) and the API route (with API key).
  */
 export async function generateSQLFromSchema(
@@ -253,7 +253,7 @@ DATABASE SCHEMA:
 
     const systemPrompt = hasContext
       ? basePrompt +
-        `\nCONVERSATION MODE: The user is refining a previous query. Use the conversation history to understand context. MODIFY the most recent pipeline/query â€” do not start from scratch.\n\n` +
+        `\nCONVERSATION MODE: The user is refining a previous query. Use the conversation history to understand context. MODIFY the most recent pipeline/query — do not start from scratch.\n\n` +
         schemaDescription
       : basePrompt + schemaDescription
 
@@ -271,16 +271,30 @@ DATABASE SCHEMA:
 
     messages.push({ role: 'user', content: question })
 
-    const completion = await withKeyRotation((groq) =>
-      groq.chat.completions.create({
-        model: 'openai/gpt-oss-20b',
-        messages,
-        max_tokens: 2048,
-        temperature: 0.1,
-      })
-    )
+    const askModel = async () => {
+      const completion = await withKeyRotation((groq) =>
+        groq.chat.completions.create({
+          model: 'openai/gpt-oss-20b',
+          messages,
+          max_tokens: 2048,
+          temperature: 0.1,
+        })
+      )
+      return completion.choices[0]?.message?.content?.trim() || ''
+    }
 
-    const rawResponse = completion.choices[0]?.message?.content?.trim() || ''
+    // The model occasionally spends its whole budget reasoning and returns no text.
+    // Ask once more before telling the person anything went wrong.
+    let rawResponse = await askModel()
+    if (!rawResponse) rawResponse = await askModel()
+    if (!rawResponse) {
+      return {
+        success: false,
+        error:
+          'The AI did not write a query this time. Ask again, or put the question a little differently.',
+      }
+    }
+
     const sql = rawResponse
       .replace(/```sql\n?/gi, '')
       .replace(/```\n?/g, '')
@@ -336,7 +350,7 @@ DATABASE SCHEMA:
  * Falls back to mock mode if no API key is configured.
  *
  * Note: quota is checked/recorded at execution time in executeSQLByConnection,
- * not here â€” so generation never double-counts.
+ * not here — so generation never double-counts.
  */
 export async function generateSQL(request: GenerateSQLRequest): Promise<GenerateSQLResult> {
   const session = await auth()
@@ -451,7 +465,7 @@ export async function fixSQL(request: FixSQLRequest): Promise<GenerateSQLResult>
   return fixSQLFromSchema(request.failedSql, request.errorMessage, request.question, request.schema)
 }
 
-// â”€â”€â”€ SQL Explanation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SQL Explanation ──────────────────────────────────────────────────
 
 export interface ExplainSQLResult {
   success: boolean
@@ -555,7 +569,7 @@ function generateMockExplanation(sql: string): string {
   return parts.join('\n')
 }
 
-// â”€â”€â”€ AI Natural Language Filter Refinement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AI Natural Language Filter Refinement ──────────────────────────
 
 export interface RefineFilterResult {
   success: boolean
@@ -569,7 +583,7 @@ const REFINE_SYSTEM_PROMPT = `You are a SQL expert. The user has an existing SQL
 RULES:
 1. Take the existing SQL and modify it to apply the user's filter request.
 2. Common requests: "only show X", "filter by Y", "sort by Z", "group by W", "break down by month", "top 10", "above/below threshold", etc.
-3. Preserve the original query structure â€” add WHERE clauses, modify ORDER BY, add GROUP BY, etc. Do NOT rewrite from scratch.
+3. Preserve the original query structure — add WHERE clauses, modify ORDER BY, add GROUP BY, etc. Do NOT rewrite from scratch.
 4. If the filter is about removing a previous filter, simplify the query accordingly.
 5. Return ONLY raw SQL. No markdown, no code blocks, no explanations.
 6. Also return a SHORT label (3-6 words) describing the filter for display as a pill/chip (e.g., "Orders > $500", "Grouped by month", "Top 10 only").
@@ -649,7 +663,7 @@ export async function refineQueryWithFilter(
   }
 }
 
-// â”€â”€â”€ AI SQL Clause Explanation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AI SQL Clause Explanation ──────────────────────────────────────
 
 export interface ExplainClauseResult {
   success: boolean
@@ -712,7 +726,7 @@ export async function explainSQLClause(
   }
 }
 
-// â”€â”€â”€ Query Performance Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Query Performance Analysis ─────────────────────────────────────
 
 export interface PerformanceTip {
   type: 'index' | 'optimization' | 'warning' | 'info'
@@ -820,7 +834,7 @@ export async function analyzeQueryPerformance(
   }
 }
 
-// â”€â”€â”€ AI Schema Discovery ("What Can I Ask?") â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AI Schema Discovery ("What Can I Ask?") ────────────────────────
 
 export interface SchemaDiscoveryResult {
   success: boolean
@@ -866,7 +880,7 @@ export async function discoverSchema(schema: DatabaseSchema): Promise<SchemaDisc
 
   try {
     if (!getGroqEntry()) {
-      // Mock mode â€” generate suggestions from table names
+      // Mock mode — generate suggestions from table names
       const tables = schema.tables.slice(0, 10)
       const tableNames = tables.map((t) => t.tableName)
       return {
@@ -939,7 +953,7 @@ export async function discoverSchema(schema: DatabaseSchema): Promise<SchemaDisc
   }
 }
 
-// â”€â”€â”€ AI Chart Recommendation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AI Chart Recommendation ──────────────────────────────────────
 
 export interface RecommendChartRequest {
   question: string

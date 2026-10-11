@@ -123,10 +123,10 @@ export function WooCommerceImportPanel({
 
   return (
     <section className="card overflow-hidden">
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4 p-5">
-        <div className="flex items-start gap-3 flex-1">
-          <div className="w-10 h-10 rounded-lg bg-violet-500/10 text-violet-500 flex items-center justify-center flex-shrink-0">
-            <ShoppingBag className="w-5 h-5" />
+      <div className="flex flex-col gap-4 p-5">
+        <div className="flex items-start gap-3 max-w-2xl">
+          <div className="w-10 h-10 rounded-md bg-secondary text-foreground flex items-center justify-center flex-shrink-0">
+            <ShoppingBag className="w-5 h-5" aria-hidden />
           </div>
           <div>
             <h2 className="font-semibold">WooCommerce orders</h2>

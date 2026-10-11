@@ -53,6 +53,12 @@ module.exports = {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
+        // Marigold: marks answers, like a highlighter. Use sparingly.
+        signal: {
+          DEFAULT: 'hsl(var(--signal) / <alpha-value>)',
+          soft: 'hsl(var(--signal-soft) / <alpha-value>)',
+          ink: 'hsl(var(--signal-ink) / <alpha-value>)',
+        },
         // Public site identity (see .mk in globals.css).
         mk: {
           paper: 'hsl(var(--mk-paper) / <alpha-value>)',
@@ -74,8 +80,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', 'Menlo', 'monospace'],
+        // The brand fonts (src/app/fonts.ts) are set on <body> in the root layout.
+        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'Cascadia Code', 'Consolas', 'monospace'],
+        serif: ['var(--font-serif)', 'Georgia', 'serif'],
         // Public site: what people ask, what the database speaks, and the interface.
         'nq-serif': ['var(--font-serif)', 'Georgia', 'serif'],
         'nq-mono': ['var(--font-mono)', 'ui-monospace', 'Cascadia Code', 'monospace'],

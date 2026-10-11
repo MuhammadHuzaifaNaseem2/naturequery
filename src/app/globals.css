@@ -3,30 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  /* App themes. Light and Dark are the brand: violet ink from the logo on
+     violet-tinted paper. Marigold (--signal) is kept for answers, like a
+     highlighter. Dim, Forest and Warm are alternatives with the same roles.
+     --accent equals --primary in every theme so old two-color gradients
+     render as one flat color. */
   :root {
-    --background: 220 18% 97%;
-    --foreground: 220 18% 10%;
+    --background: 252 30% 97%;
+    --foreground: 252 40% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 220 18% 10%;
+    --card-foreground: 252 40% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 18% 10%;
-    --primary: 217 91% 60%;
+    --popover-foreground: 252 40% 11%;
+    --primary: 251 64% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 18% 10%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 262 83% 58%;
+    --secondary: 252 28% 94%;
+    --secondary-foreground: 252 40% 11%;
+    --muted: 252 28% 94%;
+    --muted-foreground: 252 10% 40%;
+    --accent: 251 64% 52%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 70% 48%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --success: 152 52% 32%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 32 90% 40%;
     --warning-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --border: 252 22% 87%;
+    --input: 252 20% 83%;
+    --ring: 251 64% 52%;
+    --signal: 40 92% 60%;
+    --signal-soft: 43 96% 84%;
+    --signal-ink: 32 82% 30%;
   }
 
   /* ── Warm parchment theme ─────────────────────────────────── */
@@ -43,7 +51,7 @@
     --secondary-foreground: 25 30% 18%;
     --muted: 35 22% 91%;
     --muted-foreground: 28 18% 48%;
-    --accent: 20 44% 48%;
+    --accent: 27 48% 52%;
     --accent-foreground: 36 80% 97%;
     --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
@@ -54,59 +62,69 @@
     --border: 35 22% 84%;
     --input: 35 22% 84%;
     --ring: 27 48% 52%;
+    --signal: 40 92% 58%;
+    --signal-soft: 43 90% 82%;
+    --signal-ink: 30 80% 28%;
   }
 
+  /* The brand at night: the same violet, lifted for a dark ground. */
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-    --card: 224 71% 6%;
-    --card-foreground: 213 31% 91%;
-    --popover: 224 71% 6%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 47% 11%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 223 47% 11%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --background: 252 30% 7%;
+    --foreground: 252 30% 94%;
+    --card: 252 26% 10%;
+    --card-foreground: 252 30% 94%;
+    --popover: 252 26% 11%;
+    --popover-foreground: 252 30% 94%;
+    --primary: 252 92% 76%;
+    --primary-foreground: 252 30% 8%;
+    --secondary: 252 22% 14%;
+    --secondary-foreground: 252 30% 94%;
+    --muted: 252 22% 14%;
+    --muted-foreground: 252 12% 66%;
+    --accent: 252 92% 76%;
+    --accent-foreground: 252 30% 8%;
+    --destructive: 0 68% 58%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --border: 223 47% 15%;
-    --input: 223 47% 15%;
-    --ring: 217 91% 60%;
+    --success: 152 48% 52%;
+    --success-foreground: 252 30% 8%;
+    --warning: 40 92% 62%;
+    --warning-foreground: 252 30% 8%;
+    --border: 252 18% 18%;
+    --input: 252 18% 22%;
+    --ring: 252 92% 76%;
+    --signal: 40 92% 62%;
+    --signal-soft: 40 50% 22%;
+    --signal-ink: 42 92% 70%;
   }
 
-  /* Dim — soft slate-navy dark. Lower contrast than .dark, easier on the eyes. */
+  /* Dim: the brand dark with less contrast, for long sessions. */
   .dim {
-    --background: 215 27% 13%;
-    --foreground: 214 20% 89%;
-    --card: 215 24% 16%;
-    --card-foreground: 214 20% 89%;
-    --popover: 215 24% 16%;
-    --popover-foreground: 214 20% 89%;
-    --primary: 217 91% 64%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 21% 21%;
-    --secondary-foreground: 214 20% 89%;
-    --muted: 215 21% 21%;
-    --muted-foreground: 215 14% 63%;
-    --accent: 262 72% 66%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 60%;
+    --background: 252 14% 14%;
+    --foreground: 252 18% 90%;
+    --card: 252 13% 17%;
+    --card-foreground: 252 18% 90%;
+    --popover: 252 13% 18%;
+    --popover-foreground: 252 18% 90%;
+    --primary: 252 80% 78%;
+    --primary-foreground: 252 30% 10%;
+    --secondary: 252 12% 21%;
+    --secondary-foreground: 252 18% 90%;
+    --muted: 252 12% 21%;
+    --muted-foreground: 252 9% 68%;
+    --accent: 252 80% 78%;
+    --accent-foreground: 252 30% 10%;
+    --destructive: 0 66% 62%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 60% 50%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 90% 56%;
-    --warning-foreground: 0 0% 100%;
-    --border: 215 18% 25%;
-    --input: 215 18% 25%;
-    --ring: 217 91% 64%;
+    --success: 152 44% 56%;
+    --success-foreground: 252 30% 10%;
+    --warning: 40 88% 64%;
+    --warning-foreground: 252 30% 10%;
+    --border: 252 11% 26%;
+    --input: 252 11% 28%;
+    --ring: 252 80% 78%;
+    --signal: 40 90% 64%;
+    --signal-soft: 40 40% 26%;
+    --signal-ink: 42 90% 72%;
   }
 
   /* Forest — deep evergreen dark with emerald accents. On-brand for NatureQuery. */
@@ -123,18 +141,21 @@
     --secondary-foreground: 150 18% 90%;
     --muted: 160 22% 15%;
     --muted-foreground: 150 14% 65%;
-    /* Warm gold accent for contrast against the green base (sunlight-through-forest) */
-    --accent: 43 88% 60%;
-    --accent-foreground: 45 40% 10%;
+    --accent: 158 64% 48%;
+    --accent-foreground: 160 40% 6%;
     --destructive: 0 70% 58%;
     --destructive-foreground: 0 0% 100%;
     --success: 152 60% 50%;
-    --success-foreground: 0 0% 100%;
+    --success-foreground: 160 40% 6%;
     --warning: 43 88% 60%;
     --warning-foreground: 45 40% 10%;
     --border: 160 20% 18%;
     --input: 160 20% 18%;
     --ring: 158 64% 48%;
+    /* Warm gold marks answers against the green base (sunlight through the forest). */
+    --signal: 43 88% 60%;
+    --signal-soft: 43 40% 20%;
+    --signal-ink: 43 88% 68%;
   }
 }
 
@@ -165,32 +186,21 @@
     text-wrap: balance;
   }
 
-  /* Glass morphism effect */
+  /* Older effect names, kept so existing markup still works; the identity is flat. */
   .glass {
-    @apply bg-card/80 backdrop-blur-xl;
+    @apply bg-card;
   }
 
-  /* Gradient text */
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    @apply text-primary;
   }
 
-  /* Glow effects */
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
-  }
-
-  .glow-accent {
-    box-shadow: 0 0 20px hsl(var(--accent) / 0.3);
-  }
-
-  /* Smooth hover lift */
+  /* Hover: the border darkens. Nothing moves or glows. */
   .hover-lift {
-    @apply transition-all duration-300;
+    @apply transition-colors duration-150;
   }
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px hsl(var(--foreground) / 0.1);
+    border-color: hsl(var(--foreground) / 0.25);
   }
 
   /* Skeleton loading */
@@ -306,54 +316,9 @@
   animation: shimmer 1.5s infinite;
 }
 
-/* Generating animation — pulsing gradient glow on Generate SQL button */
-@keyframes gradientPulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 12px hsl(var(--primary) / 0.4),
-      0 0 24px hsl(var(--accent) / 0.2);
-  }
-  50% {
-    box-shadow:
-      0 0 20px hsl(var(--primary) / 0.6),
-      0 0 40px hsl(var(--accent) / 0.35);
-  }
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes sparkle {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.2) rotate(180deg);
-  }
-}
-
+/* While something is being written, the button simply waits; the spinner says enough. */
 .btn-generating {
-  background-size: 200% 200%;
-  animation:
-    gradientPulse 1.5s ease-in-out infinite,
-    gradientShift 3s ease infinite;
-}
-
-.animate-sparkle {
-  animation: sparkle 1s ease-in-out infinite;
+  cursor: progress;
 }
 
 /* SQL generation skeleton loader */
@@ -418,67 +383,65 @@
   animation: slideDown 0.3s ease-out reverse;
 }
 
-/* SQL syntax highlighting */
+/* SQL syntax highlighting: keywords in the brand violet, values in the answer color. */
 .sql-keyword {
-  @apply text-primary font-semibold;
+  @apply text-primary font-medium;
 }
 
 .sql-string {
-  @apply text-green-500;
+  color: hsl(var(--signal-ink));
 }
 
 .sql-number {
-  @apply text-orange-500;
+  color: hsl(var(--signal-ink));
 }
 
-/* Professional table styles */
+/* Data tables: mono column labels, hairline rows, figures that line up. */
 .data-table {
   @apply w-full text-sm;
 }
 
 .data-table th {
-  @apply sticky top-0 bg-secondary font-bold text-left px-4 py-3 border-b-2 border-primary/20;
+  @apply sticky top-0 bg-card font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground text-left px-4 py-2.5 border-b border-border;
 }
 
 .data-table td {
-  @apply px-4 py-2.5 border-b border-border/50;
-}
-
-.data-table tr:nth-child(even) {
-  @apply bg-muted/30;
+  @apply px-4 py-2.5 border-b border-border/70 tabular-nums;
 }
 
 .data-table tr:hover {
-  @apply bg-primary/5;
+  @apply bg-secondary/60;
 }
 
 /* Code block styles */
 .code-block {
-  @apply font-mono text-sm bg-secondary/50 rounded-lg p-4 overflow-x-auto border border-border;
+  @apply font-mono text-[13px] leading-relaxed bg-secondary/60 rounded-md p-4 overflow-x-auto border border-border;
+  font-variant-ligatures: none;
 }
 
-/* Focus ring */
+/* Focus ring: shown for keyboard focus and typing, not for mouse clicks on buttons. */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background;
 }
 
 /* Button variants — wrapped in @layer components so Tailwind utilities
    like `hidden` / `sm:flex` can still override `display: inline-flex` */
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all focus-ring disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
+  /* The main action: ink on paper, violet on hover, as on the public site. */
   .btn-primary {
-    @apply btn bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md;
+    @apply btn bg-foreground text-background hover:bg-primary hover:text-primary-foreground disabled:hover:bg-foreground disabled:hover:text-background;
   }
 
   .btn-secondary {
-    @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border;
+    @apply btn bg-card text-foreground border border-border hover:border-foreground/30;
   }
 
   .btn-ghost {
-    @apply btn hover:bg-secondary;
+    @apply btn text-muted-foreground hover:bg-secondary hover:text-foreground;
   }
 
   .btn-destructive {
@@ -492,47 +455,39 @@
 
 /* Input styles */
 .input {
-  @apply w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus-ring placeholder:text-muted-foreground;
+  @apply w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus-ring placeholder:text-muted-foreground;
 }
 
-/* Card styles */
+/* Card styles: a surface with a hairline edge; no shadow unless it floats. */
 .card {
-  @apply bg-card border border-border rounded-xl shadow-sm;
+  @apply bg-card border border-border rounded-lg;
 }
 
 .card-hover {
   @apply card hover-lift cursor-pointer;
 }
 
-/* Gradient button */
+/* Older name for the main action button. */
 @layer components {
   .btn-gradient {
-    @apply btn bg-gradient-to-r from-primary to-accent text-white shadow-md hover:shadow-lg hover:brightness-110;
+    @apply btn-primary;
   }
 }
 
-/* Glass card */
+/* Older name for a plain card. */
 .glass-card {
-  background: hsl(var(--card) / 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid hsl(var(--border) / 0.5);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
 }
 
-/* Hover scale */
 .hover-scale {
-  @apply transition-transform duration-200;
-}
-.hover-scale:hover {
-  transform: scale(1.02);
+  @apply transition-colors duration-150;
 }
 
 /* Active connection border */
 .card-gradient-border {
-  border-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) 1;
-  border-width: 2px;
-  border-style: solid;
-  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--primary));
+  border-radius: 0.5rem;
   overflow: hidden;
 }
 
@@ -588,26 +543,22 @@
   z-index: 1000000000;
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  border-radius: 16px;
+  border-radius: 10px;
   min-width: 320px;
   max-width: 380px;
   padding: 0;
-  box-shadow:
-    0 0 0 1px hsl(var(--primary) / 0.12),
-    0 4px 6px -2px hsl(0 0% 0% / 0.06),
-    0 20px 40px -8px hsl(0 0% 0% / 0.18),
-    0 0 80px -20px hsl(var(--primary) / 0.15);
-  animation: tourPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 24px 48px -24px hsl(var(--foreground) / 0.35);
+  animation: tourPopIn 0.2s ease-out;
 }
 
 @keyframes tourPopIn {
   from {
     opacity: 0;
-    transform: scale(0.92) translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0);
   }
 }
 
@@ -620,31 +571,17 @@
   font-family: inherit;
 }
 
-/* Title — gradient header area + top accent bar */
+/* Title */
 .driver-popover.driverjs-theme .driver-popover-title {
   display: block;
   position: relative;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: hsl(var(--foreground));
   padding-top: 22px;
-  padding-bottom: 14px;
+  padding-bottom: 10px;
   line-height: 1.4;
   letter-spacing: -0.01em;
-  border-radius: 16px 16px 0 0;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.06), hsl(var(--accent) / 0.04));
-}
-
-/* Blue-to-purple top bar */
-.driver-popover.driverjs-theme .driver-popover-title::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
-  border-radius: 16px 16px 0 0;
 }
 
 /* Description */
@@ -669,14 +606,10 @@
 
 /* Progress text */
 .driver-popover.driverjs-theme .driver-popover-progress-text {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
   color: hsl(var(--muted-foreground));
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border));
-  padding: 3px 9px;
-  border-radius: 20px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 /* Nav button group */
@@ -697,10 +630,13 @@
   font-size: 13px;
   font-weight: 600;
   line-height: 1;
-  border-radius: 8px;
-  padding: 7px 14px;
+  border-radius: 6px;
+  padding: 8px 14px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
   white-space: nowrap;
 }
 
@@ -716,20 +652,15 @@
   border-color: hsl(var(--border));
 }
 
-/* Next / Done button — gradient primary */
+/* Next / Done button: the main action style */
 .driver-popover.driverjs-theme .driver-popover-next-btn {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
-  color: white;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
   border: none;
-  box-shadow: 0 2px 8px hsl(var(--primary) / 0.35);
 }
 .driver-popover.driverjs-theme .driver-popover-next-btn:hover:not(:disabled) {
-  opacity: 0.9;
-  box-shadow: 0 4px 14px hsl(var(--primary) / 0.45);
-  transform: translateY(-1px);
-}
-.driver-popover.driverjs-theme .driver-popover-next-btn:active:not(:disabled) {
-  transform: translateY(0);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
 }
 
 /* Disabled state */

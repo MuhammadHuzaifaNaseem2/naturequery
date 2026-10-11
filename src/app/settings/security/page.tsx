@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { listDesktopSessions } from '@/lib/desktop/sessions'
 import SecurityClient from './SecurityClient'
 
-export const metadata = { title: 'Security Settings | NatureQuery' }
+export const metadata = { title: 'Security Settings' }
 
 export default async function SecurityPage() {
   const session = await auth()

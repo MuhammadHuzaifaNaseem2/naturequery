@@ -218,7 +218,7 @@ function LoginForm() {
   // 2FA Challenge Screen
   if (show2FA) {
     return (
-      <div className="glass-card rounded-2xl p-8 shadow-xl animate-fadeIn border border-border">
+      <div className="glass-card rounded-lg p-8 shadow-[0_24px_48px_-24px_rgb(0_0_0/0.45)] animate-fadeIn border border-border">
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4">
             <Shield className="w-8 h-8 text-white" />
@@ -323,7 +323,7 @@ function LoginForm() {
 
   // Normal Login Screen
   return (
-    <div className="glass-card rounded-2xl p-8 shadow-xl animate-fadeIn border border-border">
+    <div className="glass-card rounded-lg p-8 shadow-[0_24px_48px_-24px_rgb(0_0_0/0.45)] animate-fadeIn border border-border">
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
         <AppLogo size="xl" showText={false} className="mb-4" />
@@ -519,7 +519,7 @@ export default function LoginPage() {
     <AuthLayout>
       <Suspense
         fallback={
-          <div className="glass-card rounded-2xl p-8 animate-fadeIn">
+          <div className="glass-card rounded-lg p-8 animate-fadeIn">
             <div className="text-center text-muted-foreground">Loading...</div>
           </div>
         }

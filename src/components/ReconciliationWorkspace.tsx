@@ -84,9 +84,9 @@ const STATUS_LABELS: Record<ReconciliationStatus, string> = {
 
 const STATUS_STYLES: Record<ReconciliationStatus, string> = {
   matched: 'bg-success/10 text-success border-success/20',
-  amount_mismatch: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20',
-  only_in_source: 'bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/20',
-  only_in_comparison: 'bg-violet-500/10 text-violet-600 dark:text-violet-300 border-violet-500/20',
+  amount_mismatch: 'bg-warning/10 text-warning border-warning/20',
+  only_in_source: 'bg-primary/10 text-primary border-primary/20',
+  only_in_comparison: 'bg-primary/10 text-primary border-primary/20',
   duplicate_key: 'bg-destructive/10 text-destructive border-destructive/20',
 }
 
@@ -570,26 +570,22 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
   return (
     <div className="space-y-6">
       <section className="card overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-primary via-accent to-success" />
         <div className="p-5 sm:p-7">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+          <div className="flex flex-col gap-5">
             <div className="max-w-3xl">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  <Scale className="w-3.5 h-3.5" /> Reconciliation workspace
-                </span>
-                <span className="text-xs text-muted-foreground">Deterministic record matching</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                Explain why two reports disagree
+              <p className="mb-3 flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                <Scale className="w-3.5 h-3.5" aria-hidden /> Reconciliation · record by record
+              </p>
+              <h1 className="font-serif text-[clamp(1.9rem,3.6vw,2.6rem)] font-normal leading-[1.1] tracking-[-0.02em]">
+                Explain why two reports disagree.
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-muted-foreground leading-relaxed">
+              <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
                 Match records by a shared identifier, isolate the exact differences, then confirm
                 each cause. NatureQuery keeps unexplained variance visible instead of inventing an
                 answer.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setShowMonitorSetup((current) => !current)}
                 disabled={!canCreateMonitor}
@@ -608,14 +604,14 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
               <button
                 onClick={exportInvestigation}
                 disabled={!result.isComplete}
-                className="btn-gradient text-sm disabled:opacity-50"
+                className="btn-secondary text-sm disabled:opacity-50"
               >
                 <Download className="w-4 h-4" /> Export evidence
               </button>
               <button
                 onClick={saveCurrentInvestigation}
                 disabled={isSaving || !result.isComplete}
-                className="btn-gradient text-sm disabled:opacity-50"
+                className="btn-primary text-sm disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />{' '}
                 {isSaving ? 'Saving...' : savedId ? 'Save update' : 'Save case'}
@@ -881,10 +877,7 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
       </section>
 
       {!result.isComplete && (
-        <div
-          role="alert"
-          className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm"
-        >
+        <div role="alert" className="rounded-lg border border-warning/20 bg-warning/10 p-4 text-sm">
           <p className="font-semibold">Comparison incomplete</p>
           <ul className="list-disc pl-5">
             {result.validationErrors.map((error) => (
@@ -915,7 +908,7 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
 
         {!result.isComplete ? (
           <div className="p-12 text-center">
-            <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+            <AlertCircle className="w-10 h-10 text-warning mx-auto mb-3" />
             <h3 className="font-semibold">Correct the report data to compare</h3>
             <p className="text-sm text-muted-foreground">
               No match or resolution is confirmed while validation errors remain.
@@ -953,7 +946,7 @@ export function ReconciliationWorkspace({ investigationId }: { investigationId?:
                       {money(item.comparisonAmount)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right tabular-nums font-semibold ${item.difference > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-violet-600 dark:text-violet-300'}`}
+                      className={`px-4 py-3 text-right tabular-nums font-semibold ${item.difference > 0 ? 'text-warning' : 'text-primary'}`}
                     >
                       {money(item.difference)}
                     </td>
@@ -1116,7 +1109,7 @@ function SummaryCard({
     tone === 'danger'
       ? 'text-destructive'
       : tone === 'warning'
-        ? 'text-amber-600 dark:text-amber-300'
+        ? 'text-warning'
         : tone === 'success'
           ? 'text-success'
           : 'text-foreground'

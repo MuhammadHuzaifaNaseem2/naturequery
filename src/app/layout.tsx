@@ -6,6 +6,7 @@ import { LocaleProvider } from '@/contexts/LocaleContext'
 import { getLocale, getTranslations } from '@/lib/i18n'
 import { Toaster } from 'sonner'
 import { Analytics } from '@vercel/analytics/next'
+import { brandFonts } from './fonts'
 
 export const metadata: Metadata = {
   title: {
@@ -65,8 +66,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   interactiveWidget: 'resizes-content',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+    { media: '(prefers-color-scheme: light)', color: '#f6f5fa' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f0c17' },
   ],
 }
 
@@ -148,22 +149,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body
-        className="font-sans antialiased bg-background text-foreground"
+        className={`${brandFonts} font-sans antialiased bg-background text-foreground`}
         suppressHydrationWarning
       >
         <LocaleProvider initialLocale={locale} messages={messages}>
           <AuthProvider>
             <ThemeProvider>
               {children}
+              {/* Calm notifications: one neutral style; only errors get a colored edge. */}
               <Toaster
                 position="bottom-right"
-                richColors
                 closeButton
                 toastOptions={{
                   style: {
                     background: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     color: 'hsl(var(--foreground))',
+                    borderRadius: '8px',
+                    fontFamily: 'inherit',
+                  },
+                  classNames: {
+                    error: '!border-destructive/50 [&_[data-icon]]:text-destructive',
+                    warning: '[&_[data-icon]]:text-warning',
+                    success: '[&_[data-icon]]:text-muted-foreground',
+                    info: '[&_[data-icon]]:text-muted-foreground',
+                    description: '!text-muted-foreground',
                   },
                 }}
               />

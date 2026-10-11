@@ -5,7 +5,7 @@ import { Sun, Moon, MoonStar, Leaf, Flame, Monitor } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   // Only show theme after mount to avoid hydration mismatch
@@ -26,17 +26,17 @@ export function ThemeToggle() {
   const iconConfig = (() => {
     switch (theme) {
       case 'dark':
-        return { Icon: Moon, className: 'text-primary' }
+        return { Icon: Moon, className: 'text-muted-foreground' }
       case 'dim':
-        return { Icon: MoonStar, className: 'text-blue-400' }
+        return { Icon: MoonStar, className: 'text-muted-foreground' }
       case 'forest':
-        return { Icon: Leaf, className: 'text-emerald-400' }
+        return { Icon: Leaf, className: 'text-muted-foreground' }
       case 'warm':
-        return { Icon: Flame, className: 'text-orange-500' }
+        return { Icon: Flame, className: 'text-muted-foreground' }
       case 'system':
         return { Icon: Monitor, className: 'text-muted-foreground' }
       default:
-        return { Icon: Sun, className: 'text-warning' }
+        return { Icon: Sun, className: 'text-muted-foreground' }
     }
   })()
   const { Icon, className: iconClassName } = iconConfig
@@ -46,11 +46,11 @@ export function ThemeToggle() {
     return (
       <button
         suppressHydrationWarning
-        className="relative p-2 rounded-lg bg-secondary hover:bg-secondary/80 border border-border transition-all duration-200 focus-ring group"
+        className="relative p-1.5 rounded-md hover:bg-secondary transition-colors focus-ring"
         title="Loading theme..."
       >
         <svg
-          className="w-5 h-5 text-muted-foreground"
+          className="w-4 h-4 text-muted-foreground"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -70,14 +70,15 @@ export function ThemeToggle() {
     <button
       suppressHydrationWarning
       onClick={cycleTheme}
-      className="relative p-2 rounded-lg bg-secondary hover:bg-secondary/80 border border-border transition-all duration-200 focus-ring group flex-shrink-0"
-      title={`Current: ${theme} (${resolvedTheme})`}
+      className="relative p-1.5 rounded-md hover:bg-secondary hover:[&_svg]:text-foreground transition-colors focus-ring flex-shrink-0"
+      title={`Theme: ${theme}. Click to change.`}
+      aria-label={`Theme: ${theme}. Click to change.`}
     >
-      <Icon className={`w-5 h-5 transition-all duration-300 ${iconClassName}`} strokeWidth={2} />
+      <Icon className={`w-4 h-4 transition-colors ${iconClassName}`} strokeWidth={2} />
 
       {/* System indicator dot */}
       {theme === 'system' && (
-        <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
+        <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-primary rounded-full" />
       )}
     </button>
   )

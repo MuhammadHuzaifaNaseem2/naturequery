@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import {
   getNightlyInsights,
@@ -9,8 +8,9 @@ import {
   type LiveInsightMetrics,
 } from '@/actions/audit'
 import { InsightsClient } from './InsightsClient'
+import { AppPageHeader } from '@/components/AppPageHeader'
 
-export const metadata = { title: 'AI Insights | NatureQuery' }
+export const metadata = { title: 'Insights' }
 
 export default async function InsightsPage() {
   const session = await auth()
@@ -19,26 +19,13 @@ export default async function InsightsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Page shell renders immediately; the data-heavy section below streams in */}
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-          >
-            ← Dashboard
-          </Link>
-          <span className="text-muted-foreground/40">/</span>
-          <h1 className="text-lg font-semibold">AI Insights</h1>
-          <span className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
-            Beta
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground hidden sm:block">
-          Nightly AI-generated digest of your query activity
-        </p>
-      </div>
+      <AppPageHeader crumbs={[{ label: 'Insights' }]}>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+          Beta
+        </span>
+      </AppPageHeader>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         <Suspense fallback={<InsightsSkeleton />}>
           <InsightsData />
         </Suspense>
@@ -62,10 +49,10 @@ function InsightsSkeleton() {
   return (
     <div className="space-y-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="rounded-xl border border-border bg-card p-6 animate-pulse">
-          <div className="h-4 bg-muted rounded w-1/4 mb-4" />
-          <div className="h-3 bg-muted rounded w-full mb-2" />
-          <div className="h-3 bg-muted rounded w-5/6" />
+        <div key={i} className="rounded-lg border border-border bg-card p-6" aria-hidden>
+          <div className="h-3 rounded w-1/4 mb-4 skeleton-shine" />
+          <div className="h-3 rounded w-full mb-2 skeleton-shine" />
+          <div className="h-3 rounded w-5/6 skeleton-shine" />
         </div>
       ))}
     </div>

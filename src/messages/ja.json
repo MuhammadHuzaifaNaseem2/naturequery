@@ -317,7 +317,7 @@
       "instant": "即時",
       "format": "フォーマット",
       "template": "テンプレート",
-      "aiFixIt": "AI修正",
+      "aiFixIt": "AI で修正",
       "askAi": "AIに質問",
       "sqlEditor": "SQLエディター",
       "sqlEditorDescription": "完全なシンタックスハイライトでSQLを直接記述・実行",
@@ -325,7 +325,25 @@
       "schemaInsights": "スキーマの洞察",
       "conversation": "会話",
       "conversationExchange": "やり取り",
-      "conversationExchanges": "やり取り"
+      "conversationExchanges": "やり取り",
+      "stepAsk": "あなたの質問",
+      "stepWrites": "NatureQuery が書く SQL",
+      "stepAnswer": "回答",
+      "modeQuestion": "ふつうの言葉",
+      "modeSql": "SQL",
+      "followUpOne": "前の質問の続き",
+      "followUpMany": "前の {{count}} 件の質問の続き",
+      "startOver": "最初から",
+      "questionsToTry": "試せる質問",
+      "checkedReadOnly": "読み取り専用。実行前に確認済みです。",
+      "performance": "パフォーマンス",
+      "emptyLabel": "はじめに",
+      "emptyTitle": "データベースを接続するか、",
+      "emptyTitleRest": "まずサンプルストアで試してみましょう。",
+      "emptyBody": "クエリを書くために NatureQuery が読むのはテーブル名と列名だけで、データそのものは読みません。実行するのは読み取り専用の SQL だけです。",
+      "worksWith": "対応データベース",
+      "tryDemoDatabase": "サンプルデータベースを試す",
+      "csvOrExcel": "CSV・Excel ファイルにも対応"
     },
     "header": {
       "queryWorkspace": "クエリワークスペース",
@@ -404,7 +422,8 @@
       "searchPlaceholder": "履歴を検索...",
       "allStatus": "すべてのステータス",
       "historyNoResults": "検索/フィルターに一致する結果がありません。",
-      "exportHistory": "エクスポート"
+      "exportHistory": "エクスポート",
+      "newQuestion": "新しい質問"
     },
     "schemaBrowser": {
       "noSchemaLoaded": "スキーマが読み込まれていません",
@@ -657,12 +676,15 @@
       "askPlain": "自然な言葉で質問",
       "askPlainExample": "先週のすべての注文を表示",
       "instantResults": "即座に結果を取得",
-      "instantResultsSub": "AIがクエリを生成して実行します"
+      "instantResultsSub": "AIがクエリを生成して実行します",
+      "label": "ようこそ",
+      "skipSetup": "設定をスキップ"
     },
     "step1": {
       "title": "データベースを接続",
       "subtitle": "最初のデータベース接続を追加して始めましょう。",
-      "skip": "今はスキップ"
+      "skip": "今はスキップ",
+      "label": "データ"
     },
     "step2": {
       "title": "最初のクエリを試す",
@@ -678,7 +700,8 @@
       "dbConnected": "データベースが接続されました。ダッシュボードに移動して質問を始めましょう。",
       "noDatabase": "ダッシュボードに移動してデータベースを接続し、自然言語でクエリを開始しましょう。",
       "tryAsking": "こんな質問を試してみてください：",
-      "exampleQuery": "今月サインアップしたすべての顧客を表示"
+      "exampleQuery": "今月サインアップしたすべての顧客を表示",
+      "label": "準備完了"
     },
     "checklist": {
       "gettingStarted": "はじめに",
@@ -698,7 +721,8 @@
         "setupSchedule": "スケジュールレポートを設定",
         "setupScheduleDesc": "定期的なクエリをメール配信で自動化。"
       }
-    }
+    },
+    "progress": "ステップ {{step}} / {{total}}"
   },
   "pages": {
     "notFound": {

@@ -130,7 +130,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
             >
               {isUploadingImage ? (
-                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 </div>
               ) : null}

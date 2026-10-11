@@ -98,7 +98,7 @@ function RegisterForm() {
     if (/[^A-Za-z0-9]/.test(password)) strength++
 
     if (strength <= 2) return { strength, label: 'Weak', color: 'bg-destructive' }
-    if (strength === 3) return { strength, label: 'Fair', color: 'bg-yellow-500' }
+    if (strength === 3) return { strength, label: 'Fair', color: 'bg-warning' }
     if (strength === 4) return { strength, label: 'Good', color: 'bg-primary' }
     return { strength, label: 'Strong', color: 'bg-success' }
   }
@@ -106,7 +106,7 @@ function RegisterForm() {
   const passwordStrength = getPasswordStrength()
 
   return (
-    <div className="glass-card rounded-2xl p-8 shadow-xl animate-fadeIn border border-border">
+    <div className="glass-card rounded-lg p-8 shadow-[0_24px_48px_-24px_rgb(0_0_0/0.45)] animate-fadeIn border border-border">
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
         <AppLogo size="xl" showText={false} className="mb-4" />
@@ -345,7 +345,7 @@ export default function RegisterPage() {
     <AuthLayout>
       <Suspense
         fallback={
-          <div className="glass-card rounded-2xl p-8 animate-fadeIn">
+          <div className="glass-card rounded-lg p-8 animate-fadeIn">
             <div className="text-center text-muted-foreground">Loading...</div>
           </div>
         }

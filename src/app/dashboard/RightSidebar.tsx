@@ -86,12 +86,12 @@ export function RightSidebar({
   const activeIndex = tabs.indexOf(activeTab)
 
   return (
-    <aside className="w-64 h-full border-l border-border bg-card flex flex-col">
+    <aside className="w-64 h-full border-l border-border bg-background flex flex-col">
       {/* Tabs with sliding indicator */}
       <div className="relative flex border-b border-border">
         {/* Sliding indicator */}
         <div
-          className="absolute bottom-0 h-0.5 bg-primary transition-all duration-300 ease-out"
+          className="absolute bottom-0 h-0.5 bg-foreground transition-all duration-200 ease-out"
           style={{ left: `${activeIndex * (100 / 3)}%`, width: `${100 / 3}%` }}
         />
         {tabs.map((tab) => (
@@ -99,18 +99,20 @@ export function RightSidebar({
             key={tab}
             onClick={() => handleTabChange(tab)}
             className={clsx(
-              'flex-1 px-3 py-2.5 text-sm font-medium transition-colors',
-              activeTab === tab ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              'flex-1 px-3 py-3 text-sm transition-colors',
+              activeTab === tab
+                ? 'text-foreground font-medium'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {t(`dashboard.sidebar.${tab}`)}
             {tab === 'history' && (queryHistoryTotal ?? queryHistory.length) > 0 && (
-              <span className="ml-1 text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">
+              <span className="ml-1.5 font-mono text-[10.5px] tabular-nums text-muted-foreground">
                 {queryHistoryTotal ?? queryHistory.length}
               </span>
             )}
             {tab === 'saved' && (savedQueries.length > 0 || (cachedSavedCount ?? 0) > 0) && (
-              <span className="ml-1 text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">
+              <span className="ml-1.5 font-mono text-[10.5px] tabular-nums text-muted-foreground">
                 {savedQueries.length || cachedSavedCount}
               </span>
             )}

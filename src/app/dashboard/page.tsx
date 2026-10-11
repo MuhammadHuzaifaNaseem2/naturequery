@@ -99,7 +99,7 @@ export default function DashboardPage() {
       {dashboard.showLeftSidebar && (
         <>
           <div
-            className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
             onClick={() => dashboard.setShowLeftSidebar(false)}
           />
           <div className="fixed inset-y-0 left-0 z-50 lg:hidden animate-slideInLeft">
@@ -141,7 +141,7 @@ export default function DashboardPage() {
         />
 
         {/* Content Area */}
-        <div className="flex-1 flex overflow-hidden bg-secondary/10">
+        <div className="flex-1 flex overflow-hidden">
           {viewMode === 'editor' ? (
             <QueryPanel
               activeConnection={dashboard.activeConnection}
@@ -222,7 +222,7 @@ export default function DashboardPage() {
       {dashboard.showRightSidebar && dashboard.activeConnection && (
         <>
           <div
-            className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
             onClick={() => dashboard.setShowRightSidebar(false)}
           />
           <div className="fixed inset-y-0 right-0 z-50 lg:hidden animate-slideInRight">
@@ -253,8 +253,8 @@ export default function DashboardPage() {
 
       {/* Add Connection Modal */}
       {dashboard.showAddConnection && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="relative animate-scaleIn">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="relative animate-fadeIn">
             <SettingsForm
               onSchemaFetched={() => {}}
               onConnectionSuccess={(credentials, schema) => {
@@ -274,17 +274,16 @@ export default function DashboardPage() {
       {/* Query Scheduler Modal */}
       {dashboard.showScheduler && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fadeIn"
           onClick={dashboard.handleCloseScheduler}
         >
           <div
-            className="relative w-full max-w-3xl max-h-[85vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-scaleIn flex flex-col"
+            className="relative w-full max-w-3xl max-h-[85vh] bg-card border border-border rounded-lg shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="h-1 w-full bg-gradient-to-r from-primary to-accent flex-shrink-0" />
             <button
               onClick={dashboard.handleCloseScheduler}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors z-20"
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors z-20"
               aria-label="Close"
             >
               <X className="w-4 h-4" />

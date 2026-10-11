@@ -16,14 +16,14 @@ interface AuditLogEntry {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  LOGIN: 'bg-green-500/10 text-green-600',
+  LOGIN: 'bg-success/10 text-success',
   LOGOUT: 'bg-gray-500/10 text-gray-500',
-  CREATE_TEAM: 'bg-blue-500/10 text-blue-600',
-  DELETE_TEAM: 'bg-red-500/10 text-red-600',
-  INVITE_MEMBER: 'bg-purple-500/10 text-purple-600',
-  REMOVE_MEMBER: 'bg-orange-500/10 text-orange-600',
-  CREATE_API_KEY: 'bg-amber-500/10 text-amber-600',
-  REVOKE_API_KEY: 'bg-red-500/10 text-red-600',
+  CREATE_TEAM: 'bg-primary/10 text-primary',
+  DELETE_TEAM: 'bg-destructive/10 text-destructive',
+  INVITE_MEMBER: 'bg-primary/10 text-primary',
+  REMOVE_MEMBER: 'bg-warning/10 text-warning',
+  CREATE_API_KEY: 'bg-warning/10 text-warning',
+  REVOKE_API_KEY: 'bg-destructive/10 text-destructive',
 }
 
 export function AuditLogViewer() {
@@ -134,7 +134,11 @@ export function AuditLogViewer() {
             className="btn-secondary text-sm py-1.5"
             title="Export to CSV"
           >
-            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
             Export CSV
           </button>
         </div>
@@ -156,17 +160,19 @@ export function AuditLogViewer() {
       ) : (
         <div className="space-y-1">
           {logs.map((log) => (
-            <div key={log.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
+            <div
+              key={log.id}
+              className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-secondary/50 transition-colors"
+            >
               <span
-                className={`px-2 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${ACTION_COLORS[log.action] || 'bg-secondary text-muted-foreground'
-                  }`}
+                className={`px-2 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
+                  ACTION_COLORS[log.action] || 'bg-secondary text-muted-foreground'
+                }`}
               >
                 {formatAction(log.action)}
               </span>
               <div className="flex-1 min-w-0">
-                <span className="text-sm">
-                  {log.user?.name || log.user?.email || 'System'}
-                </span>
+                <span className="text-sm">{log.user?.name || log.user?.email || 'System'}</span>
                 {log.resource && (
                   <span className="text-xs text-muted-foreground ml-2">
                     {log.resource}

@@ -25,11 +25,14 @@ import { DesktopSessions, type DesktopSessionView } from './DesktopSessions'
 interface SecurityClientProps {
   initialTwoFactorEnabled: boolean
   desktopSessions: DesktopSessionView[]
+  /** Inside the Settings page, which already supplies the title and page padding. */
+  embedded?: boolean
 }
 
 export default function SecurityClient({
   initialTwoFactorEnabled,
   desktopSessions,
+  embedded = false,
 }: SecurityClientProps) {
   const { t } = useTranslation()
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(initialTwoFactorEnabled)
@@ -167,42 +170,47 @@ export default function SecurityClient({
   }
 
   return (
-    <div className="min-h-screen bg-background p-3 sm:p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className={embedded ? undefined : 'min-h-screen bg-background p-3 sm:p-6'}>
+      <div className={embedded ? undefined : 'max-w-4xl mx-auto'}>
         {/* Toast notification */}
         {toast && (
           <div
-            className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg animate-slideUp ${
-              toast.type === 'success'
-                ? 'bg-success/10 border border-success/30 text-success'
-                : 'bg-destructive/10 border border-destructive/30 text-destructive'
+            role="status"
+            className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg border bg-card text-foreground shadow-[0_16px_40px_-20px_rgb(0_0_0/0.45)] animate-fadeIn ${
+              toast.type === 'success' ? 'border-border' : 'border-destructive/50'
             }`}
           >
             {toast.type === 'success' ? (
-              <CheckCircle className="w-4 h-4" />
+              <CheckCircle className="w-4 h-4 text-muted-foreground" aria-hidden />
             ) : (
-              <AlertTriangle className="w-4 h-4" />
+              <AlertTriangle className="w-4 h-4 text-destructive" aria-hidden />
             )}
             <span className="text-sm font-medium">{toast.message}</span>
           </div>
         )}
 
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('settings.security.title')}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            {t('settings.security.description')}
-          </p>
-        </div>
+        {embedded ? (
+          <p className="mb-6 text-sm text-muted-foreground">{t('settings.security.description')}</p>
+        ) : (
+          <div className="mb-6 sm:mb-8">
+            <h1 className="font-serif text-[2rem] font-normal leading-tight tracking-[-0.015em] mb-2">
+              {t('settings.security.title')}
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              {t('settings.security.description')}
+            </p>
+          </div>
+        )}
 
         {/* 2FA Section */}
-        <div className="glass-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="card p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-              <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="w-10 h-10 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
+              <Shield className="w-5 h-5 text-foreground" aria-hidden />
             </div>
             <div className="flex-1 w-full min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
-                <h2 className="text-xl font-bold">Two-Factor Authentication</h2>
+                <h2 className="text-base font-semibold">Two-Factor Authentication</h2>
                 <div
                   className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium w-fit ${
                     twoFactorEnabled
@@ -263,13 +271,13 @@ export default function SecurityClient({
         </div>
 
         {/* Change Password */}
-        <div className="glass-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="card p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-              <Key className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="w-10 h-10 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
+              <Key className="w-5 h-5 text-foreground" aria-hidden />
             </div>
             <div className="flex-1 w-full min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold mb-1">
+              <h2 className="text-base font-semibold mb-1">
                 {t('settings.security.changePassword')}
               </h2>
               <p className="text-sm text-muted-foreground mb-4">
@@ -376,15 +384,13 @@ export default function SecurityClient({
         <DesktopSessions initial={desktopSessions} />
 
         {/* Danger Zone */}
-        <div className="glass-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 border border-destructive/20">
+        <div className="card p-4 sm:p-6 mb-4 sm:mb-6 border border-destructive/20">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-destructive/10 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
               <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 text-destructive" />
             </div>
             <div className="flex-1 w-full min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold mb-1">
-                {t('settings.security.dangerZone')}
-              </h2>
+              <h2 className="text-base font-semibold mb-1">{t('settings.security.dangerZone')}</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 {t('settings.security.dangerZoneDesc')}
               </p>
@@ -400,13 +406,13 @@ export default function SecurityClient({
         </div>
 
         {/* Security Tips */}
-        <div className="glass-card rounded-2xl p-4 sm:p-6">
+        <div className="card p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-warning/20 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-warning/20 flex items-center justify-center flex-shrink-0">
               <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
             </div>
             <div className="flex-1 w-full min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold mb-2">Security Tips</h2>
+              <h2 className="text-base font-semibold mb-2">Security Tips</h2>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-1">•</span>
@@ -433,12 +439,12 @@ export default function SecurityClient({
       {/* Disable 2FA Confirmation */}
       {showDisableConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass-card rounded-2xl p-6 max-w-sm w-full">
+          <div className="card p-6 max-w-sm w-full">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-destructive" />
               </div>
-              <h3 className="text-lg font-bold">Disable 2FA?</h3>
+              <h3 className="text-base font-semibold">Disable 2FA?</h3>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
               This will make your account less secure. You will no longer need a verification code
@@ -466,12 +472,12 @@ export default function SecurityClient({
       {/* Regenerate Confirmation */}
       {showRegenerateConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass-card rounded-2xl p-6 max-w-sm w-full">
+          <div className="card p-6 max-w-sm w-full">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
                 <RefreshCw className="w-5 h-5 text-warning" />
               </div>
-              <h3 className="text-lg font-bold">Regenerate Backup Codes?</h3>
+              <h3 className="text-base font-semibold">Regenerate Backup Codes?</h3>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
               All existing backup codes will be invalidated. Save the new ones in a safe place
@@ -510,12 +516,12 @@ export default function SecurityClient({
       {/* Delete Account Confirmation */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass-card rounded-2xl p-6 max-w-sm w-full">
+          <div className="card p-6 max-w-sm w-full">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-destructive" />
               </div>
-              <h3 className="text-lg font-bold">Delete Account?</h3>
+              <h3 className="text-base font-semibold">Delete Account?</h3>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               This will permanently delete your account, connections, queries, and all data.{' '}
@@ -560,9 +566,9 @@ export default function SecurityClient({
       {/* New Backup Codes Modal */}
       {newBackupCodes && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass-card rounded-2xl p-6 max-w-md w-full">
+          <div className="card p-6 max-w-md w-full">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">New Backup Codes</h3>
+              <h3 className="text-base font-semibold">New Backup Codes</h3>
               <button
                 onClick={() => setNewBackupCodes(null)}
                 className="text-muted-foreground hover:text-foreground"

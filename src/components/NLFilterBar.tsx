@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Filter, X, Plus, Loader2, Sparkles, Send } from 'lucide-react'
+import { Filter, X, Plus, Loader2, Send } from 'lucide-react'
 import { clsx } from 'clsx'
 
 export interface ActiveFilter {
@@ -46,11 +46,13 @@ export function NLFilterBar({
           setTimeout(() => inputRef.current?.focus(), 50)
         }}
         disabled={disabled}
-        className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border hover:border-primary/30 rounded-lg transition-all disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-md px-1 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
       >
-        <Filter className="w-3.5 h-3.5" />
-        <span>Add AI filter...</span>
-        <span className="text-[10px] opacity-60">e.g. &quot;only orders above $500&quot;</span>
+        <Filter className="w-3.5 h-3.5" aria-hidden />
+        <span>Filter in plain English</span>
+        <span className="hidden font-serif text-[13px] italic text-muted-foreground/80 sm:inline">
+          &ldquo;only orders above $500&rdquo;
+        </span>
       </button>
     )
   }
@@ -61,13 +63,14 @@ export function NLFilterBar({
       {filters.map((filter) => (
         <div
           key={filter.id}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-medium animate-scaleIn"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card py-1 pl-2.5 pr-1 font-serif text-[13px] italic text-foreground animate-fadeIn"
         >
-          <Sparkles className="w-3 h-3" />
+          <Filter className="w-3 h-3 not-italic text-muted-foreground" aria-hidden />
           <span>{filter.label}</span>
           <button
             onClick={() => onRemoveFilter(filter.id)}
-            className="ml-0.5 p-0.5 hover:bg-primary/20 rounded-full transition-colors"
+            aria-label={`Remove filter ${filter.label}`}
+            className="ml-0.5 p-0.5 rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
             <X className="w-3 h-3" />
           </button>
@@ -76,7 +79,7 @@ export function NLFilterBar({
 
       {/* Add filter input */}
       {showInput ? (
-        <div className="inline-flex items-center gap-1 bg-card border border-primary/30 rounded-full px-3 py-1 animate-scaleIn">
+        <div className="inline-flex items-center gap-1 rounded-md border border-input bg-card px-2.5 py-1 focus-within:border-foreground/40 animate-fadeIn">
           <input
             ref={inputRef}
             type="text"
@@ -84,20 +87,25 @@ export function NLFilterBar({
             onChange={(e) => setFilterText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSubmit()
-              if (e.key === 'Escape') { setShowInput(false); setFilterText('') }
+              if (e.key === 'Escape') {
+                setShowInput(false)
+                setFilterText('')
+              }
             }}
-            placeholder="Describe filter..."
-            className="bg-transparent text-xs outline-none w-36 placeholder:text-muted-foreground"
+            placeholder="Describe the filter..."
+            aria-label="Describe the filter in plain English"
+            className="bg-transparent font-serif text-[13px] outline-none w-48 placeholder:italic placeholder:text-muted-foreground"
             disabled={isApplying}
             autoFocus
           />
           {isApplying ? (
-            <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />
           ) : (
             <button
               onClick={handleSubmit}
               disabled={!filterText.trim()}
-              className="p-0.5 text-primary hover:text-primary/80 disabled:opacity-30 transition-colors"
+              aria-label="Apply filter"
+              className="p-0.5 text-foreground hover:text-primary disabled:opacity-30 transition-colors"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
@@ -109,7 +117,7 @@ export function NLFilterBar({
             setShowInput(true)
             setTimeout(() => inputRef.current?.focus(), 50)
           }}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-primary border border-dashed border-border/60 hover:border-primary/30 rounded-full transition-all"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
         >
           <Plus className="w-3 h-3" />
           Filter
@@ -120,7 +128,7 @@ export function NLFilterBar({
       {filters.length > 0 && (
         <button
           onClick={onClearAll}
-          className="text-[10px] text-muted-foreground hover:text-destructive transition-colors ml-1"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-1"
         >
           Clear all
         </button>

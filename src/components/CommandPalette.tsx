@@ -77,17 +77,14 @@ export function CommandPalette({
   if (!open) return null
 
   const groupHeadingClass =
-    '[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground'
+    '[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:text-muted-foreground'
 
   return (
     <div className="fixed inset-0 z-[100] animate-fadeIn">
-      <div
-        className="fixed inset-0 bg-background/60 backdrop-blur-sm"
-        onClick={() => onOpenChange(false)}
-      />
-      <div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg px-4 animate-scaleIn">
+      <div className="fixed inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
+      <div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg px-4 animate-fadeIn">
         <Command
-          className="bg-card/95 backdrop-blur-xl rounded-xl shadow-2xl border border-border overflow-hidden"
+          className="bg-popover rounded-lg shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] border border-border overflow-hidden"
           label="Command palette"
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -181,8 +178,8 @@ export function CommandPalette({
                       {t('dashboard.commandPalette.switchTo', { name: conn.name })}
                     </span>
                     {conn.id === activeConnectionId && (
-                      <span className="text-xs text-primary">
-                        ({t('dashboard.commandPalette.active')})
+                      <span className="ml-2 font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+                        {t('dashboard.commandPalette.active')}
                       </span>
                     )}
                   </CmdItem>
@@ -333,7 +330,7 @@ export function CommandPalette({
           <div className="border-t border-border px-4 py-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>{t('dashboard.commandPalette.navigateArrows')}</span>
             <span>
-              <kbd className="px-1.5 py-0.5 bg-secondary rounded border border-border text-[10px]">
+              <kbd className="px-1.5 py-0.5 bg-background rounded border border-border font-mono text-[10px]">
                 Esc
               </kbd>{' '}
               {t('dashboard.commandPalette.escClose')}
@@ -357,7 +354,7 @@ function CmdItem({
   return (
     <Command.Item
       onSelect={onSelect}
-      className="flex items-center gap-2 px-2 py-2 rounded-lg text-sm cursor-pointer data-[selected=true]:bg-primary/10 data-[selected=true]:text-primary transition-colors"
+      className="flex items-center gap-2 px-2 py-2 rounded-md text-sm cursor-pointer data-[selected=true]:bg-secondary data-[selected=true]:text-foreground transition-colors"
     >
       <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
       <span className="flex-1 truncate">{children}</span>

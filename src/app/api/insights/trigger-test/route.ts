@@ -20,7 +20,7 @@ export async function POST(_req: NextRequest) {
   const userId = session.user.id
 
   try {
-    // â”€â”€ 1. Fetch activity metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 1. Fetch activity metrics ──────────────────────────────────────────
     const now = Date.now()
     const d7 = new Date(now - 7 * 24 * 60 * 60 * 1000)
     const d14 = new Date(now - 14 * 24 * 60 * 60 * 1000)
@@ -76,7 +76,7 @@ export async function POST(_req: NextRequest) {
       })),
     }
 
-    // â”€â”€ 2. Generate narrative â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 2. Generate narrative ──────────────────────────────────────────────
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
     const name = user?.name ?? 'there'
 
@@ -106,7 +106,7 @@ Mention the trend (${metrics.wowDirection}), highlight the most-used connection 
                 role: 'system',
                 content: `You are a concise business intelligence analyst writing a weekly data digest email.
 Write in a professional but friendly tone. Be specific with numbers. Keep it under 150 words.
-Output plain text only â€” no markdown, no bullet points, no headers.`,
+Output plain text only: no markdown, no bullet points, no headers, and no em dashes.`,
               },
               { role: 'user', content: prompt },
             ],
@@ -122,7 +122,7 @@ Output plain text only â€” no markdown, no bullet points, no headers.`,
       narrative = buildFallback(name, metrics)
     }
 
-    // â”€â”€ 3. Save to DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 3. Save to DB ──────────────────────────────────────────────────────
     await prisma.auditLog.create({
       data: {
         userId,
@@ -166,5 +166,5 @@ function buildFallback(
         ? `down ${Math.abs(m.wowDelta)}%`
         : 'steady'
   const top = m.topConnections[0]
-  return `Hi ${name}, here's your NatureQuery weekly digest. You ran ${m.queries7d} queries this week â€” ${direction} from last week â€” and ${m.queries30d} total this month. ${top ? `Your most active connection was "${top.name}" with ${top.count} queries. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved ${m.savedQueryCount !== 1 ? 'queries' : 'query'}. Keep exploring your data!`
+  return `Hi ${name}, here's your NatureQuery weekly digest. You ran ${m.queries7d} queries this week, ${direction} from last week, and ${m.queries30d} in total this month. ${top ? `Your most active connection was "${top.name}" with ${top.count} queries. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved ${m.savedQueryCount !== 1 ? 'queries' : 'query'}.`
 }

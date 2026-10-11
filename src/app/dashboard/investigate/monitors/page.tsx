@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { Activity, AlertTriangle, ArrowLeft, CheckCircle2, Clock3, Plus } from 'lucide-react'
-import { AppLogo } from '@/components/AppLogo'
+import { Activity, AlertTriangle, CheckCircle2, Clock3, Plus } from 'lucide-react'
+import { AppPageHeader } from '@/components/AppPageHeader'
 import { getReconciliationMonitors } from '@/actions/reconciliation-monitors'
 import type { MonitorRunStatus } from '@/lib/reconciliation-monitor'
 import { MonitorActions } from './MonitorActions'
@@ -14,10 +14,10 @@ const STATUS_LABEL: Record<MonitorRunStatus, string> = {
 }
 
 const STATUS_STYLE: Record<MonitorRunStatus, string> = {
-  within_threshold: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  within_threshold: 'bg-warning/10 text-warning border-warning/20',
   never: 'bg-secondary text-muted-foreground border-border',
   matched: 'bg-success/10 text-success border-success/20',
-  alert: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  alert: 'bg-warning/10 text-warning border-warning/20',
   failed: 'bg-destructive/10 text-destructive border-destructive/20',
 }
 
@@ -27,26 +27,17 @@ export default async function ReconciliationMonitorsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <AppLogo size="md" showText={false} />
-            <div>
-              <p className="font-bold leading-tight">Reconciliation monitors</p>
-              <p className="text-xs text-muted-foreground">Automatic report discrepancy checks</p>
-            </div>
-          </div>
-          <Link href="/dashboard" className="btn-secondary text-sm">
-            <ArrowLeft className="w-4 h-4" /> Query workspace
-          </Link>
-        </div>
-      </header>
+      <AppPageHeader
+        crumbs={[{ label: 'Investigate', href: '/dashboard/investigate' }, { label: 'Monitors' }]}
+      />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Automatic monitoring</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="font-serif text-[clamp(2rem,4vw,2.75rem)] font-normal leading-[1.08] tracking-[-0.02em]">
+              Monitors
+            </h1>
+            <p className="text-muted-foreground mt-3 max-w-xl">
               NatureQuery reruns both read-only reports and opens an investigation when money
               differs.
             </p>

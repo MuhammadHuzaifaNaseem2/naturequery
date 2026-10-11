@@ -29,12 +29,10 @@ import {
   Activity,
   Download,
   Settings,
-  Palette,
   X,
   Circle,
   Maximize2,
   ZoomIn,
-  Sparkles,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { QueryResultRow } from '@/types/database'
@@ -50,17 +48,18 @@ interface ResultsChartProps {
   recommendation?: ChartRecommendation
 }
 
-// Professional color palettes
+// Color palettes. The first is the brand: violet ink, marigold, then quieter hues that stay
+// distinct from each other. Literal colors, because exported PNG/SVG files can't read CSS variables.
 const COLOR_PALETTES = {
   default: [
-    'hsl(217, 91%, 60%)', // blue
-    'hsl(142, 71%, 45%)', // green
-    'hsl(38, 92%, 50%)', // amber
-    'hsl(346, 77%, 50%)', // rose
-    'hsl(262, 83%, 58%)', // violet
-    'hsl(199, 89%, 48%)', // cyan
-    'hsl(24, 95%, 53%)', // orange
-    'hsl(173, 58%, 39%)', // teal
+    'hsl(251, 64%, 52%)', // violet
+    'hsl(40, 92%, 55%)', // marigold
+    'hsl(252, 30%, 32%)', // ink violet
+    'hsl(168, 42%, 40%)', // sage teal
+    'hsl(252, 70%, 74%)', // light violet
+    'hsl(14, 62%, 54%)', // clay
+    'hsl(205, 40%, 48%)', // slate blue
+    'hsl(34, 45%, 42%)', // bronze
   ],
   ocean: [
     'hsl(200, 100%, 50%)',
@@ -105,6 +104,30 @@ const COLOR_PALETTES = {
 }
 
 type PaletteName = keyof typeof COLOR_PALETTES
+
+const PALETTE_LABELS: Record<PaletteName, string> = {
+  default: 'NatureQuery',
+  ocean: 'Ocean',
+  sunset: 'Sunset',
+  forest: 'Forest',
+  monochrome: 'Monochrome',
+}
+
+// Legend text stays neutral; the swatch next to it carries the series color.
+const legendProps = {
+  wrapperStyle: { fontSize: '12px', paddingTop: '8px' },
+  formatter: (value: string) => (
+    <span style={{ color: 'hsl(var(--muted-foreground))' }}>{value}</span>
+  ),
+}
+
+const tooltipStyle = {
+  backgroundColor: 'hsl(var(--popover))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: '6px',
+  fontSize: '12px',
+  boxShadow: '0 12px 32px -18px rgba(0,0,0,0.35)',
+}
 
 /**
  * Detect which fields are numeric and which are categorical (labels).
@@ -169,12 +192,59 @@ export function ResultsChart({
 
   // Pick the best label and value fields automatically
   const defaultLabelField = labelFields[0] || fields[0]
-  const defaultValueFields = valueFields.length > 0 ? valueFields : []
+  // Identifier columns (id, customer_id) are numbers but rarely what anyone wants to chart.
+  const measureFields = valueFields.filter((f) => !/(^id$|_id$|^id_)/i.test(f))
+  const defaultValueFields = measureFields.length > 0 ? measureFields : valueFields
 
   const [selectedValues, setSelectedValues] = useState<string[]>(() =>
     defaultValueFields.slice(0, 3)
   )
   const [selectedLabelField, setSelectedLabelField] = useState<string>(defaultLabelField)
+  const [pickedByUser, setPickedByUser] = useState(false)
+
+  useEffect(() => {
+    if (!recommendation || pickedByUser) return
+    setChartType(recommendation.type)
+    if (recommendation.xAxis && fields.includes(recommendation.xAxis)) {
+      setSelectedLabelField(recommendation.xAxis)
+    }
+    const suggestedValues = (recommendation.yAxis ?? []).filter((f) => valueFields.includes(f))
+    if (suggestedValues.length > 0) setSelectedValues(suggestedValues.slice(0, 3))
+    // Only react to a new suggestion, not to every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recommendation])
+
+  const pickChartType = (type: ChartType) => {
+    setPickedByUser(true)
+    setChartType(type)
+  }
+
+  const typeButton = (type: ChartType, Icon: typeof BarChart3, label: string) => (
+    <button
+      onClick={() => pickChartType(type)}
+      aria-pressed={chartType === type}
+      title={
+        recommendation?.type === type
+          ? `Suggested for this data: ${recommendation.title}`
+          : undefined
+      }
+      className={clsx(
+        'relative flex items-center gap-1.5 rounded-[5px] px-2.5 py-1 text-xs font-medium transition-colors',
+        chartType === type
+          ? 'bg-secondary text-foreground'
+          : 'text-muted-foreground hover:text-foreground'
+      )}
+    >
+      <Icon className="w-3.5 h-3.5" aria-hidden />
+      {label}
+      {recommendation?.type === type && (
+        <>
+          <span className="h-1.5 w-1.5 rounded-full bg-signal" aria-hidden />
+          <span className="sr-only">(suggested)</span>
+        </>
+      )}
+    </button>
+  )
 
   // Limit data points for readability; coerce BigInt to number for recharts
   const chartData = useMemo(
@@ -251,7 +321,7 @@ export function ResultsChart({
         const val = rows[0][fields[0]]
         return (
           <div className="flex flex-col items-center justify-center gap-2" style={{ height: h }}>
-            <p className="text-5xl font-bold text-foreground">
+            <p className="font-mono text-4xl font-medium tabular-nums text-foreground">
               {String(typeof val === 'bigint' ? Number(val) : (val ?? '—'))}
             </p>
             <p className="text-xs text-muted-foreground capitalize">
@@ -269,16 +339,16 @@ export function ResultsChart({
                 {fields.map((f) => (
                   <th
                     key={f}
-                    className="text-left py-1.5 px-2 text-muted-foreground font-medium capitalize"
+                    className="text-left py-1.5 px-2 font-mono text-[11px] text-muted-foreground font-medium"
                   >
-                    {f.replace(/_/g, ' ')}
+                    {f}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.slice(0, 50).map((row, i) => (
-                <tr key={i} className="border-b border-border/40 hover:bg-muted/20">
+                <tr key={i} className="border-b border-border/60 hover:bg-secondary/50">
                   {fields.map((f) => (
                     <td key={f} className="py-1.5 px-2 truncate max-w-[140px]">
                       {String(typeof row[f] === 'bigint' ? Number(row[f]) : (row[f] ?? '—'))}
@@ -319,7 +389,7 @@ export function ResultsChart({
   }
 
   const containerClass = isFullscreen
-    ? 'fixed inset-x-4 bottom-4 z-50 bg-card rounded-xl shadow-2xl p-6 animate-scaleIn'
+    ? 'fixed inset-x-4 bottom-4 z-50 bg-card border border-border rounded-lg shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] p-6 animate-fadeIn'
     : 'space-y-4'
 
   const chart = (
@@ -337,69 +407,16 @@ export function ResultsChart({
       >
         <div className="flex items-center gap-3">
           {/* Chart type selector */}
-          <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
-            <button
-              onClick={() => {
-                setChartType('bar')
-              }}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-                chartType === 'bar'
-                  ? 'bg-card text-foreground shadow-sm scale-105'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              )}
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              Bar
-            </button>
-            <button
-              onClick={() => setChartType('line')}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-                chartType === 'line'
-                  ? 'bg-card text-foreground shadow-sm scale-105'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              )}
-            >
-              <TrendingUp className="w-3.5 h-3.5" />
-              Line
-            </button>
-            <button
-              onClick={() => setChartType('area')}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-                chartType === 'area'
-                  ? 'bg-card text-foreground shadow-sm scale-105'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              )}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              Area
-            </button>
-            <button
-              onClick={() => setChartType('pie')}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-                chartType === 'pie'
-                  ? 'bg-card text-foreground shadow-sm scale-105'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              )}
-            >
-              <PieChartIcon className="w-3.5 h-3.5" />
-              Pie
-            </button>
-            <button
-              onClick={() => setChartType('scatter')}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
-                chartType === 'scatter'
-                  ? 'bg-card text-foreground shadow-sm scale-105'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              )}
-            >
-              <Circle className="w-3.5 h-3.5" />
-              Scatter
-            </button>
+          <div
+            className="flex items-center rounded-md border border-border bg-card p-0.5"
+            role="group"
+            aria-label="Chart type"
+          >
+            {typeButton('bar', BarChart3, 'Bar')}
+            {typeButton('line', TrendingUp, 'Line')}
+            {typeButton('area', Activity, 'Area')}
+            {typeButton('pie', PieChartIcon, 'Pie')}
+            {typeButton('scatter', Circle, 'Scatter')}
           </div>
         </div>
 
@@ -408,18 +425,20 @@ export function ResultsChart({
           <button
             onClick={() => setShowSettings(!showSettings)}
             className={clsx(
-              'p-2 rounded-lg transition-colors',
+              'p-2 rounded-md transition-colors',
               showSettings
-                ? 'bg-primary/10 text-primary'
+                ? 'bg-secondary text-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
             )}
-            title="Chart Settings"
+            title="Chart settings"
+            aria-label="Chart settings"
+            aria-expanded={showSettings}
           >
             <Settings className="w-4 h-4" />
           </button>
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             title={isFullscreen ? 'Close full screen (Esc)' : 'Full screen'}
             aria-label={isFullscreen ? 'Close full screen' : 'Full screen'}
           >
@@ -427,12 +446,13 @@ export function ResultsChart({
           </button>
           <div className="relative group">
             <button
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              title="Export Chart"
+              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Export chart"
+              aria-label="Export chart"
             >
               <Download className="w-4 h-4" />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-border rounded-lg shadow-lg py-1 hidden group-hover:block z-10">
+            <div className="absolute right-0 top-full mt-1 w-36 bg-popover border border-border rounded-md shadow-[0_16px_40px_-20px_hsl(var(--foreground)/0.45)] py-1 hidden group-hover:block group-focus-within:block z-10">
               <button
                 onClick={() => exportChart('png')}
                 className="w-full px-3 py-2 text-xs text-left hover:bg-secondary flex items-center gap-2"
@@ -452,11 +472,14 @@ export function ResultsChart({
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-4 animate-slideUp">
+        <div className="border border-border rounded-md p-4 space-y-4 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Chart Settings</h4>
+            <h4 className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              Chart settings
+            </h4>
             <button
               onClick={() => setShowSettings(false)}
+              aria-label="Close chart settings"
               className="text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
@@ -465,23 +488,30 @@ export function ResultsChart({
 
           {/* Color Palette */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
-              <Palette className="w-3 h-3" />
-              Color Palette
-            </label>
+            <p className="text-xs text-muted-foreground mb-2">Colors</p>
             <div className="flex flex-wrap gap-2">
               {(Object.keys(COLOR_PALETTES) as PaletteName[]).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPalette(p)}
+                  aria-pressed={palette === p}
                   className={clsx(
-                    'px-3 py-1.5 rounded-md text-xs capitalize transition-all',
+                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors',
                     palette === p
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary hover:bg-secondary/80'
+                      ? 'border-foreground/40 bg-secondary text-foreground'
+                      : 'border-border text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  {p}
+                  <span className="flex" aria-hidden>
+                    {COLOR_PALETTES[p].slice(0, 4).map((c) => (
+                      <span
+                        key={c}
+                        className="h-2.5 w-2.5 rounded-full -ml-0.5 first:ml-0 ring-1 ring-card"
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </span>
+                  {PALETTE_LABELS[p]}
                 </button>
               ))}
             </div>
@@ -489,17 +519,18 @@ export function ResultsChart({
 
           {/* X-Axis Field (Label) */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">X-Axis (Label Field)</label>
+            <p className="text-xs text-muted-foreground mb-2">Labels along the bottom</p>
             <div className="flex flex-wrap gap-1.5">
               {labelFields.map((field) => (
                 <button
                   key={field}
                   onClick={() => setSelectedLabelField(field)}
+                  aria-pressed={selectedLabelField === field}
                   className={clsx(
-                    'px-2 py-1 rounded text-xs font-medium border transition-colors',
+                    'px-2 py-1 rounded-md font-mono text-[11px] border transition-colors',
                     selectedLabelField === field
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/30'
+                      ? 'border-foreground/40 bg-secondary text-foreground'
+                      : 'border-border text-muted-foreground hover:text-foreground'
                   )}
                 >
                   {field}
@@ -513,15 +544,16 @@ export function ResultsChart({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowBrush(!showBrush)}
+                aria-pressed={showBrush}
                 className={clsx(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors',
+                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs transition-colors',
                   showBrush
-                    ? 'bg-primary/10 text-primary border border-primary/30'
-                    : 'bg-secondary text-muted-foreground hover:text-foreground'
+                    ? 'border-foreground/40 bg-secondary text-foreground'
+                    : 'border-border text-muted-foreground hover:text-foreground'
                 )}
               >
-                <ZoomIn className="w-3 h-3" />
-                Enable Zoom/Brush
+                <ZoomIn className="w-3 h-3" aria-hidden />
+                Zoom slider
               </button>
             </div>
           )}
@@ -531,23 +563,29 @@ export function ResultsChart({
       {/* Value field toggles — hidden in compact mode */}
       {!compact && chartType !== 'pie' && valueFields.length > 1 && (
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs text-muted-foreground mr-1">Y-Axis Fields:</span>
+          <span className="text-xs text-muted-foreground mr-1">Values:</span>
           {valueFields.map((field, i) => (
             <button
               key={field}
               onClick={() => toggleValue(field)}
+              aria-pressed={activeValues.includes(field)}
               className={clsx(
-                'px-2 py-1 rounded text-xs font-medium border transition-all duration-200',
+                'flex items-center gap-1.5 px-2 py-1 rounded-md font-mono text-[11px] border transition-colors',
                 activeValues.includes(field)
-                  ? 'border-primary/50 bg-primary/10 text-primary scale-105'
-                  : 'border-border text-muted-foreground hover:border-primary/30 hover:scale-[1.02]'
+                  ? 'border-foreground/30 bg-secondary text-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground'
               )}
-              style={
-                activeValues.includes(field)
-                  ? { borderColor: CHART_COLORS[i % CHART_COLORS.length] }
-                  : undefined
-              }
             >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{
+                  backgroundColor: activeValues.includes(field)
+                    ? CHART_COLORS[i % CHART_COLORS.length]
+                    : 'transparent',
+                  boxShadow: `inset 0 0 0 1px ${CHART_COLORS[i % CHART_COLORS.length]}`,
+                }}
+                aria-hidden
+              />
               {field}
             </button>
           ))}
@@ -558,7 +596,7 @@ export function ResultsChart({
       <div
         ref={chartRef}
         className={clsx(
-          'w-full transition-all duration-300',
+          'w-full [&_.recharts-cartesian-axis-tick_text]:font-mono [&_.recharts-legend-item-text]:text-xs',
           !compact && !height && (isFullscreen ? 'h-[calc(100%-140px)]' : 'h-80')
         )}
         style={compact || height ? { height: height ?? 196 } : undefined}
@@ -566,23 +604,7 @@ export function ResultsChart({
         <ResponsiveContainer width="100%" height="100%">
           {chartType === 'bar' ? (
             <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-              <defs>
-                {activeValues.map((field, i) => (
-                  <linearGradient key={field} id={`gradient-${i}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="0%"
-                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
-                      stopOpacity={0.9}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
-                      stopOpacity={0.6}
-                    />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 dataKey={selectedLabelField}
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
@@ -595,16 +617,10 @@ export function ResultsChart({
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
+                contentStyle={tooltipStyle}
+                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.6 }}
               />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+              <Legend {...legendProps} />
               {showBrush && (
                 <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />
               )}
@@ -612,16 +628,17 @@ export function ResultsChart({
                 <Bar
                   key={field}
                   dataKey={field}
-                  fill={`url(#gradient-${i})`}
-                  radius={[6, 6, 0, 0]}
-                  animationDuration={800}
+                  fill={CHART_COLORS[i % CHART_COLORS.length]}
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={56}
+                  animationDuration={500}
                   animationEasing="ease-out"
                 />
               ))}
             </BarChart>
           ) : chartType === 'line' ? (
             <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 dataKey={selectedLabelField}
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
@@ -633,16 +650,8 @@ export function ResultsChart({
                 tickLine={false}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend {...legendProps} />
               {showBrush && (
                 <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />
               )}
@@ -652,15 +661,15 @@ export function ResultsChart({
                   type="monotone"
                   dataKey={field}
                   stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                  strokeWidth={2.5}
+                  strokeWidth={2}
                   dot={{
-                    r: 4,
+                    r: 3,
                     fill: CHART_COLORS[i % CHART_COLORS.length],
                     strokeWidth: 2,
-                    stroke: 'white',
+                    stroke: 'hsl(var(--card))',
                   }}
-                  activeDot={{ r: 6, strokeWidth: 2, stroke: 'white' }}
-                  animationDuration={1000}
+                  activeDot={{ r: 5, strokeWidth: 2, stroke: 'hsl(var(--card))' }}
+                  animationDuration={600}
                   animationEasing="ease-out"
                 />
               ))}
@@ -673,17 +682,17 @@ export function ResultsChart({
                     <stop
                       offset="0%"
                       stopColor={CHART_COLORS[i % CHART_COLORS.length]}
-                      stopOpacity={0.5}
+                      stopOpacity={0.28}
                     />
                     <stop
                       offset="100%"
                       stopColor={CHART_COLORS[i % CHART_COLORS.length]}
-                      stopOpacity={0.05}
+                      stopOpacity={0.02}
                     />
                   </linearGradient>
                 ))}
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 dataKey={selectedLabelField}
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
@@ -695,16 +704,8 @@ export function ResultsChart({
                 tickLine={false}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend {...legendProps} />
               {showBrush && (
                 <Brush dataKey={selectedLabelField} height={30} stroke="hsl(var(--primary))" />
               )}
@@ -716,14 +717,14 @@ export function ResultsChart({
                   stroke={CHART_COLORS[i % CHART_COLORS.length]}
                   strokeWidth={2}
                   fill={`url(#area-gradient-${i})`}
-                  animationDuration={1200}
+                  animationDuration={600}
                   animationEasing="ease-out"
                 />
               ))}
             </AreaChart>
           ) : chartType === 'scatter' ? (
             <ScatterChart margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 type="number"
                 dataKey={activeValues[0]}
@@ -740,17 +741,8 @@ export function ResultsChart({
                 tickLine={false}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-                cursor={{ strokeDasharray: '3 3' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ strokeDasharray: '3 3' }} />
+              <Legend {...legendProps} />
               <Scatter
                 name={`${activeValues[0]} vs ${activeValues[1] || activeValues[0]}`}
                 data={chartData}
@@ -760,22 +752,6 @@ export function ResultsChart({
             </ScatterChart>
           ) : (
             <PieChart>
-              <defs>
-                {chartData.slice(0, 10).map((_, i) => (
-                  <linearGradient key={i} id={`pie-gradient-${i}`} x1="0" y1="0" x2="1" y2="1">
-                    <stop
-                      offset="0%"
-                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
-                      stopOpacity={1}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={CHART_COLORS[i % CHART_COLORS.length]}
-                      stopOpacity={0.7}
-                    />
-                  </linearGradient>
-                ))}
-              </defs>
               <Pie
                 data={chartData.slice(0, 10).map((row) => ({
                   name: String(row[selectedLabelField] ?? 'Unknown'),
@@ -785,27 +761,24 @@ export function ResultsChart({
                 cy="50%"
                 innerRadius={60}
                 outerRadius={isFullscreen ? 180 : 120}
-                paddingAngle={3}
+                paddingAngle={1}
                 dataKey="value"
                 label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
                 labelLine={{ stroke: 'hsl(var(--muted-foreground))' }}
-                animationDuration={1000}
+                animationDuration={600}
                 animationEasing="ease-out"
               >
                 {chartData.slice(0, 10).map((_, i) => (
-                  <Cell key={i} fill={`url(#pie-gradient-${i})`} stroke="white" strokeWidth={2} />
+                  <Cell
+                    key={i}
+                    fill={CHART_COLORS[i % CHART_COLORS.length]}
+                    stroke="hsl(var(--card))"
+                    strokeWidth={2}
+                  />
                 ))}
               </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend {...legendProps} />
             </PieChart>
           )}
         </ResponsiveContainer>
@@ -823,7 +796,7 @@ export function ResultsChart({
   // Full screen sits above the whole page, with the backdrop behind the chart.
   return createPortal(
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={toggleFullscreen} />
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={toggleFullscreen} />
       {chart}
     </>,
     document.body

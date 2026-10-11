@@ -59,36 +59,6 @@ const DEFAULT_TEMPLATES: QueryTemplate[] = [
   },
 ]
 
-const CATEGORY_COLORS: Record<string, string> = {
-  analytics: 'bg-primary/10 text-primary',
-  sales: 'bg-success/10 text-success',
-  inventory: 'bg-warning/10 text-warning',
-  custom: 'bg-accent/10 text-accent',
-}
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  analytics: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  ),
-  sales: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  inventory: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-    </svg>
-  ),
-  custom: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-    </svg>
-  ),
-}
-
 const ALL_CATEGORIES = ['analytics', 'sales', 'inventory', 'custom'] as const
 
 interface QueryTemplatesProps {
@@ -171,10 +141,11 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
       <div className="flex items-center border-b border-border">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex-1 flex items-center gap-2 p-3 text-sm font-medium hover:text-primary transition-colors"
+          aria-expanded={isExpanded}
+          className="flex-1 flex items-center gap-1.5 px-4 py-3 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground hover:text-foreground transition-colors"
         >
           <svg
-            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -183,16 +154,15 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
           </svg>
           {t('dashboard.quickTemplates.title')}
           {userTemplates.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              ({DEFAULT_TEMPLATES.length + userTemplates.length})
-            </span>
+            <span className="tabular-nums">{DEFAULT_TEMPLATES.length + userTemplates.length}</span>
           )}
         </button>
         {isExpanded && (
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="p-2 mr-1 text-muted-foreground hover:text-primary rounded-md hover:bg-secondary transition-colors"
+            className="p-1.5 mr-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary transition-colors"
             title="Create custom template"
+            aria-label="Create custom template"
           >
             {showCreateForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           </button>
@@ -203,26 +173,26 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
         <>
           {/* Create Template Form */}
           {showCreateForm && (
-            <div className="p-3 border-b border-border bg-secondary/30 space-y-2">
+            <div className="p-3 border-b border-border space-y-2">
               <input
                 type="text"
                 placeholder="Template name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-xs rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full px-2.5 py-1.5 text-xs rounded-md border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
               />
               <textarea
                 placeholder="Question (e.g. Show me the top 10 customers by revenue)"
                 value={newQuestion}
                 onChange={(e) => setNewQuestion(e.target.value)}
                 rows={2}
-                className="w-full px-2.5 py-1.5 text-xs rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
+                className="w-full px-2.5 py-1.5 font-serif text-sm rounded-md border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 resize-none"
               />
               <div className="flex items-center gap-2">
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  className="flex-1 px-2 py-1.5 text-xs rounded-md border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  className="flex-1 px-2 py-1.5 text-xs rounded-md border border-input bg-card text-foreground focus:outline-none focus:border-foreground/40"
                 >
                   {ALL_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat} className="capitalize">
@@ -233,7 +203,7 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
                 <button
                   onClick={handleCreate}
                   disabled={isSaving || !newName.trim() || !newQuestion.trim()}
-                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="btn-primary px-3 py-1.5 text-xs"
                 >
                   {isSaving ? t('common.loading') : t('common.save')}
                 </button>
@@ -242,13 +212,13 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
           )}
 
           {/* Category filters */}
-          <div className="flex gap-1 p-2 border-b border-border overflow-x-auto">
+          <div className="flex gap-0.5 px-2 py-1.5 border-b border-border overflow-x-auto">
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-2 py-1 text-xs rounded-full transition-colors ${
+              className={`px-2 py-1 text-xs rounded-md transition-colors ${
                 selectedCategory === null
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary hover:bg-secondary/80'
+                  ? 'bg-secondary text-foreground font-medium'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {t('common.filter')}
@@ -257,10 +227,10 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-2 py-1 text-xs rounded-full capitalize transition-colors flex items-center gap-1 ${
+                className={`px-2 py-1 text-xs rounded-md capitalize transition-colors flex items-center gap-1 ${
                   selectedCategory === category
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary hover:bg-secondary/80'
+                    ? 'bg-secondary text-foreground font-medium'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {t(`dashboard.quickTemplates.${category}` as any)}
@@ -269,7 +239,7 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
           </div>
 
           {/* Templates grid */}
-          <div className="p-2 space-y-1.5 max-h-[300px] overflow-y-auto">
+          <div className="p-1.5 space-y-0.5 max-h-[300px] overflow-y-auto">
             {filteredTemplates.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-4">
                 No templates in this category
@@ -278,29 +248,24 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                className="w-full p-2.5 text-left rounded-lg border border-border hover:border-primary/50 hover:bg-secondary/50 transition-all group relative"
+                className="w-full px-2.5 py-2 text-left rounded-md hover:bg-secondary/60 transition-colors group relative"
               >
                 <button
                   onClick={() => onSelectTemplate(template.question)}
                   className="w-full text-left"
                 >
-                  <div className="flex items-start gap-2">
-                    <span className={`p-1.5 rounded ${CATEGORY_COLORS[template.category] || CATEGORY_COLORS.custom}`}>
-                      {CATEGORY_ICONS[template.category] || CATEGORY_ICONS.custom}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium group-hover:text-primary transition-colors">
-                        {template.name}
-                        {template.isUserTemplate && (
-                          <span className="ml-1.5 text-[10px] font-normal px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">
-                            Custom
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                        {template.description}
-                      </p>
-                    </div>
+                  <div className="min-w-0 pr-5">
+                    <p className="text-sm text-foreground">
+                      {template.name}
+                      {template.isUserTemplate && (
+                        <span className="ml-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+                          Custom
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                      {template.description}
+                    </p>
                   </div>
                 </button>
                 {template.isUserTemplate && (
@@ -309,8 +274,9 @@ export function QueryTemplates({ onSelectTemplate }: QueryTemplatesProps) {
                       e.stopPropagation()
                       handleDelete(template.id)
                     }}
-                    className="absolute top-2 right-2 p-1 rounded text-muted-foreground/0 group-hover:text-muted-foreground hover:!text-destructive hover:bg-destructive/10 transition-all"
+                    className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                     title="Delete template"
+                    aria-label={`Delete template ${template.name}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

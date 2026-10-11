@@ -329,6 +329,9 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
   ),
 }
 
+// Switched off on the website for now, but NatureQuery Desktop connects to them.
+const DESKTOP_APP_TYPES: string[] = ['turso', 'dynamodb', 'firestore', 'cassandra']
+
 const DB_OPTIONS: {
   group: string
   items: { type: string; label: string; port: number; soon?: boolean }[]
@@ -561,38 +564,45 @@ export default function SettingsForm({
     DB_OPTIONS.flatMap((g) => g.items).find((i) => i.type === dbType)?.label || 'Database'
 
   return (
-    <div className="glass-card rounded-2xl p-0 shadow-2xl max-w-2xl w-full animate-scaleIn overflow-hidden border border-border/50 flex flex-col max-h-[85vh] bg-background">
+    <div
+      role="dialog"
+      aria-labelledby="add-connection-title"
+      className="rounded-lg shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] max-w-2xl w-full animate-fadeIn overflow-hidden border border-border flex flex-col max-h-[85vh] bg-card"
+    >
       {/* Header */}
-      <div className="px-6 py-5 border-b border-border/50 bg-secondary/30 flex items-center justify-between sticky top-0 z-10 backdrop-blur-xl">
+      <div className="px-6 py-4 border-b border-border flex items-center justify-between sticky top-0 z-10 bg-card">
         <div className="flex items-center gap-4">
           {step === 2 && (
             <button
               onClick={() => setStep(1)}
-              className="p-2 hover:bg-secondary/80 rounded-full transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Back to the list of databases"
+              className="p-1.5 hover:bg-secondary rounded-md transition-colors text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shadow-lg border border-border/50 overflow-hidden">
+          <div className="w-10 h-10 rounded-md bg-card flex items-center justify-center border border-border overflow-hidden">
             {step === 2 && dbType && DB_LOGOS[dbType] ? (
               <div className="w-8 h-8 flex items-center justify-center">{DB_LOGOS[dbType]}</div>
             ) : (
-              <Database className="w-5 h-5 text-primary" />
+              <Database className="w-5 h-5 text-muted-foreground" />
             )}
           </div>
           <div>
-            <h2 className="text-lg font-bold tracking-tight text-foreground">
-              {step === 1 ? 'Select Source' : `Configure ${selectedDbLabel}`}
+            <h2 id="add-connection-title" className="text-base font-semibold text-foreground">
+              {step === 1 ? 'Connect a database' : `Connect ${selectedDbLabel}`}
             </h2>
-            <p className="text-xs text-muted-foreground font-medium">
-              {step === 1 ? 'Choose an engine to connect' : 'Enter your credentials securely'}
+            <p className="text-xs text-muted-foreground">
+              {step === 1
+                ? 'Pick the kind of database. You enter its details next.'
+                : 'The password is encrypted before it is stored.'}
             </p>
           </div>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-2 hover:bg-secondary/80 rounded-full transition-colors text-muted-foreground hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="p-1.5 hover:bg-secondary rounded-md transition-colors text-muted-foreground hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -612,7 +622,7 @@ export default function SettingsForm({
           <div className="p-6 space-y-8 min-h-[400px]">
             {DB_OPTIONS.map(({ group, items }) => (
               <div key={group}>
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/50 mb-4 pl-1">
+                <h3 className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground mb-3">
                   {group}
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -620,24 +630,29 @@ export default function SettingsForm({
                     <button
                       key={type}
                       disabled={soon}
+                      title={
+                        soon && DESKTOP_APP_TYPES.includes(type)
+                          ? `${label} works in NatureQuery Desktop today`
+                          : undefined
+                      }
                       onClick={() => !soon && handleSelectDatabase(type as DatabaseType, port)}
-                      className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-xl border group outline-none
+                      className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-md border group outline-none transition-colors
                         ${
                           soon
-                            ? 'bg-secondary/20 border-border/20 opacity-50 cursor-not-allowed'
-                            : 'bg-secondary/40 border-border/50 hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary'
+                            ? 'border-border/60 opacity-50 cursor-not-allowed'
+                            : 'bg-card border-border hover:border-foreground/30 hover:bg-secondary/40 focus-visible:ring-2 focus-visible:ring-ring/60'
                         }
                       `}
                     >
-                      <div className={`p-1 rounded-xl ${soon ? 'opacity-40 grayscale' : ''}`}>
+                      <div className={`p-1 ${soon ? 'opacity-40 grayscale' : ''}`}>
                         {DB_LOGOS[type] ?? <Database className="w-8 h-8 text-muted-foreground" />}
                       </div>
-                      <span className="text-xs font-semibold tracking-wide text-center text-foreground">
+                      <span className="text-xs font-medium text-center text-foreground">
                         {label}
                       </span>
                       {soon && (
-                        <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-secondary text-muted-foreground rounded text-[9px] font-bold uppercase tracking-wider">
-                          Soon
+                        <span className="absolute top-1.5 right-2 font-mono text-[9.5px] uppercase tracking-[0.06em] text-muted-foreground">
+                          {DESKTOP_APP_TYPES.includes(type) ? 'Desktop app' : 'Soon'}
                         </span>
                       )}
                     </button>
@@ -649,15 +664,13 @@ export default function SettingsForm({
         ) : (
           <div className="p-6 space-y-6">
             {/* Workspace Selector */}
-            <div className="bg-secondary/20 p-5 rounded-xl border border-border/50">
-              <label className="block text-sm font-semibold mb-2 text-foreground/90">
-                Connect into Workspace
-              </label>
+            <div className="p-4 rounded-md border border-border">
+              <label className="block text-sm font-medium mb-2 text-foreground">Workspace</label>
               <div className="relative">
                 <select
                   value={credentials.teamId || ''}
                   onChange={(e) => handleInputChange('teamId', e.target.value)}
-                  className="w-full px-4 py-3 pl-10 bg-background border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none shadow-sm transition-all hover:border-primary/50 cursor-pointer text-foreground"
+                  className="w-full px-3 py-2 pl-10 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 appearance-none transition-colors hover:border-foreground/30 cursor-pointer text-foreground"
                 >
                   <option value="">Personal Workspace</option>
                   {teams.map((team) => (
@@ -680,9 +693,9 @@ export default function SettingsForm({
               {/* Connection Name — intentionally separate from credentials */}
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-foreground">
-                  Connection Name <span className="text-destructive">*</span>
+                  Connection name <span className="text-destructive">*</span>
                   <span className="text-muted-foreground font-normal ml-1">
-                    (friendly label shown in your sidebar)
+                    (shown in your sidebar)
                   </span>
                 </label>
                 <input
@@ -693,10 +706,10 @@ export default function SettingsForm({
                   maxLength={50}
                   autoComplete="off"
                   spellCheck={false}
-                  className={`w-full px-4 py-2.5 bg-background border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all text-foreground ${
+                  className={`w-full px-3 py-2 bg-card border rounded-md text-sm focus:outline-none transition-colors text-foreground ${
                     nameError
-                      ? 'border-destructive focus:ring-destructive/20'
-                      : 'border-border hover:border-primary/50 focus:ring-primary/20'
+                      ? 'border-destructive'
+                      : 'border-input hover:border-foreground/30 focus:border-foreground/40'
                   }`}
                 />
                 {nameError ? (
@@ -706,7 +719,8 @@ export default function SettingsForm({
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {connectionName.length}/50 — never include passwords or connection strings here
+                    {connectionName.length}/50. Don’t put passwords or connection strings in the
+                    name.
                   </p>
                 )}
               </div>
@@ -717,7 +731,7 @@ export default function SettingsForm({
                   <button
                     type="button"
                     onClick={handlePasteConnectionString}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 border border-border hover:border-primary/30 rounded-xl transition-all"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-border hover:border-foreground/30 rounded-md transition-colors"
                   >
                     <ClipboardPaste className="w-4 h-4" />
                     Paste connection string (postgresql://...)
@@ -734,14 +748,14 @@ export default function SettingsForm({
               {dbType === 'sqlite' ? (
                 <div>
                   <label className="block text-sm font-medium mb-1.5 text-foreground">
-                    Database File Path
+                    Database file path
                   </label>
                   <input
                     type="text"
                     value={credentials.database}
                     onChange={(e) => handleInputChange('database', e.target.value)}
                     placeholder="/path/to/database.db"
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
+                    className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 transition-all hover:border-foreground/30 text-foreground"
                   />
                 </div>
               ) : (
@@ -761,9 +775,9 @@ export default function SettingsForm({
                     <div>
                       <label className="block text-sm font-medium mb-1.5 text-foreground">
                         {dbType === 'bigquery'
-                          ? '(Not Needed)'
+                          ? 'Host (not needed)'
                           : dbType === 'snowflake'
-                            ? 'Account Identifier'
+                            ? 'Account identifier'
                             : dbType === 'mongodb'
                               ? 'Host / Cluster'
                               : 'Host'}
@@ -787,7 +801,7 @@ export default function SettingsForm({
                                     : 'localhost'
                         }
                         disabled={dbType === 'bigquery'}
-                        className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 transition-all hover:border-primary/50 text-foreground"
+                        className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 disabled:opacity-50 transition-all hover:border-foreground/30 text-foreground"
                       />
                     </div>
                     <div>
@@ -803,7 +817,7 @@ export default function SettingsForm({
                         autoComplete="off"
                         placeholder="5432"
                         disabled={dbType === 'bigquery' || dbType === 'snowflake'}
-                        className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 transition-all hover:border-primary/50 text-foreground"
+                        className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 disabled:opacity-50 transition-all hover:border-foreground/30 text-foreground"
                       />
                     </div>
                   </div>
@@ -814,7 +828,7 @@ export default function SettingsForm({
                         ? 'Project ID'
                         : dbType === 'snowflake'
                           ? 'Database / Warehouse'
-                          : 'Database Name'}
+                          : 'Database name'}
                     </label>
                     <input
                       type="text"
@@ -832,13 +846,13 @@ export default function SettingsForm({
                                 ? 'myDatabase'
                                 : 'my_database'
                       }
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
+                      className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 transition-all hover:border-foreground/30 text-foreground"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-foreground">
-                      {dbType === 'bigquery' ? 'Client Email' : 'Username'}
+                      {dbType === 'bigquery' ? 'Client email' : 'Username'}
                     </label>
                     <input
                       type="text"
@@ -856,14 +870,14 @@ export default function SettingsForm({
                                 ? 'system'
                                 : 'postgres'
                       }
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
+                      className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 transition-all hover:border-foreground/30 text-foreground"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5 text-foreground">
                       {dbType === 'bigquery'
-                        ? 'Private Key (paste full key including \\n)'
+                        ? 'Private key (paste the full key, including \\n)'
                         : 'Password'}
                     </label>
                     <div className="relative">
@@ -877,13 +891,14 @@ export default function SettingsForm({
                             ? '-----BEGIN PRIVATE KEY-----...'
                             : 'Enter password'
                         }
-                        className="w-full px-4 py-2.5 pr-10 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/50 text-foreground"
+                        className="w-full px-3 py-2 pr-10 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 transition-all hover:border-foreground/30 text-foreground"
                       />
                       <button
                         type="button"
                         onClick={() => (showPassword ? hidePassword() : revealPassword())}
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
                         title={showPassword ? 'Hide password' : 'Show password'}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? (
                           <EyeOff className="w-4 h-4" />
@@ -900,7 +915,7 @@ export default function SettingsForm({
                 <div
                   className={`flex items-center gap-2 p-3 mt-4 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
                     connectionStatus === 'success'
-                      ? 'bg-green-500/10 text-green-600 dark:text-green-500 border border-green-500/20'
+                      ? 'bg-success/10 text-success border border-success/20'
                       : 'bg-destructive/10 text-destructive border border-destructive/20'
                   }`}
                 >
@@ -914,48 +929,45 @@ export default function SettingsForm({
               )}
             </div>
 
-            <div className="flex gap-3 pt-6 border-t border-border/50">
+            <div className="flex gap-3 pt-6 border-t border-border">
               <button
                 onClick={handleTestConnection}
                 disabled={!isFormValid || isTestingConnection || isFetchingSchema}
-                className="flex-1 px-4 py-3 bg-secondary hover:bg-secondary/80 border border-border/50 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group text-foreground"
+                className="btn-secondary flex-1 h-10"
               >
                 {isTestingConnection ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-label="Testing" />
                 ) : (
-                  <>Test Connection</>
+                  <>Test connection</>
                 )}
               </button>
               <button
                 onClick={handleFetchSchema}
                 disabled={!isFormValid || isFetchingSchema || isTestingConnection}
-                className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
+                className="btn-primary flex-1 h-10"
               >
                 {isFetchingSchema ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-label="Loading tables" />
                 ) : (
-                  <>Fetch Schema</>
+                  <>Load tables</>
                 )}
               </button>
             </div>
 
             {schema && schema.tables.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-border/50 animate-in fade-in slide-in-from-bottom-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold tracking-tight text-foreground">
-                    Schema Preview
+              <div className="mt-6 pt-6 border-t border-border animate-fadeIn">
+                <div className="flex items-baseline justify-between mb-3">
+                  <h3 className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                    Tables found
                   </h3>
-                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md">
-                    {schema.tables.length} tables found
+                  <span className="font-mono text-xs tabular-nums text-foreground">
+                    {schema.tables.length}
                   </span>
                 </div>
                 <div className="max-h-52 overflow-y-auto space-y-3 seamless-scrollbar pr-2">
                   {schema.tables.map((table) => (
-                    <div
-                      key={table.tableName}
-                      className="bg-secondary/30 rounded-xl p-4 border border-border/50"
-                    >
-                      <h4 className="font-bold text-sm mb-3 flex items-center gap-2 text-foreground">
+                    <div key={table.tableName} className="rounded-md p-3 border border-border">
+                      <h4 className="font-mono font-medium text-[13px] mb-2 flex items-center gap-2 text-foreground">
                         <Database className="w-3.5 h-3.5 text-muted-foreground" />
                         {table.tableName}
                       </h4>
@@ -963,7 +975,7 @@ export default function SettingsForm({
                         {table.columns.map((col) => (
                           <div key={col.name} className="flex items-center gap-2 text-xs">
                             <span
-                              className={`font-medium ${col.isPrimaryKey ? 'text-primary' : 'text-muted-foreground'}`}
+                              className={`font-mono ${col.isPrimaryKey ? 'text-foreground' : 'text-muted-foreground'}`}
                             >
                               {col.name}
                             </span>
@@ -971,13 +983,13 @@ export default function SettingsForm({
                               {col.type}
                             </span>
                             {col.isPrimaryKey && (
-                              <span className="px-1.5 py-0.5 bg-primary/20 text-primary rounded text-[9px] font-bold uppercase tracking-wider">
-                                PK
+                              <span className="px-1 font-mono text-[9.5px] uppercase tracking-[0.06em] text-primary border border-primary/40 rounded">
+                                key
                               </span>
                             )}
                             {!col.nullable && !col.isPrimaryKey && (
-                              <span className="px-1.5 py-0.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded text-[9px] font-bold uppercase tracking-wider">
-                                NOT NULL
+                              <span className="px-1 font-mono text-[9.5px] uppercase tracking-[0.06em] text-muted-foreground border border-border rounded">
+                                required
                               </span>
                             )}
                           </div>
@@ -1000,10 +1012,9 @@ export default function SettingsForm({
                         schema
                       )
                     }}
-                    className="w-full mt-6 px-4 py-3.5 bg-green-500 hover:bg-green-400 text-white rounded-xl text-sm font-bold tracking-wide hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="btn-primary w-full mt-6 h-11"
                   >
-                    <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                    Save & Connect Database
+                    Save and connect
                   </button>
                 )}
               </div>
@@ -1014,10 +1025,10 @@ export default function SettingsForm({
 
       {/* Footer */}
       {onClose && (
-        <div className="border-t border-border/50 bg-secondary/10 p-3 mt-auto">
+        <div className="border-t border-border p-3 mt-auto">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-lg transition-colors"
+            className="w-full px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
           >
             Cancel
           </button>

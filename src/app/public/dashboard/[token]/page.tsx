@@ -1,7 +1,8 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getPublicDashboardWidgets } from '@/actions/share-dashboard'
+import { AppLogo } from '@/components/AppLogo'
 import { PublicDashboardWidgets } from './PublicDashboardWidgets'
-import { Activity } from 'lucide-react'
 
 interface PublicDashboardProps {
   params: Promise<{
@@ -18,50 +19,56 @@ export default async function PublicDashboard({ params }: PublicDashboardProps) 
 
   const result = await getPublicDashboardWidgets(token)
 
+  const header = (
+    <header className="border-b border-mk-rule">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 sm:px-8">
+        <Link href="/" className="flex items-center gap-2" aria-label="NatureQuery home">
+          <AppLogo size="sm" textClassName="text-[15px] font-semibold tracking-[-0.01em]" />
+        </Link>
+        <Link href="/register" className="mk-btn mk-btn-sm mk-btn-primary">
+          Build your own
+        </Link>
+      </div>
+    </header>
+  )
+
   if (!result.success || !result.widgets) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <Activity className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-        <h1 className="text-2xl font-bold mb-2">Dashboard Not Found</h1>
-        <p className="text-muted-foreground text-center max-w-md">
-          {result.error || 'This dashboard link is invalid or has been set to private.'}
-        </p>
+      <div className="mk min-h-screen">
+        {header}
+        <main className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
+          <p className="mk-label">Shared dashboard</p>
+          <h1 className="mt-4 font-nq-serif text-[clamp(2rem,4.4vw,3rem)] font-normal leading-[1.06] tracking-[-0.02em] text-mk-ink">
+            This dashboard isn&apos;t available.
+          </h1>
+          <p className="mt-4 max-w-xl leading-relaxed text-mk-ink-2">
+            {result.error || 'The link is wrong, or its owner has made the dashboard private.'}
+          </p>
+        </main>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="font-bold">{result.ownerName}&apos;s Dashboard</h1>
-            <p className="text-xs text-muted-foreground">Generated via NatureQuery</p>
-          </div>
-        </div>
-        <a 
-          href="/" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-sm font-medium text-primary hover:underline"
-        >
-          Build your own
-        </a>
-      </header>
+    <div className="mk min-h-screen">
+      {header}
+      <main className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
+        <p className="mk-label">Shared dashboard</p>
+        <h1 className="mt-4 text-balance font-nq-serif text-[clamp(2rem,4.4vw,3rem)] font-normal leading-[1.06] tracking-[-0.02em] text-mk-ink">
+          {result.ownerName}&apos;s dashboard
+        </h1>
+        <p className="mt-4 max-w-xl leading-relaxed text-mk-ink-2">
+          The questions {result.ownerName} keeps an eye on in NatureQuery. Their data and SQL stay
+          private.
+        </p>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto">
-        {result.widgets.length === 0 ? (
-          <div className="h-64 border border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground">
-            <p>This dashboard is empty.</p>
-          </div>
-        ) : (
-          <PublicDashboardWidgets widgets={result.widgets} />
-        )}
+        <div className="mt-10">
+          {result.widgets.length === 0 ? (
+            <p className="border-t border-mk-rule pt-6 text-mk-ink-3">This dashboard is empty.</p>
+          ) : (
+            <PublicDashboardWidgets widgets={result.widgets} />
+          )}
+        </div>
       </main>
     </div>
   )

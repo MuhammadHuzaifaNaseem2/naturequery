@@ -4,19 +4,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
-  ArrowLeft,
   Search,
   Trash2,
   Play,
   Bookmark,
   AlertCircle,
   CheckCircle2,
-  Clock,
   ChevronLeft,
   ChevronRight,
-  Filter,
 } from 'lucide-react'
-import Link from 'next/link'
+import { AppPageHeader } from '@/components/AppPageHeader'
 import type { QueryHistoryItem } from '@/actions/queries'
 import {
   getQueryHistory,
@@ -143,39 +140,28 @@ export function HistoryClient() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/dashboard"
-                className="p-2 hover:bg-secondary rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold">{t('dashboard.history.title')}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {total === 1 ? t('dashboard.history.totalQuery', { count: total }) : t('dashboard.history.totalQueries', { count: total })}
-                </p>
-              </div>
-            </div>
-            {total > 0 && (
-              <button
-                onClick={handleClearAll}
-                className="px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-              >
-                {t('dashboard.history.clearAll')}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <AppPageHeader crumbs={[{ label: t('dashboard.history.title') }]} wide>
+        {total > 0 && (
+          <button
+            onClick={handleClearAll}
+            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          >
+            {t('dashboard.history.clearAll')}
+          </button>
+        )}
+      </AppPageHeader>
 
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center gap-3">
+      {/* Title and filters */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-5">
+        <h1 className="font-serif text-[clamp(2rem,4vw,2.75rem)] font-normal leading-[1.08] tracking-[-0.02em]">
+          {t('dashboard.history.title')}
+        </h1>
+        <p className="mt-2 font-mono text-[11px] tabular-nums text-muted-foreground">
+          {total === 1
+            ? t('dashboard.history.totalQuery', { count: total })
+            : t('dashboard.history.totalQueries', { count: total })}
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -183,22 +169,31 @@ export function HistoryClient() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('dashboard.history.searchPlaceholder')}
-              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              aria-label={t('dashboard.history.searchPlaceholder')}
+              className="w-full pl-10 pr-4 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40"
             />
           </div>
-          <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-0.5">
-            <Filter className="w-4 h-4 text-muted-foreground ml-2" />
+          <div
+            className="flex items-center rounded-md border border-border bg-card p-0.5"
+            role="group"
+            aria-label="Filter by result"
+          >
             {['', 'success', 'error'].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                aria-pressed={statusFilter === status}
+                className={`px-3 py-1 text-xs font-medium rounded-[5px] transition-colors ${
                   statusFilter === status
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-secondary text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {status === '' ? t('common.filter') : status === 'success' ? t('dashboard.history.success') : t('dashboard.history.error')}
+                {status === ''
+                  ? t('dashboard.sidebar.allStatus')
+                  : status === 'success'
+                    ? t('dashboard.history.success')
+                    : t('dashboard.history.error')}
               </button>
             ))}
           </div>
@@ -206,19 +201,21 @@ export function HistoryClient() {
       </div>
 
       {/* Table */}
-      <div className="max-w-7xl mx-auto px-6 pb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-muted-foreground/40 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20">
-            <Clock className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-muted-foreground">{t('dashboard.history.noResults')}</p>
+          <div className="py-12">
+            <p className="font-serif text-2xl">{t('dashboard.history.noResults')}</p>
             {(debouncedSearch || statusFilter) && (
               <button
-                onClick={() => { setSearch(''); setStatusFilter('') }}
-                className="mt-2 text-sm text-primary hover:underline"
+                onClick={() => {
+                  setSearch('')
+                  setStatusFilter('')
+                }}
+                className="mt-3 text-sm text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground"
               >
                 {t('dashboard.history.clearFilters')}
               </button>
@@ -229,14 +226,28 @@ export function HistoryClient() {
             <div className="bg-card border border-border rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.history.status')}</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.history.question')}</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.history.connection')}</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.history.rows')}</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.history.time')}</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.history.date')}</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.history.actions')}</th>
+                  <tr className="border-b border-border">
+                    <th className="text-left px-4 py-2.5 font-mono text-[10.5px] font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                      {t('dashboard.history.status')}
+                    </th>
+                    <th className="text-left px-4 py-2.5 font-mono text-[10.5px] font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                      {t('dashboard.history.question')}
+                    </th>
+                    <th className="text-left px-4 py-2.5 font-mono text-[10.5px] font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                      {t('dashboard.history.connection')}
+                    </th>
+                    <th className="text-left px-4 py-2.5 font-mono text-[10.5px] font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                      {t('dashboard.history.rows')}
+                    </th>
+                    <th className="text-left px-4 py-2.5 font-mono text-[10.5px] font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                      {t('dashboard.history.time')}
+                    </th>
+                    <th className="text-left px-4 py-2.5 font-mono text-[10.5px] font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                      {t('dashboard.history.date')}
+                    </th>
+                    <th className="text-right px-4 py-2.5 font-mono text-[10.5px] font-medium text-muted-foreground uppercase tracking-[0.08em]">
+                      {t('dashboard.history.actions')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -246,16 +257,20 @@ export function HistoryClient() {
                         {item.status === 'error' ? (
                           <AlertCircle className="w-4 h-4 text-destructive" />
                         ) : (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <CheckCircle2 className="w-4 h-4 text-success" />
                         )}
                       </td>
                       <td className="px-4 py-3 max-w-xs">
-                        <p className="text-sm font-medium truncate">{item.question}</p>
+                        <p className="font-serif text-[15px] leading-snug truncate">
+                          {item.question}
+                        </p>
                         <button
                           onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                           className="text-xs text-muted-foreground hover:text-primary mt-0.5"
                         >
-                          {expandedId === item.id ? t('dashboard.history.hideSql') : t('dashboard.history.showSql')}
+                          {expandedId === item.id
+                            ? t('dashboard.history.hideSql')
+                            : t('dashboard.history.showSql')}
                         </button>
                         {expandedId === item.id && (
                           <pre className="mt-1 p-2 bg-muted/50 rounded text-xs font-mono text-muted-foreground overflow-x-auto max-w-sm">
@@ -263,12 +278,14 @@ export function HistoryClient() {
                           </pre>
                         )}
                         {item.status === 'error' && item.errorMessage && (
-                          <p className="text-xs text-destructive mt-0.5 truncate max-w-xs">{item.errorMessage}</p>
+                          <p className="text-xs text-destructive mt-0.5 truncate max-w-xs">
+                            {item.errorMessage}
+                          </p>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {item.connectionName ? (
-                          <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                          <span className="font-mono text-[11px] text-muted-foreground">
                             {item.connectionName}
                           </span>
                         ) : (
@@ -288,17 +305,20 @@ export function HistoryClient() {
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleRerun(item)}
-                            className="p-1.5 hover:bg-primary/10 rounded transition-colors"
+                            className="p-1.5 hover:bg-secondary rounded transition-colors"
                             title="Re-run query"
                           >
-                            <Play className="w-3.5 h-3.5 text-primary" />
+                            <Play className="w-3.5 h-3.5 text-foreground" />
                           </button>
                           <button
-                            onClick={() => { setSavingId(item.id); setSaveName(item.question.slice(0, 40)) }}
-                            className="p-1.5 hover:bg-primary/10 rounded transition-colors"
+                            onClick={() => {
+                              setSavingId(item.id)
+                              setSaveName(item.question.slice(0, 40))
+                            }}
+                            className="p-1.5 hover:bg-secondary rounded transition-colors"
                             title="Save query"
                           >
-                            <Bookmark className="w-3.5 h-3.5 text-primary" />
+                            <Bookmark className="w-3.5 h-3.5 text-foreground" />
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
@@ -377,14 +397,15 @@ export function HistoryClient() {
 
       {/* Clear All Confirm Modal */}
       {showClearModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fadeIn">
-          <div className="relative bg-card border border-border shadow-2xl rounded-2xl p-6 w-full max-w-md animate-scaleIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 animate-fadeIn">
+          <div className="relative bg-card border border-border shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] rounded-lg p-6 w-full max-w-md animate-fadeIn">
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive">
               <Trash2 className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-semibold">{t('dashboard.history.clearAll')}</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              Are you sure you want to clear your entire query history? This action cannot be undone.
+              Are you sure you want to clear your entire query history? This action cannot be
+              undone.
             </p>
             <div className="flex gap-3 mt-6">
               <button
@@ -393,10 +414,7 @@ export function HistoryClient() {
               >
                 Yes, Clear All
               </button>
-              <button
-                onClick={() => setShowClearModal(false)}
-                className="btn-secondary flex-1"
-              >
+              <button onClick={() => setShowClearModal(false)} className="btn-secondary flex-1">
                 {t('common.cancel')}
               </button>
             </div>

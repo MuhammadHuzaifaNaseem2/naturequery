@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { listDesktopSessions } from '@/lib/desktop/sessions'
 import SettingsClient from './SettingsClient'
 
-export const metadata = { title: 'Settings | NatureQuery' }
+export const metadata = { title: 'Settings' }
 
 export default async function SettingsPage() {
   const session = await auth()

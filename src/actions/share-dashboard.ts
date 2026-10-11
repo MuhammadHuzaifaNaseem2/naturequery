@@ -66,15 +66,19 @@ export async function getPublicDashboardWidgets(token: string) {
   try {
     const user = await prisma.user.findUnique({
       where: { dashboardShareToken: token, isDashboardPublic: true },
+      select: { id: true, name: true },
     })
 
     if (!user) {
       return { success: false, error: 'Dashboard not found or is private' }
     }
 
+    // Anyone with the link can load this, so send only what the page shows:
+    // never the SQL, connection details or owner IDs (the share dialog promises that).
     const widgets = await prisma.dashboardWidget.findMany({
       where: { userId: user.id },
       orderBy: { position: 'asc' },
+      select: { id: true, title: true, question: true, position: true },
     })
 
     return {

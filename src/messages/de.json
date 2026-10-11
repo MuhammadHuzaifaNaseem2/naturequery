@@ -317,7 +317,7 @@
       "instant": "Sofort",
       "format": "Formatieren",
       "template": "Vorlage",
-      "aiFixIt": "KI-Korrektur",
+      "aiFixIt": "Mit KI korrigieren",
       "askAi": "KI fragen",
       "sqlEditor": "SQL-Editor",
       "sqlEditorDescription": "SQL direkt schreiben und ausführen mit vollständiger Syntaxhervorhebung",
@@ -325,7 +325,25 @@
       "schemaInsights": "Schema-Einblicke",
       "conversation": "Gespräch",
       "conversationExchange": "Austausch",
-      "conversationExchanges": "Austausche"
+      "conversationExchanges": "Austausche",
+      "stepAsk": "Ihre Frage",
+      "stepWrites": "NatureQuery schreibt",
+      "stepAnswer": "Die Antwort",
+      "modeQuestion": "Natürliche Sprache",
+      "modeSql": "SQL",
+      "followUpOne": "Knüpft an Ihre letzte Frage an",
+      "followUpMany": "Knüpft an Ihre letzten {{count}} Fragen an",
+      "startOver": "Neu beginnen",
+      "questionsToTry": "Fragen zum Ausprobieren",
+      "checkedReadOnly": "Nur lesend. Wird vor der Ausführung geprüft.",
+      "performance": "Leistung",
+      "emptyLabel": "Hier beginnen",
+      "emptyTitle": "Verbinden Sie eine Datenbank",
+      "emptyTitleRest": "oder testen Sie zuerst den Beispielshop.",
+      "emptyBody": "Um eine Abfrage zu schreiben, liest NatureQuery Tabellen- und Spaltennamen, nicht Ihre Daten. Es führt nur lesendes SQL aus.",
+      "worksWith": "Funktioniert mit",
+      "tryDemoDatabase": "Beispieldatenbank testen",
+      "csvOrExcel": "sowie CSV- und Excel-Dateien"
     },
     "header": {
       "queryWorkspace": "Abfrage-Arbeitsbereich",
@@ -404,7 +422,8 @@
       "searchPlaceholder": "Verlauf durchsuchen...",
       "allStatus": "Alle Status",
       "historyNoResults": "Keine Ergebnisse für Ihre Suche/Filter gefunden.",
-      "exportHistory": "Exportieren"
+      "exportHistory": "Exportieren",
+      "newQuestion": "Neue Frage"
     },
     "schemaBrowser": {
       "noSchemaLoaded": "Kein Schema geladen",
@@ -657,12 +676,15 @@
       "askPlain": "Fragen Sie in einfachem Deutsch",
       "askPlainExample": "Zeige mir alle Bestellungen der letzten Woche",
       "instantResults": "Sofortige Ergebnisse erhalten",
-      "instantResultsSub": "Die KI generiert und führt die Abfrage für Sie aus"
+      "instantResultsSub": "Die KI generiert und führt die Abfrage für Sie aus",
+      "label": "Willkommen",
+      "skipSetup": "Einrichtung überspringen"
     },
     "step1": {
       "title": "Verbinden Sie Ihre Datenbank",
       "subtitle": "Fügen Sie Ihre erste Datenbankverbindung hinzu, um loszulegen.",
-      "skip": "Vorerst überspringen"
+      "skip": "Vorerst überspringen",
+      "label": "Ihre Daten"
     },
     "step2": {
       "title": "Probieren Sie Ihre erste Abfrage",
@@ -678,7 +700,8 @@
       "dbConnected": "Ihre Datenbank ist verbunden. Gehen Sie zum Dashboard, um Fragen zu stellen.",
       "noDatabase": "Gehen Sie zum Dashboard, um eine Datenbank zu verbinden und mit natürlicher Sprache abzufragen.",
       "tryAsking": "Versuchen Sie zum Beispiel:",
-      "exampleQuery": "Zeige mir alle Kunden, die sich diesen Monat registriert haben"
+      "exampleQuery": "Zeige mir alle Kunden, die sich diesen Monat registriert haben",
+      "label": "Bereit"
     },
     "checklist": {
       "gettingStarted": "Erste Schritte",
@@ -698,7 +721,8 @@
         "setupSchedule": "Geplanten Bericht einrichten",
         "setupScheduleDesc": "Automatisieren Sie wiederkehrende Abfragen mit E-Mail-Zustellung."
       }
-    }
+    },
+    "progress": "Schritt {{step}} von {{total}}"
   },
   "pages": {
     "notFound": {

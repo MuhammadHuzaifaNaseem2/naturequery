@@ -7,7 +7,6 @@ import {
   Check,
   CheckCheck,
   Trash2,
-  Clock,
   AlertTriangle,
   Sparkles,
   Users,
@@ -30,15 +29,15 @@ const TYPE_CONFIG: Record<
 > = {
   query_complete: {
     icon: Sparkles,
-    color: 'text-violet-500',
-    bg: 'bg-violet-500/10',
-    border: 'border-violet-500/20',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    border: 'border-primary/20',
   },
   threshold_alert: {
     icon: AlertTriangle,
-    color: 'text-amber-500',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/20',
+    color: 'text-warning',
+    bg: 'bg-warning/10',
+    border: 'border-warning/20',
   },
   schedule_failed: {
     icon: AlertTriangle,
@@ -48,15 +47,15 @@ const TYPE_CONFIG: Record<
   },
   team_invite: {
     icon: Users,
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/20',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    border: 'border-primary/20',
   },
   billing: {
     icon: CreditCard,
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/20',
+    color: 'text-success',
+    bg: 'bg-success/10',
+    border: 'border-success/20',
   },
   system: {
     icon: Info,
@@ -149,16 +148,18 @@ export function NotificationCenter() {
           if (!isOpen) loadNotifications()
         }}
         className={clsx(
-          'relative p-2 rounded-lg transition-all',
+          'relative inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors',
           isOpen
-            ? 'bg-primary/10 text-primary'
+            ? 'bg-secondary text-foreground'
             : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
         )}
         title="Notifications"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-expanded={isOpen}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] font-bold bg-primary text-primary-foreground rounded-full shadow-sm shadow-primary/40">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] flex items-center justify-center px-1 font-mono text-[9px] font-medium bg-foreground text-background rounded-full tabular-nums">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -168,20 +169,14 @@ export function NotificationCenter() {
       {isOpen && (
         <div
           ref={panelRef}
-          className="fixed left-2 right-2 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[400px] bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-scaleIn"
+          className="fixed left-2 right-2 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[400px] bg-card border border-border rounded-lg shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] z-50 overflow-hidden animate-fadeIn"
         >
-          {/* Gradient accent top bar */}
-          <div className="h-[3px] bg-gradient-to-r from-primary via-accent to-primary" />
-
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bell className="w-3.5 h-3.5 text-primary" />
-              </div>
+            <div className="flex items-baseline gap-2.5">
               <h3 className="font-semibold text-sm">Notifications</h3>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full shadow-sm shadow-primary/30">
+                <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                   {unreadCount} new
                 </span>
               )}
@@ -190,7 +185,7 @@ export function NotificationCenter() {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
                   title="Mark all as read"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
@@ -199,7 +194,8 @@ export function NotificationCenter() {
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                aria-label="Close notifications"
+                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -210,53 +206,17 @@ export function NotificationCenter() {
           <div className="overflow-y-auto max-h-[420px]">
             {isLoading && notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Loader2 className="w-5 h-5 animate-spin text-primary/50" />
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">Loading notifications…</p>
               </div>
             ) : notifications.length === 0 ? (
               /* ── Empty state ── */
-              <div className="flex flex-col items-center justify-center py-14 px-8 text-center">
-                <div className="relative mb-5">
-                  {/* Outer ring */}
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/10 flex items-center justify-center">
-                    {/* Inner circle */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                      <Bell className="w-6 h-6 text-primary/60" />
-                    </div>
-                  </div>
-                  {/* Floating dots */}
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-primary/30 border-2 border-card" />
-                  <span className="absolute bottom-2 left-0 w-2 h-2 rounded-full bg-accent/30 border-2 border-card" />
-                </div>
-                <p className="font-semibold text-sm mb-1.5">All caught up!</p>
-                <p className="text-xs text-muted-foreground leading-relaxed max-w-[220px]">
+              <div className="px-5 py-8">
+                <p className="font-serif text-xl leading-snug">Nothing new.</p>
+                <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed max-w-[300px]">
                   You'll be notified when you reach query limits, scheduled queries run, and for
                   team activity.
                 </p>
-                {/* Decorative pills */}
-                <div className="flex items-center gap-2 mt-5 flex-wrap justify-center">
-                  {[
-                    {
-                      icon: AlertTriangle,
-                      label: 'Usage alerts',
-                      color: 'text-amber-500 bg-amber-500/10',
-                    },
-                    {
-                      icon: Sparkles,
-                      label: 'Scheduled queries',
-                      color: 'text-violet-500 bg-violet-500/10',
-                    },
-                    { icon: Users, label: 'Team updates', color: 'text-blue-500 bg-blue-500/10' },
-                  ].map(({ icon: Icon, label, color }) => (
-                    <span
-                      key={label}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border border-border/50 ${color}`}
-                    >
-                      <Icon className="w-3 h-3" />
-                      {label}
-                    </span>
-                  ))}
-                </div>
               </div>
             ) : (
               <div className="divide-y divide-border/40">
@@ -267,18 +227,16 @@ export function NotificationCenter() {
                     <div
                       key={n.id}
                       className={clsx(
-                        'flex items-start gap-3 px-5 py-3.5 hover:bg-secondary/30 transition-colors group',
-                        !n.read && 'bg-primary/[0.025]'
+                        'flex items-start gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors group',
+                        !n.read && 'bg-secondary/40'
                       )}
                     >
                       <div
                         className={clsx(
-                          'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border',
-                          cfg.bg,
-                          cfg.border
+                          'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 bg-secondary'
                         )}
                       >
-                        <Icon className={clsx('w-4 h-4', cfg.color)} />
+                        <Icon className={clsx('w-3.5 h-3.5', cfg.color)} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
@@ -291,23 +249,26 @@ export function NotificationCenter() {
                             {n.title}
                           </p>
                           {!n.read && (
-                            <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5 shadow-sm shadow-primary/50" />
+                            <span
+                              className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5"
+                              aria-label="Unread"
+                            />
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
                           {n.message}
                         </p>
                         <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                          <span className="font-mono text-[10.5px] text-muted-foreground">
                             {timeAgo(n.createdAt)}
                           </span>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {!n.read && (
                               <button
                                 onClick={() => handleMarkRead(n.id)}
-                                className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                                 title="Mark as read"
+                                aria-label="Mark as read"
                               >
                                 <Check className="w-3 h-3" />
                               </button>
@@ -316,6 +277,7 @@ export function NotificationCenter() {
                               onClick={() => handleDelete(n.id)}
                               className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                               title="Delete"
+                              aria-label="Delete notification"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -331,8 +293,8 @@ export function NotificationCenter() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-5 py-3 border-t border-border/60 bg-secondary/20">
-              <p className="text-[10px] text-muted-foreground/60 text-center">
+            <div className="px-5 py-2.5 border-t border-border">
+              <p className="font-mono text-[10.5px] text-muted-foreground text-center">
                 Showing last {notifications.length} notification
                 {notifications.length !== 1 ? 's' : ''}
               </p>

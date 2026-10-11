@@ -13,7 +13,11 @@ import {
   Activity,
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import { analyzeQueryPerformance, type PerformanceTip, type QueryPerformanceResult } from '@/actions/ai'
+import {
+  analyzeQueryPerformance,
+  type PerformanceTip,
+  type QueryPerformanceResult,
+} from '@/actions/ai'
 import type { DatabaseSchema } from '@/actions/db'
 
 interface QueryPerformancePanelProps {
@@ -26,13 +30,13 @@ interface QueryPerformancePanelProps {
 const TIP_CONFIG: Record<string, { icon: typeof Zap; color: string; bg: string }> = {
   index: { icon: DatabaseIcon, color: 'text-primary', bg: 'bg-primary/10' },
   optimization: { icon: Zap, color: 'text-accent', bg: 'bg-accent/10' },
-  warning: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  warning: { icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10' },
   info: { icon: Info, color: 'text-muted-foreground', bg: 'bg-secondary' },
 }
 
 const COMPLEXITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   simple: { label: 'Simple', color: 'text-success', bg: 'bg-success/10' },
-  moderate: { label: 'Moderate', color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  moderate: { label: 'Moderate', color: 'text-warning', bg: 'bg-warning/10' },
   complex: { label: 'Complex', color: 'text-destructive', bg: 'bg-destructive/10' },
 }
 
@@ -62,7 +66,7 @@ export function QueryPerformancePanel({
     if (!hasAnalyzed && sql) {
       handleAnalyze()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sql])
 
   if (isLoading) {
@@ -99,19 +103,31 @@ export function QueryPerformancePanel({
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-secondary/50 rounded-xl p-3 text-center border border-border/50">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Execution</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+            Execution
+          </p>
           <p className="text-lg font-bold text-foreground">
             {executionTimeMs !== undefined ? `${executionTimeMs}ms` : '—'}
           </p>
         </div>
         <div className="bg-secondary/50 rounded-xl p-3 text-center border border-border/50">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Complexity</p>
-          <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold', complexityConfig.bg, complexityConfig.color)}>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+            Complexity
+          </p>
+          <span
+            className={clsx(
+              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold',
+              complexityConfig.bg,
+              complexityConfig.color
+            )}
+          >
             {complexityConfig.label}
           </span>
         </div>
         <div className="bg-secondary/50 rounded-xl p-3 text-center border border-border/50">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Est. Cost</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+            Est. Cost
+          </p>
           <p className="text-lg font-bold text-foreground">{result.estimatedCost}</p>
         </div>
       </div>
@@ -131,12 +147,19 @@ export function QueryPerformancePanel({
                 key={i}
                 className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border/50 hover:border-border transition-colors"
               >
-                <div className={clsx('w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0', config.bg)}>
+                <div
+                  className={clsx(
+                    'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
+                    config.bg
+                  )}
+                >
                   <Icon className={clsx('w-3.5 h-3.5', config.color)} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{tip.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{tip.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    {tip.description}
+                  </p>
                 </div>
               </div>
             )

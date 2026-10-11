@@ -68,7 +68,6 @@ export function useDashboardHistory(
       })
       if (result.success && result.data) {
         setSavedQueries((prev) => [result.data!, ...prev])
-        toast.success('Query saved')
         return true
       }
       toast.error('Failed to save query', { description: result.error })
@@ -82,7 +81,6 @@ export function useDashboardHistory(
     const result = await deleteSavedQueryAction(id)
     if (result.success) {
       setSavedQueries((prev) => prev.filter((q) => q.id !== id))
-      toast.success('Saved query deleted')
     }
   }, [])
 
@@ -93,7 +91,6 @@ export function useDashboardHistory(
       setSavedQueries((prev) =>
         prev.map((q) => (q.id === id ? { ...q, isFavorite: result.data!.isFavorite } : q))
       )
-      toast.success(result.data.isFavorite ? 'Added to favorites' : 'Removed from favorites')
     }
   }, [])
 
@@ -120,7 +117,6 @@ export function useDashboardHistory(
     if (result.success) {
       setQueryHistory([])
       setQueryHistoryTotal(0)
-      toast.success('History cleared')
     }
   }, [])
 
@@ -132,7 +128,6 @@ export function useDashboardHistory(
 
     const result = await deleteHistoryEntry(id)
     if (result.success) {
-      toast.success('History entry deleted')
       // Background sync: pull updated list + authoritative total from server
       getQueryHistory({ pageSize: 50 })
         .then((res) => {

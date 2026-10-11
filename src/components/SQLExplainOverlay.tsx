@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Loader2, Lightbulb, X } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { explainSQLClause } from '@/actions/ai'
 
 interface SQLExplainOverlayProps {
@@ -89,7 +89,7 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
   return (
     <div ref={containerRef} className="relative">
       <pre
-        className="text-foreground cursor-text select-text leading-relaxed"
+        className="text-foreground cursor-text select-text font-mono text-[13px] leading-[1.7] [font-variant-ligatures:none]"
         style={{
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
@@ -107,10 +107,9 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
       </pre>
 
       {/* Hint */}
-      <div className="mt-2 flex items-center gap-1.5 text-xs leading-5 text-muted-foreground/60">
-        <Lightbulb className="w-3 h-3 shrink-0" />
-        <span>Select any part of the SQL to get an AI explanation</span>
-      </div>
+      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+        Select any part of the SQL to have it explained.
+      </p>
 
       {/* Tooltip — portaled to body with fixed positioning to escape parent overflow clipping */}
       {tooltip &&
@@ -129,9 +128,9 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
               return { left, top }
             })()}
           >
-            <div className="bg-card border border-primary/20 rounded-xl shadow-xl p-3 w-[280px] relative">
+            <div className="bg-popover border border-border rounded-lg shadow-[0_16px_40px_-20px_hsl(var(--foreground)/0.45)] p-3 w-[280px] relative">
               <div className="flex items-start justify-between gap-2 mb-2">
-                <code className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded font-mono line-clamp-1 flex-1">
+                <code className="text-[11px] bg-secondary text-foreground px-2 py-0.5 rounded font-mono line-clamp-1 flex-1">
                   {tooltip.text}
                 </code>
                 <button
@@ -150,7 +149,7 @@ export function SQLExplainOverlay({ sql }: SQLExplainOverlayProps) {
                 <p className="text-xs text-foreground/80 leading-relaxed">{tooltip.explanation}</p>
               )}
               {/* Arrow — points up to the selection */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-card border-l border-t border-primary/20 rotate-45" />
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-popover border-l border-t border-border rotate-45" />
             </div>
           </div>,
           document.body
@@ -342,13 +341,13 @@ function tokenizeSQL(sql: string): Token[] {
 function getTokenClass(type: Token['type']): string {
   switch (type) {
     case 'keyword':
-      return 'text-primary font-semibold'
+      return 'text-primary font-medium'
     case 'function':
-      return 'text-accent font-medium'
+      return 'text-primary'
     case 'string':
-      return 'text-success'
+      return 'text-signal-ink'
     case 'number':
-      return 'text-amber-500'
+      return 'text-signal-ink'
     case 'operator':
       return 'text-muted-foreground'
     case 'identifier':

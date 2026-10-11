@@ -1,46 +1,38 @@
 'use client'
 
-import { type Ref, type RefObject, useState, useEffect, lazy, Suspense } from 'react'
+import { type Ref, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Play,
   Brain,
   Download,
-  Sparkles,
-  Terminal,
   CheckCircle2,
   Loader2,
   XCircle,
   ShieldAlert,
+  ShieldCheck,
   FileSpreadsheet,
   FileText,
   Table2,
-  ChevronDown,
   BarChart3,
   Bookmark,
   Pin,
   Clock,
-  Zap,
   Database,
   Wand2,
-  ToggleLeft,
-  ToggleRight,
   AlignLeft,
   LayoutTemplate,
-  MessageSquare,
   RotateCcw,
   Gauge,
-  Code2,
   CopyPlus,
   Scale,
+  Lightbulb,
 } from 'lucide-react'
-import { StreamingQueryPanel } from '@/components/StreamingQueryPanel'
 import { NLFilterBar, type ActiveFilter } from '@/components/NLFilterBar'
 import { SQLExplainOverlay } from '@/components/SQLExplainOverlay'
 import { QueryPerformancePanel } from '@/components/QueryPerformancePanel'
 import { SQLEditor } from '@/components/SQLEditor'
 import { clsx } from 'clsx'
-import { GlowCard } from '@/components/GlowCard'
 import ResultsTable from '@/components/ResultsTable'
 import { ResultsChart } from '@/components/ResultsChart'
 import { DataInsights } from '@/components/DataInsights'
@@ -49,12 +41,14 @@ import { format as formatSQL } from 'sql-formatter'
 import { saveAsTemplate } from '@/actions/queries'
 import { toast } from 'sonner'
 import { QueryResultRow } from '@/actions/db'
-import { SavedConnection, QueryResults, ChartRecommendation } from './types'
+import { SavedConnection, QueryResults } from './types'
 import type { InsightResult } from '@/actions/insights'
 import type { QueryHistoryItem, SavedQueryItem } from '@/actions/queries'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { SmartQueryInput } from './SmartQueryInput'
+import { StepLabel } from './StepLabel'
 import { useTheme } from '@/components/ThemeProvider'
+import { WEB_DATABASES } from '@/lib/supported-databases'
 import {
   createInvestigationReport,
   INVESTIGATION_BASELINE_KEY,
@@ -64,6 +58,7 @@ import {
 } from '@/lib/investigation-transfer'
 
 type ResultsView = 'table' | 'chart' | 'insights' | 'performance'
+type SaveState = 'idle' | 'saving' | 'saved'
 
 interface QueryPanelProps {
   activeConnection: SavedConnection | undefined
@@ -118,6 +113,17 @@ interface QueryPanelProps {
   onPlanLimitReached?: () => void
 }
 
+const kbd =
+  'rounded border border-border bg-background px-1 py-px font-mono text-[10px] text-muted-foreground'
+
+/** Quiet text button used for secondary actions next to a step. */
+const textAction =
+  'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-50'
+
+/** Square icon button used in the answer toolbar. */
+const iconAction =
+  'inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground'
+
 export function QueryPanel({
   activeConnection,
   nlQuery,
@@ -133,7 +139,6 @@ export function QueryPanel({
   showExportMenu,
   onToggleExportMenu,
   onGenerateSQL,
-  onStreamingSQL,
   onExecuteSQL,
   onFixQuery,
   onExport,
@@ -152,14 +157,12 @@ export function QueryPanel({
   schemaSuggestions,
   isDiscovering,
   conversationLength,
-  conversationContext,
   onClearConversation,
   activeFilters,
   isApplyingFilter,
   onAddFilter,
   onRemoveFilter,
   onClearFilters,
-  onPlanLimitReached,
 }: QueryPanelProps) {
   const { t } = useTranslation()
   const { resolvedTheme } = useTheme()
@@ -169,8 +172,9 @@ export function QueryPanel({
   const [isExplaining, setIsExplaining] = useState(false)
   const [inputMode, setInputMode] = useState<'ai' | 'sql'>('ai')
   const [rawSQL, setRawSQL] = useState('')
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
-  const [templateState, setTemplateState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [editorSaveState, setEditorSaveState] = useState<SaveState>('idle')
+  const [templateState, setTemplateState] = useState<SaveState>('idle')
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null)
   const [investigationBaseline, setInvestigationBaseline] = useState<InvestigationReport | null>(
     null
@@ -207,7 +211,7 @@ export function QueryPanel({
     try {
       sessionStorage.setItem(INVESTIGATION_BASELINE_KEY, JSON.stringify(report))
       setInvestigationBaseline(report)
-      toast.success('Report A is ready', {
+      toast('Report A is ready', {
         description: 'Run the second query, then click Compare with A.',
       })
     } catch {
@@ -295,217 +299,208 @@ export function QueryPanel({
     onExecuteSQL(rawSQL) // Execute immediately using the passed value
   }
 
-  // Empty state — no connection selected
+  // Saves through the dashboard hook and shows "Saved" on the button instead of a toast.
+  const saveWithFeedback = async (
+    setState: (state: SaveState) => void,
+    name: string,
+    question: string,
+    sql: string
+  ) => {
+    setState('saving')
+    const result = await onSaveQuery(name, question, sql)
+    // void-returning callers: assume success since errors are reported by the hook
+    const ok = result === undefined ? true : !!result
+    if (ok) {
+      setState('saved')
+      setTimeout(() => setState('idle'), 2000)
+    } else {
+      setState('idle')
+    }
+  }
+
+  const formatted = (sql: string) => {
+    try {
+      return formatSQL(sql, { language: 'sql', tabWidth: 2, keywordCase: 'upper' })
+    } catch {
+      return null
+    }
+  }
+
+  // Empty state: no database selected yet
   if (!activeConnection) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-background via-background to-primary/5">
-        <div className="max-w-2xl w-full">
-          <div className="card rounded-2xl p-10 md:p-14 text-center border border-border/50 shadow-2xl relative overflow-hidden group">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-              <Database className="w-10 h-10 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold mb-3">{t('dashboard.queryPanel.connectDatabase')}</h2>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              {t('dashboard.queryPanel.connectDescription')}
+      <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl px-6 pb-16 pt-14 sm:px-10 sm:pt-20">
+          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            {t('dashboard.queryPanel.emptyLabel')}
+          </p>
+          <h2 className="mt-4 max-w-3xl text-balance font-serif text-[clamp(2rem,4vw,3.1rem)] font-normal leading-[1.06] tracking-[-0.02em] text-foreground">
+            {t('dashboard.queryPanel.emptyTitle')}{' '}
+            <em className="text-muted-foreground">{t('dashboard.queryPanel.emptyTitleRest')}</em>
+          </h2>
+          <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+            {t('dashboard.queryPanel.emptyBody')}
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <button onClick={onAddConnection} className="btn-primary h-10 px-5">
+              <Database className="h-4 w-4" aria-hidden />
+              {t('dashboard.queryPanel.addConnection')}
+            </button>
+            <button onClick={onAddDemoConnection} className="btn-secondary h-10 px-5">
+              {t('dashboard.queryPanel.tryDemoDatabase')}
+            </button>
+          </div>
+          <div className="mt-14 max-w-3xl border-t border-border pt-6">
+            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              {t('dashboard.queryPanel.worksWith')}
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button onClick={onAddConnection} className="btn-gradient px-6 py-3">
-                <Database className="w-4 h-4" />
-                {t('dashboard.queryPanel.addConnection')}
-              </button>
-              <button onClick={onAddDemoConnection} className="btn-secondary px-6 py-3">
-                <Sparkles className="w-4 h-4" />
-                {t('dashboard.queryPanel.tryDemo')}
-              </button>
-            </div>
+            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 font-mono text-xs text-muted-foreground">
+              {WEB_DATABASES.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+              <li className="text-foreground/70">{t('dashboard.queryPanel.csvOrExcel')}</li>
+            </ul>
           </div>
         </div>
       </div>
     )
   }
 
+  const followUps = conversationLength ?? 0
+  const views: { id: ResultsView; label: string; Icon: typeof Table2 }[] = [
+    { id: 'table', label: t('dashboard.queryPanel.table'), Icon: Table2 },
+    { id: 'chart', label: t('dashboard.queryPanel.chart'), Icon: BarChart3 },
+    { id: 'insights', label: t('dashboard.queryPanel.insights'), Icon: Brain },
+    { id: 'performance', label: t('dashboard.queryPanel.performance'), Icon: Gauge },
+  ]
+
   return (
-    <div className="flex-1 min-w-0 overflow-y-auto px-3 sm:px-6 pb-6 pt-2">
-      <div className="max-w-6xl mx-auto space-y-5">
-        {/* Natural Language Input */}
-        <GlowCard className="pt-5 pb-7 px-4 sm:px-7 lg:pt-6 lg:pb-10 lg:px-10 animate-fadeIn">
-          {/* Mode Toggle: Ask AI / SQL Editor */}
-          <div className="flex items-center gap-2 mb-5">
-            <button
-              onClick={() => setInputMode('ai')}
-              className={clsx(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-                inputMode === 'ai'
-                  ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md shadow-primary/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-              )}
+    <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="mx-auto w-full max-w-5xl space-y-10 px-4 pb-16 pt-6 sm:px-8 sm:pt-8">
+        {/* 01 · The question */}
+        <section aria-labelledby="step-ask" className="animate-fadeIn">
+          <div className="mb-3 flex items-end justify-between gap-4">
+            <StepLabel step="01" id="step-ask">
+              {t('dashboard.queryPanel.stepAsk')}
+            </StepLabel>
+            <div
+              role="tablist"
+              aria-label={t('dashboard.queryPanel.stepAsk')}
+              className="flex items-center rounded-md border border-border bg-card p-0.5"
             >
-              <Sparkles className="w-4 h-4" />
-              {t('dashboard.queryPanel.askAi')}
-            </button>
-            <button
-              onClick={() => {
-                setInputMode('sql')
-                // Pre-load existing generated SQL into the editor
-                if (generatedSQL && !rawSQL) setRawSQL(generatedSQL)
-              }}
-              className={clsx(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
-                inputMode === 'sql'
-                  ? 'bg-gradient-to-r from-accent to-primary text-white shadow-md shadow-accent/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-              )}
-            >
-              <Code2 className="w-4 h-4" />
-              {t('dashboard.queryPanel.sqlEditor')}
-            </button>
+              {(['ai', 'sql'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  role="tab"
+                  aria-selected={inputMode === mode}
+                  onClick={() => {
+                    setInputMode(mode)
+                    // Pre-load existing generated SQL into the editor
+                    if (mode === 'sql' && generatedSQL && !rawSQL) setRawSQL(generatedSQL)
+                  }}
+                  className={clsx(
+                    'rounded-[5px] px-3 py-1 text-xs font-medium transition-colors',
+                    inputMode === mode
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {mode === 'ai'
+                    ? t('dashboard.queryPanel.modeQuestion')
+                    : t('dashboard.queryPanel.modeSql')}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* AI Input Mode */}
           {inputMode === 'ai' && (
             <>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{t('dashboard.queryPanel.title')}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {t('dashboard.queryPanel.describeData')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Conversation context indicator */}
-              {conversationLength && conversationLength > 0 ? (
-                <div className="flex items-center gap-2 mb-3 px-3 py-1.5 bg-primary/5 rounded-lg border border-primary/10">
-                  <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs text-muted-foreground">
-                    {t('dashboard.queryPanel.conversation')}: {conversationLength}{' '}
-                    {conversationLength === 1
-                      ? t('dashboard.queryPanel.conversationExchange')
-                      : t('dashboard.queryPanel.conversationExchanges')}
-                  </span>
-                  <button
-                    onClick={onClearConversation}
-                    className="ml-auto text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    {t('common.clear')}
-                  </button>
-                </div>
-              ) : null}
-
-              {/* Smart Query Input with autocomplete */}
-              <SmartQueryInput
-                value={nlQuery}
-                onChange={onNlQueryChange}
-                onSubmit={onGenerateSQL}
-                disabled={!activeConnection}
-                placeholder={t('dashboard.queryPanel.placeholder')}
-                schema={activeConnection?.schema}
-                history={queryHistory?.map((h) => ({ question: h.question })) || []}
-                templates={savedQueries?.map((q) => ({ question: q.question })) || []}
-                inputRef={queryInputRef}
-                suggestionsEnabled={suggestionsEnabled}
-                onToggleSuggestions={handleToggleSuggestions}
-              />
-
-              {/* Schema discovery suggestions */}
-              {schemaSuggestions && (
-                <div className="mt-3 p-3 bg-accent/5 border border-accent/10 rounded-lg">
-                  <p className="text-xs font-medium text-accent mb-2 flex items-center gap-1.5">
-                    <Wand2 className="w-3.5 h-3.5" />
-                    {isDiscovering
-                      ? t('dashboard.queryPanel.analyzingSchema')
-                      : t('dashboard.queryPanel.schemaInsights')}
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-2">{schemaSuggestions.summary}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {schemaSuggestions.suggestions.slice(0, 4).map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => onNlQueryChange(s)}
-                        className="text-[11px] px-2.5 py-1 bg-accent/10 hover:bg-accent/20 text-accent rounded-full transition-colors"
-                      >
-                        {s}
-                      </button>
-                    ))}
+              <div className="rounded-lg border border-border bg-card transition-colors focus-within:border-foreground/35">
+                {followUps > 0 && (
+                  <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2 text-xs text-muted-foreground sm:px-5">
+                    <span>
+                      {followUps === 1
+                        ? t('dashboard.queryPanel.followUpOne')
+                        : t('dashboard.queryPanel.followUpMany', { count: followUps })}
+                    </span>
+                    <button
+                      onClick={onClearConversation}
+                      className="inline-flex items-center gap-1 font-medium transition-colors hover:text-foreground"
+                    >
+                      <RotateCcw className="h-3 w-3" aria-hidden />
+                      {t('dashboard.queryPanel.startOver')}
+                    </button>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-2">
+                <SmartQueryInput
+                  value={nlQuery}
+                  onChange={onNlQueryChange}
+                  onSubmit={onGenerateSQL}
+                  disabled={!activeConnection}
+                  placeholder={t('dashboard.queryPanel.placeholder')}
+                  schema={activeConnection?.schema}
+                  history={queryHistory?.map((h) => ({ question: h.question })) || []}
+                  templates={savedQueries?.map((q) => ({ question: q.question })) || []}
+                  inputRef={queryInputRef}
+                  suggestionsEnabled={suggestionsEnabled}
+                  onToggleSuggestions={handleToggleSuggestions}
+                />
+
+                <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2.5 sm:px-4">
+                  <span className="hidden items-center gap-1 sm:inline-flex">
+                    <kbd className={kbd}>Ctrl</kbd>
+                    <kbd className={kbd}>Enter</kbd>
+                  </span>
                   <button
                     onClick={onGenerateSQL}
                     disabled={!activeConnection || !nlQuery.trim() || isGenerating}
-                    className={clsx(
-                      'btn-gradient relative overflow-hidden transition-all duration-300 text-sm py-2 px-4',
-                      isGenerating && 'min-w-[180px] scale-[1.02]'
-                    )}
+                    className={clsx('btn-primary ml-auto', isGenerating && 'btn-generating')}
                   >
                     {isGenerating ? (
                       <>
-                        {/* Animated gradient shimmer effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="flex items-center gap-1 z-10 relative">
-                          {t('dashboard.queryPanel.generating') || 'Generating SQL'}
-                          <span className="flex gap-0.5">
-                            <span
-                              className="w-1 h-1 bg-white rounded-full animate-bounce"
-                              style={{ animationDelay: '0ms' }}
-                            />
-                            <span
-                              className="w-1 h-1 bg-white rounded-full animate-bounce"
-                              style={{ animationDelay: '150ms' }}
-                            />
-                            <span
-                              className="w-1 h-1 bg-white rounded-full animate-bounce"
-                              style={{ animationDelay: '300ms' }}
-                            />
-                          </span>
-                        </span>
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        {t('dashboard.queryPanel.generating')}
                       </>
                     ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        {t('dashboard.queryPanel.generateButton')}
-                      </>
+                      t('dashboard.queryPanel.generateButton')
                     )}
                   </button>
                 </div>
-
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  Press{' '}
-                  <kbd className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs">
-                    Ctrl
-                  </kbd>{' '}
-                  +{' '}
-                  <kbd className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs">
-                    Enter
-                  </kbd>
-                </span>
               </div>
+
+              {/* Questions suggested from the schema */}
+              {schemaSuggestions && (
+                <div className="mt-5">
+                  <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                    {isDiscovering
+                      ? t('dashboard.queryPanel.analyzingSchema')
+                      : t('dashboard.queryPanel.questionsToTry')}
+                  </p>
+                  {schemaSuggestions.summary && (
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                      {schemaSuggestions.summary}
+                    </p>
+                  )}
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {schemaSuggestions.suggestions.slice(0, 4).map((s, i) => (
+                      <li key={i}>
+                        <button
+                          onClick={() => onNlQueryChange(s)}
+                          className="rounded-md border border-border bg-card px-3 py-1.5 text-left font-serif text-[0.95rem] italic leading-snug text-foreground transition-colors hover:border-foreground/30"
+                        >
+                          {s}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </>
           )}
 
-          {/* SQL Editor Mode */}
           {inputMode === 'sql' && (
-            <>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg">
-                  <Code2 className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{t('dashboard.queryPanel.sqlEditor')}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {t('dashboard.queryPanel.sqlEditorDescription')}
-                  </p>
-                </div>
-              </div>
-
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
               <SQLEditor
                 value={rawSQL}
                 onChange={setRawSQL}
@@ -515,78 +510,68 @@ export function QueryPanel({
                 isDark={resolvedTheme === 'dark'}
                 height="280px"
               />
-
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleEditorExecute}
-                    disabled={!rawSQL.trim() || isExecuting}
-                    className="btn-success text-sm py-2 px-4 hover-scale"
-                  >
-                    {isExecuting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Play className="w-4 h-4" />
-                    )}
-                    {isExecuting
-                      ? t('dashboard.queryPanel.running')
-                      : t('dashboard.queryPanel.runQuery')}
-                  </button>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-3 py-2.5 sm:px-4">
+                <div className="flex items-center gap-1">
                   <button
                     onClick={() => {
-                      try {
-                        const formatted = formatSQL(rawSQL, {
-                          language: 'sql',
-                          tabWidth: 2,
-                          keywordCase: 'upper',
-                        })
-                        setRawSQL(formatted)
-                      } catch {}
+                      const next = formatted(rawSQL)
+                      if (next) setRawSQL(next)
                     }}
                     disabled={!rawSQL.trim()}
-                    className="btn-secondary text-sm py-2 px-3"
+                    className={textAction}
                   >
-                    <AlignLeft className="w-4 h-4" />
+                    <AlignLeft className="h-3.5 w-3.5" aria-hidden />
                     {t('dashboard.queryPanel.format')}
                   </button>
                   {rawSQL.trim() && (
                     <button
                       onClick={() => {
+                        if (editorSaveState !== 'idle') return
                         const name = rawSQL.slice(0, 50).replace(/\n/g, ' ') || 'Custom Query'
-                        onSaveQuery(name, '', rawSQL)
+                        saveWithFeedback(setEditorSaveState, name, '', rawSQL)
                       }}
-                      className="btn-secondary text-sm py-2 px-3"
+                      disabled={editorSaveState !== 'idle'}
+                      className={textAction}
                     >
-                      <Bookmark className="w-4 h-4" />
-                      {t('common.save')}
+                      {editorSaveState === 'saving' ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      ) : editorSaveState === 'saved' ? (
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                      ) : (
+                        <Bookmark className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                      {editorSaveState === 'saved' ? 'Saved' : t('common.save')}
                     </button>
                   )}
                 </div>
-
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  <kbd className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs">
-                    Ctrl
-                  </kbd>{' '}
-                  +{' '}
-                  <kbd className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs">
-                    Enter
-                  </kbd>{' '}
-                  to run &nbsp;·&nbsp;
-                  <kbd className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs">
-                    Ctrl
-                  </kbd>{' '}
-                  +{' '}
-                  <kbd className="px-1.5 py-0.5 bg-secondary border border-border rounded text-xs">
-                    Space
-                  </kbd>{' '}
-                  for autocomplete
+                <span className="hidden items-center gap-1 text-[11px] text-muted-foreground lg:inline-flex">
+                  <kbd className={kbd}>Ctrl</kbd>
+                  <kbd className={kbd}>Enter</kbd>
+                  <span className="ml-0.5 mr-2">to run</span>
+                  <kbd className={kbd}>Ctrl</kbd>
+                  <kbd className={kbd}>Space</kbd>
+                  <span className="ml-0.5">to complete</span>
                 </span>
+                <button
+                  onClick={handleEditorExecute}
+                  disabled={!rawSQL.trim() || isExecuting}
+                  className="btn-primary"
+                >
+                  {isExecuting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Play className="h-4 w-4" aria-hidden />
+                  )}
+                  {isExecuting
+                    ? t('dashboard.queryPanel.running')
+                    : t('dashboard.queryPanel.runQuery')}
+                </button>
               </div>
-            </>
+            </div>
           )}
-        </GlowCard>
+        </section>
 
-        {/* Error Message */}
+        {/* What went wrong, and how to continue */}
         {error &&
           (() => {
             const lc = error.toLowerCase()
@@ -603,38 +588,31 @@ export function QueryPanel({
 
             if (isSecurityBlock) {
               return (
-                <div className="border border-amber-500/30 bg-amber-500/10 rounded-xl p-4 animate-slideUp">
-                  <div className="flex items-start gap-3">
-                    <ShieldAlert className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-amber-600 dark:text-amber-400">
-                        Read-only Protection
-                      </h4>
-                      <p className="text-sm text-amber-600/80 dark:text-amber-400/80 mt-1">
-                        {error}
-                      </p>
-                      <div className="mt-3 space-y-1.5">
-                        <p className="text-xs font-medium text-foreground/70">
-                          Try rephrasing as a question:
-                        </p>
-                        <ul className="text-xs text-muted-foreground space-y-1 ml-1">
-                          <li>
-                            <span className="text-amber-500 font-bold">→</span> Instead of{' '}
-                            <em>&quot;delete all customers&quot;</em> try{' '}
-                            <strong className="text-foreground/80">
-                              &quot;show me all customers&quot;
-                            </strong>
-                          </li>
-                          <li>
-                            <span className="text-amber-500 font-bold">→</span> Instead of{' '}
-                            <em>&quot;update prices to 100&quot;</em> try{' '}
-                            <strong className="text-foreground/80">
-                              &quot;list products with their prices&quot;
-                            </strong>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning/[0.06] p-4 sm:p-5"
+                >
+                  <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-semibold text-foreground">Read-only protection</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+                    <p className="mt-3 text-xs font-medium text-foreground/80">
+                      Try asking it as a question:
+                    </p>
+                    <ul className="mt-1.5 space-y-1 text-xs text-muted-foreground">
+                      <li>
+                        Instead of <em>&quot;delete all customers&quot;</em>, try{' '}
+                        <span className="font-medium text-foreground">
+                          &quot;show me all customers&quot;
+                        </span>
+                      </li>
+                      <li>
+                        Instead of <em>&quot;update prices to 100&quot;</em>, try{' '}
+                        <span className="font-medium text-foreground">
+                          &quot;list products with their prices&quot;
+                        </span>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               )
@@ -642,44 +620,47 @@ export function QueryPanel({
 
             return (
               <div
-                className={`border rounded-xl p-4 flex items-start justify-between gap-3 animate-slideUp ${isAIRateLimit ? 'bg-amber-500/10 border-amber-500/30' : 'bg-destructive/10 border-destructive/30'}`}
+                role="alert"
+                className={clsx(
+                  'flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5',
+                  isAIRateLimit
+                    ? 'border-warning/40 bg-warning/[0.06]'
+                    : 'border-destructive/40 bg-destructive/[0.05]'
+                )}
               >
                 <div className="flex items-start gap-3">
                   {isAIRateLimit ? (
-                    <Clock className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" aria-hidden />
                   ) : (
-                    <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <XCircle
+                      className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive"
+                      aria-hidden
+                    />
                   )}
-                  <div>
-                    <h4
-                      className={`font-medium ${isAIRateLimit ? 'text-amber-600 dark:text-amber-400' : 'text-destructive'}`}
-                    >
-                      {isAIRateLimit ? 'AI Service Rate Limit' : t('common.error')}
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-foreground">
+                      {isAIRateLimit ? 'The AI service is busy' : t('common.error')}
                     </h4>
-                    <p
-                      className={`text-sm mt-1 ${isAIRateLimit ? 'text-amber-600/80 dark:text-amber-400/80' : 'text-destructive/80'}`}
-                    >
-                      {error}
-                    </p>
+                    <p className="mt-1 break-words text-sm text-muted-foreground">{error}</p>
                     {isAIRateLimit && (
                       <>
-                        <p className="text-xs text-muted-foreground mt-1.5">
-                          Our AI service is temporarily rate-limited. Use the{' '}
-                          <strong>SQL Editor</strong> tab to run queries directly while waiting.
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          While you wait, switch to <strong>SQL</strong> above to run queries
+                          yourself.
                         </p>
                         {retryCountdown !== null && (
                           <div className="mt-2 flex items-center gap-2">
                             {retryCountdown > 0 ? (
-                              <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 animate-pulse" />
+                              <span className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5" aria-hidden />
                                 Ready to retry in {retryCountdown}s
                               </span>
                             ) : (
                               <button
                                 onClick={onGenerateSQL}
-                                className="text-xs font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 transition-colors"
+                                className="btn-secondary px-2.5 py-1 text-xs"
                               >
-                                <RotateCcw className="w-3.5 h-3.5" />
+                                <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                                 Retry now
                               </button>
                             )}
@@ -693,12 +674,12 @@ export function QueryPanel({
                   <button
                     onClick={onFixQuery}
                     disabled={isFixing}
-                    className="btn-secondary whitespace-nowrap text-sm bg-background border-destructive/20 hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                    className="btn-secondary flex-shrink-0 self-start whitespace-nowrap"
                   >
                     {isFixing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                     ) : (
-                      <Sparkles className="w-4 h-4" />
+                      <Wand2 className="h-4 w-4" aria-hidden />
                     )}
                     {t('dashboard.queryPanel.aiFixIt')}
                   </button>
@@ -707,76 +688,29 @@ export function QueryPanel({
             )
           })()}
 
-        {/* SQL Preview */}
+        {/* 02 · The SQL NatureQuery wrote */}
         {generatedSQL && (
-          <div className="card p-4 sm:p-5 animate-slideUp">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-md flex-shrink-0">
-                  <Terminal className="w-4 h-4 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold">{t('dashboard.queryPanel.generatedSql')}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {t('dashboard.queryPanel.readyToExecute')}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => onExecuteSQL()}
-                disabled={isExecuting}
-                className="btn-success text-sm py-1.5 hover-scale w-full sm:w-auto justify-center"
-              >
-                {isExecuting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Play className="w-4 h-4" />
-                )}
-                {isExecuting
-                  ? t('dashboard.queryPanel.running')
-                  : t('dashboard.queryPanel.runQuery')}
-              </button>
-            </div>
-
-            <div className="code-block">
-              <SQLExplainOverlay sql={generatedSQL} />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-3">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                <span>{t('dashboard.queryPanel.validated')}</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <section aria-labelledby="step-sql" className="animate-fadeIn">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+              <StepLabel step="02" id="step-sql">
+                {t('dashboard.queryPanel.stepWrites')}
+              </StepLabel>
+              <div className="flex flex-wrap items-center gap-0.5">
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     if (saveState !== 'idle') return
                     const name = nlQuery.slice(0, 50) || 'Untitled Query'
-                    setSaveState('saving')
-                    const result = await onSaveQuery(name, nlQuery, generatedSQL)
-                    // void-returning callers: assume success since toasts are emitted in the hook
-                    const ok = result === undefined ? true : !!result
-                    if (ok) {
-                      setSaveState('saved')
-                      setTimeout(() => setSaveState('idle'), 2000)
-                    } else {
-                      setSaveState('idle')
-                    }
+                    saveWithFeedback(setSaveState, name, nlQuery, generatedSQL)
                   }}
                   disabled={saveState !== 'idle'}
-                  className={clsx(
-                    'text-xs font-medium flex items-center gap-1 transition-colors',
-                    saveState === 'saved'
-                      ? 'text-success'
-                      : 'text-muted-foreground hover:text-primary'
-                  )}
+                  className={textAction}
                 >
                   {saveState === 'saving' ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                   ) : saveState === 'saved' ? (
-                    <CheckCircle2 className="w-3 h-3" />
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                   ) : (
-                    <Bookmark className="w-3 h-3" />
+                    <Bookmark className="h-3.5 w-3.5" aria-hidden />
                   )}
                   {saveState === 'saving'
                     ? 'Saving...'
@@ -787,18 +721,12 @@ export function QueryPanel({
                 {onSQLChange && (
                   <button
                     onClick={() => {
-                      try {
-                        const formatted = formatSQL(generatedSQL, {
-                          language: 'sql',
-                          tabWidth: 2,
-                          keywordCase: 'upper',
-                        })
-                        onSQLChange(formatted)
-                      } catch {}
+                      const next = formatted(generatedSQL)
+                      if (next) onSQLChange(next)
                     }}
-                    className="text-xs text-muted-foreground hover:text-primary font-medium flex items-center gap-1 transition-colors"
+                    className={textAction}
                   >
-                    <AlignLeft className="w-3 h-3" />
+                    <AlignLeft className="h-3.5 w-3.5" aria-hidden />
                     {t('dashboard.queryPanel.format')}
                   </button>
                 )}
@@ -814,7 +742,6 @@ export function QueryPanel({
                       category: 'custom',
                     })
                     if (result.success) {
-                      toast.success('Template saved')
                       setTemplateState('saved')
                       setTimeout(() => setTemplateState('idle'), 2000)
                     } else {
@@ -823,20 +750,15 @@ export function QueryPanel({
                     }
                   }}
                   disabled={templateState !== 'idle'}
-                  className={clsx(
-                    'text-xs font-medium flex items-center gap-1 transition-colors',
-                    templateState === 'saved'
-                      ? 'text-success'
-                      : 'text-muted-foreground hover:text-accent'
-                  )}
+                  className={textAction}
                   title="Save as reusable template"
                 >
                   {templateState === 'saving' ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                   ) : templateState === 'saved' ? (
-                    <CheckCircle2 className="w-3 h-3" />
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                   ) : (
-                    <LayoutTemplate className="w-3 h-3" />
+                    <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
                   )}
                   {templateState === 'saving'
                     ? 'Saving...'
@@ -844,15 +766,11 @@ export function QueryPanel({
                       ? 'Saved'
                       : t('dashboard.queryPanel.template')}
                 </button>
-                <button
-                  onClick={handleExplain}
-                  disabled={isExplaining}
-                  className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-                >
+                <button onClick={handleExplain} disabled={isExplaining} className={textAction}>
                   {isExplaining ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                   ) : (
-                    <Sparkles className="w-3 h-3" />
+                    <Lightbulb className="h-3.5 w-3.5" aria-hidden />
                   )}
                   {isExplaining
                     ? t('dashboard.queryPanel.explaining')
@@ -863,125 +781,113 @@ export function QueryPanel({
               </div>
             </div>
 
+            <div className="rounded-lg border border-border bg-card">
+              <div className="overflow-x-auto px-5 py-4 sm:px-6 sm:py-5">
+                <SQLExplainOverlay sql={generatedSQL} />
+              </div>
+              <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="h-4 w-4 flex-shrink-0 text-primary" aria-hidden />
+                  {t('dashboard.queryPanel.checkedReadOnly')}
+                </p>
+                <button
+                  onClick={() => onExecuteSQL()}
+                  disabled={isExecuting}
+                  className="btn-primary w-full sm:w-auto"
+                >
+                  {isExecuting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Play className="h-4 w-4" aria-hidden />
+                  )}
+                  {isExecuting
+                    ? t('dashboard.queryPanel.running')
+                    : t('dashboard.queryPanel.runQuery')}
+                </button>
+              </div>
+            </div>
+
             {explanation && (
-              <div className="mt-3 p-3 bg-primary/5 border border-primary/10 rounded-lg">
-                <p className="text-xs font-medium text-primary mb-1.5">
+              <div className="mt-4 rounded-lg border border-border bg-secondary/50 px-5 py-4">
+                <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                   {t('dashboard.queryPanel.whatQueryDoes')}
                 </p>
-                <div className="text-sm text-foreground/80 whitespace-pre-line">{explanation}</div>
+                <div className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+                  {explanation}
+                </div>
               </div>
             )}
-          </div>
+          </section>
         )}
 
-        {/* Loading Skeleton */}
+        {/* Waiting for the database */}
         {isExecuting && !queryResults && (
-          <div className="card p-5 animate-pulse border-primary/20">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg skeleton-shine"></div>
-              <div className="space-y-2">
-                <div className="h-4 w-32 skeleton-shine rounded"></div>
-                <div className="h-3 w-24 skeleton-shine rounded"></div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="h-8 w-full skeleton-shine rounded-md"></div>
-              <div className="h-8 w-full skeleton-shine rounded-md opacity-80"></div>
-              <div className="h-8 w-full skeleton-shine rounded-md opacity-60"></div>
-              <div className="h-8 w-full skeleton-shine rounded-md opacity-40"></div>
-              <div className="h-8 w-full skeleton-shine rounded-md opacity-20"></div>
+          <div role="status" aria-label={t('dashboard.queryPanel.running')} className="space-y-3">
+            <div className="h-3 w-32 rounded skeleton-shine" />
+            <div className="space-y-2.5 rounded-lg border border-border bg-card p-4">
+              {[100, 94, 97, 90, 84].map((width) => (
+                <div
+                  key={width}
+                  className="h-6 rounded skeleton-shine"
+                  style={{ width: `${width}%` }}
+                />
+              ))}
             </div>
           </div>
         )}
 
-        {/* Query Results */}
+        {/* 03 · The answer */}
         {queryResults && (
-          <GlowCard
+          <section
             key={queryResults.rowCount + '-' + queryResults.executionTime}
-            className="p-4 sm:p-5 animate-slideUp"
+            aria-labelledby="step-answer"
+            className="animate-fadeIn"
           >
-            {/* Results Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-success to-primary flex items-center justify-center shadow-md flex-shrink-0">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold truncate">{t('dashboard.queryPanel.results')}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {queryResults.rowCount} {t('common.rows')} &bull; {queryResults.executionTime}ms
-                  </p>
-                </div>
+            <StepLabel step="03" id="step-answer">
+              {t('dashboard.queryPanel.stepAnswer')}
+            </StepLabel>
+
+            <div className="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-border">
+              <div
+                role="tablist"
+                aria-label={t('dashboard.queryPanel.results')}
+                className="-mb-px flex"
+              >
+                {views.map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    role="tab"
+                    aria-selected={resultsView === id}
+                    onClick={() => {
+                      setResultsView(id)
+                      if (id === 'insights' && !insights && onAnalyze) onAnalyze()
+                    }}
+                    className={clsx(
+                      'inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors',
+                      resultsView === id
+                        ? 'border-foreground font-medium text-foreground'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden />
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
               </div>
 
-              <div className="flex items-center gap-1 flex-wrap -mx-1 px-1">
-                {/* View Toggle */}
-                <button
-                  onClick={() => setResultsView('table')}
-                  className={clsx(
-                    'p-2 rounded-lg transition-colors',
-                    resultsView === 'table'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                  )}
-                  title="Table view"
-                >
-                  <Table2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setResultsView('chart')}
-                  className={clsx(
-                    'p-2 rounded-lg transition-colors',
-                    resultsView === 'chart'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                  )}
-                  title="Chart view"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setResultsView('insights')
-                    if (!insights && onAnalyze) onAnalyze()
-                  }}
-                  className={clsx(
-                    'p-2 rounded-lg transition-colors',
-                    resultsView === 'insights'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                  )}
-                  title="AI Insights"
-                >
-                  <Brain className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setResultsView('performance')}
-                  className={clsx(
-                    'p-2 rounded-lg transition-colors',
-                    resultsView === 'performance'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                  )}
-                  title="Performance"
-                >
-                  <Gauge className="w-4 h-4" />
-                </button>
-
-                {/* Actions */}
-                <div className="w-px h-5 bg-border mx-1" />
+              <div className="flex flex-wrap items-center gap-0.5 pb-1.5">
                 {queryResults.rows.length > 0 && (
                   <>
                     <button
                       onClick={setCurrentAsReportA}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-secondary transition-colors whitespace-nowrap"
+                      className={textAction}
                       title={
                         investigationBaseline
                           ? 'Replace the saved Report A'
                           : 'Use this result as Report A'
                       }
                     >
-                      <CopyPlus className="w-4 h-4" />
+                      <CopyPlus className="h-4 w-4" aria-hidden />
                       <span className="hidden xl:inline">
                         {investigationBaseline ? 'Replace A' : 'Set as Report A'}
                       </span>
@@ -989,10 +895,10 @@ export function QueryPanel({
                     {investigationBaseline && (
                       <button
                         onClick={compareCurrentWithReportA}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors text-xs font-semibold whitespace-nowrap"
+                        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-secondary"
                         title={`Compare this result with ${investigationBaseline.name}`}
                       >
-                        <Scale className="w-4 h-4" />
+                        <Scale className="h-4 w-4" aria-hidden />
                         <span className="hidden lg:inline">Compare with A</span>
                       </button>
                     )}
@@ -1008,55 +914,56 @@ export function QueryPanel({
                         queryResults.fields
                       )
                     }
-                    className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
-                    title="Pin to dashboard"
+                    className={iconAction}
+                    title={t('dashboard.queryPanel.pinToDashboard')}
+                    aria-label={t('dashboard.queryPanel.pinToDashboard')}
                   >
-                    <Pin className="w-4 h-4" />
+                    <Pin className="h-4 w-4" aria-hidden />
                   </button>
                 )}
                 {onScheduleQuery && (
                   <button
                     onClick={() => onScheduleQuery(nlQuery, generatedSQL)}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
-                    title="Schedule this query"
+                    className={iconAction}
+                    title={t('dashboard.queryPanel.scheduleQuery')}
+                    aria-label={t('dashboard.queryPanel.scheduleQuery')}
                   >
-                    <Clock className="w-4 h-4" />
+                    <Clock className="h-4 w-4" aria-hidden />
                   </button>
                 )}
-
-                {/* Export */}
                 <div className="relative">
                   <button
                     onClick={() => onToggleExportMenu(!showExportMenu)}
                     disabled={isExporting}
                     aria-label="Export results"
+                    title="Export results"
                     aria-expanded={showExportMenu}
                     aria-controls="results-export-options"
-                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                    className={iconAction}
                   >
                     {isExporting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                     ) : (
-                      <Download className="w-4 h-4" />
+                      <Download className="h-4 w-4" aria-hidden />
                     )}
                   </button>
                   {showExportMenu && (
                     <div
                       id="results-export-options"
-                      className="absolute top-full right-0 mt-1 w-40 bg-card border border-border rounded-lg shadow-lg py-1 z-20 animate-scaleIn"
+                      className="absolute right-0 top-full z-20 mt-1 w-44 rounded-md border border-border bg-popover py-1 shadow-[0_16px_40px_-20px_hsl(var(--foreground)/0.45)] animate-fadeIn"
                     >
                       <button
                         onClick={() => onExport('excel')}
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-secondary"
                       >
-                        <FileSpreadsheet className="w-4 h-4 text-success" />
+                        <FileSpreadsheet className="h-4 w-4 text-muted-foreground" aria-hidden />
                         {t('dashboard.queryPanel.excelFile')}
                       </button>
                       <button
                         onClick={() => onExport('csv')}
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-secondary"
                       >
-                        <FileText className="w-4 h-4 text-primary" />
+                        <FileText className="h-4 w-4 text-muted-foreground" aria-hidden />
                         {t('dashboard.queryPanel.csvFile')}
                       </button>
                     </div>
@@ -1065,49 +972,58 @@ export function QueryPanel({
               </div>
             </div>
 
-            {/* NL Filter Bar */}
-            {onAddFilter && generatedSQL && resultsView === 'table' && (
-              <NLFilterBar
-                filters={activeFilters || []}
-                isApplying={isApplyingFilter || false}
-                onAddFilter={onAddFilter}
-                onRemoveFilter={onRemoveFilter || (() => {})}
-                onClearAll={onClearFilters || (() => {})}
-              />
-            )}
+            <div className="mt-4">
+              {/* Plain-English filters for the table */}
+              {onAddFilter && generatedSQL && resultsView === 'table' && (
+                <div className="mb-3">
+                  <NLFilterBar
+                    filters={activeFilters || []}
+                    isApplying={isApplyingFilter || false}
+                    onAddFilter={onAddFilter}
+                    onRemoveFilter={onRemoveFilter || (() => {})}
+                    onClearAll={onClearFilters || (() => {})}
+                  />
+                </div>
+              )}
 
-            {/* Results Content */}
-            {resultsView === 'table' && (
-              <ResultsTable
-                rows={queryResults.rows}
-                fields={queryResults.fields}
-                rowCount={queryResults.rowCount}
-                executionTime={queryResults.executionTime}
-              />
-            )}
-            {resultsView === 'chart' && (
-              <ResultsChart
-                rows={queryResults.rows}
-                fields={queryResults.fields}
-                recommendation={queryResults.chartRecommendation}
-              />
-            )}
-            {resultsView === 'insights' && (
-              <DataInsights
-                insights={insights}
-                isLoading={isAnalyzing}
-                onFollowUpClick={onFollowUpClick}
-              />
-            )}
-            {resultsView === 'performance' && (
-              <QueryPerformancePanel
-                sql={generatedSQL}
-                schema={activeConnection?.schema ?? { tables: [] }}
-                executionTimeMs={queryResults.executionTime}
-                rowCount={queryResults.rowCount}
-              />
-            )}
-          </GlowCard>
+              {resultsView === 'table' && (
+                <ResultsTable
+                  rows={queryResults.rows}
+                  fields={queryResults.fields}
+                  rowCount={queryResults.rowCount}
+                  executionTime={queryResults.executionTime}
+                />
+              )}
+              {resultsView === 'chart' && (
+                <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+                  <ResultsChart
+                    rows={queryResults.rows}
+                    fields={queryResults.fields}
+                    recommendation={queryResults.chartRecommendation}
+                  />
+                </div>
+              )}
+              {resultsView === 'insights' && (
+                <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+                  <DataInsights
+                    insights={insights}
+                    isLoading={isAnalyzing}
+                    onFollowUpClick={onFollowUpClick}
+                  />
+                </div>
+              )}
+              {resultsView === 'performance' && (
+                <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+                  <QueryPerformancePanel
+                    sql={generatedSQL}
+                    schema={activeConnection?.schema ?? { tables: [] }}
+                    executionTimeMs={queryResults.executionTime}
+                    rowCount={queryResults.rowCount}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
         )}
       </div>
     </div>

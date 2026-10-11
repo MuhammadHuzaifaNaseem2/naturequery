@@ -200,31 +200,23 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       {/* Stats Header + Global Search */}
-      <div className="bg-secondary px-3 sm:px-4 py-3 border-b border-border">
+      <div className="px-3 sm:px-4 py-2.5 border-b border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground tabular-nums">
             <span>
-              Rows:{' '}
-              <span className="font-medium text-foreground">
-                {filteredRows.length !== rows.length
-                  ? `${filteredRows.length} / ${rowCount}`
-                  : rowCount}
-              </span>
+              {filteredRows.length !== rows.length
+                ? `${filteredRows.length} of ${rowCount} rows`
+                : `${rowCount} ${rowCount === 1 ? 'row' : 'rows'}`}
             </span>
-            <span>-</span>
             <span>
-              Columns: <span className="font-medium text-foreground">{fields.length}</span>
+              {fields.length} {fields.length === 1 ? 'column' : 'columns'}
             </span>
-            <span>-</span>
-            <span>
-              Execution time: <span className="font-medium text-foreground">{executionTime}ms</span>
-            </span>
+            <span>{executionTime} ms</span>
             {sortField && (
               <>
-                <span>-</span>
                 <span>
-                  Sorted by:{' '}
-                  <span className="font-medium text-foreground">
+                  sorted by{' '}
+                  <span className="text-foreground">
                     {sortField} {sortDir === 'asc' ? '\u2191' : '\u2193'}
                   </span>
                 </span>
@@ -232,7 +224,6 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
             )}
             {activeFilterCount > 0 && (
               <>
-                <span>-</span>
                 <button
                   onClick={clearAllFilters}
                   className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
@@ -255,7 +246,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
                 setGlobalSearch(e.target.value)
                 setCurrentPage(1)
               }}
-              className="pl-8 pr-8 py-1.5 text-xs rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 w-full transition-colors"
+              className="pl-8 pr-8 py-1.5 text-xs rounded-md border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 w-full transition-colors"
             />
             {globalSearch && (
               <button
@@ -281,17 +272,28 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
       >
         <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
           <table className="w-full text-sm">
-            <thead className="bg-secondary sticky top-0 z-10 shadow-sm">
+            <thead className="bg-card sticky top-0 z-10">
               <tr>
                 {fields.map((field) => (
                   <th
                     key={field}
-                    className="px-4 py-2 text-left font-bold text-foreground border-b border-border whitespace-nowrap select-none relative align-top"
+                    className={clsx(
+                      'group px-4 py-0.5 font-mono text-xs font-medium text-muted-foreground border-b border-border whitespace-nowrap select-none relative align-top',
+                      columnTypes[field] === 'number' ? 'text-right' : 'text-left'
+                    )}
                   >
-                    <div className="flex items-center gap-1">
+                    <div
+                      className={clsx(
+                        'flex items-center gap-1',
+                        columnTypes[field] === 'number' && 'flex-row-reverse'
+                      )}
+                    >
                       <span
                         onClick={() => handleSort(field)}
-                        className="flex items-center gap-1 py-3 cursor-pointer hover:text-primary transition-colors flex-1"
+                        className={clsx(
+                          'flex items-center gap-1 py-2.5 cursor-pointer hover:text-foreground transition-colors flex-1',
+                          columnTypes[field] === 'number' && 'justify-end'
+                        )}
                       >
                         {field.startsWith('?') ? 'result' : field}
                         {sortField === field && (
@@ -310,9 +312,10 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
                           'p-1 rounded transition-colors',
                           hasColumnFilter(field)
                             ? 'text-primary bg-primary/10'
-                            : 'text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary'
+                            : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-foreground hover:bg-secondary'
                         )}
                         title={`Filter ${field}`}
+                        aria-label={`Filter ${field}`}
                       >
                         <Filter className="w-3.5 h-3.5" />
                       </button>
@@ -322,7 +325,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
                     {openFilterCol === field && (
                       <div
                         ref={filterRef}
-                        className="mt-2 mb-2 bg-card border border-border rounded-lg shadow-sm p-3 min-w-[220px] font-normal"
+                        className="mt-2 mb-2 bg-popover border border-border rounded-md shadow-[0_12px_32px_-18px_hsl(var(--foreground)/0.4)] p-3 min-w-[220px] font-sans font-normal text-left"
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -393,11 +396,15 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
             </thead>
             <tbody>
               {paginatedRows.map((row, rowIndex) => (
-                <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-card' : 'bg-secondary/30'}>
+                <tr key={rowIndex} className="bg-card hover:bg-secondary/50 transition-colors">
                   {fields.map((field) => (
                     <td
                       key={field}
-                      className="px-4 py-2.5 border-b border-border/50 whitespace-nowrap"
+                      className={clsx(
+                        'px-4 py-2.5 border-b border-border/70 whitespace-nowrap',
+                        columnTypes[field] === 'number' &&
+                          'text-right font-mono text-[13px] tabular-nums [font-variant-ligatures:none]'
+                      )}
                     >
                       <span
                         className={
@@ -441,7 +448,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
 
         {/* Pagination Footer */}
         {sortedRows.length > 0 && (
-          <div className="shrink-0 bg-secondary/50 px-3 sm:px-4 py-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="shrink-0 bg-card px-3 sm:px-4 py-2.5 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             {/* Page size selector */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="hidden sm:inline">Rows per page:</span>
@@ -454,7 +461,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
                     className={clsx(
                       'px-2 py-1 rounded text-xs font-medium transition-colors',
                       pageSize === size
-                        ? 'bg-primary/10 text-primary'
+                        ? 'bg-secondary text-foreground'
                         : 'hover:bg-secondary text-muted-foreground'
                     )}
                   >
@@ -466,7 +473,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
 
             {/* Page navigation */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs text-muted-foreground mr-2 whitespace-nowrap">
+              <span className="font-mono text-[11px] text-muted-foreground mr-2 whitespace-nowrap tabular-nums">
                 {(safeCurrentPage - 1) * pageSize + 1}-
                 {Math.min(safeCurrentPage * pageSize, sortedRows.length)} of {sortedRows.length}
               </span>
@@ -484,7 +491,7 @@ export default function ResultsTable({ rows, fields, rowCount, executionTime }: 
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-xs font-medium px-2">
+              <span className="font-mono text-[11px] px-2 tabular-nums">
                 {safeCurrentPage} / {totalPages}
               </span>
               <button

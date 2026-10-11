@@ -13,18 +13,15 @@ export function CopyButton({ text, label = 'Copy' }: { text: string; label?: str
   }
 
   return (
-    <button
-      onClick={handleCopy}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-    >
+    <button onClick={handleCopy} className="mk-btn mk-btn-sm mk-btn-quiet">
       {copied ? (
         <>
-          <Check className="w-4 h-4" />
-          Copied!
+          <Check className="w-4 h-4" aria-hidden />
+          Copied
         </>
       ) : (
         <>
-          <Copy className="w-4 h-4" />
+          <Copy className="w-4 h-4" aria-hidden />
           {label}
         </>
       )}

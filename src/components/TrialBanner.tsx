@@ -21,13 +21,15 @@ export function TrialBanner() {
       setDismissed(true)
       return
     }
-    getUserSubscription().then((sub) => {
-      if (sub.status === 'TRIALING' && sub.trialEndsAt) {
-        const msLeft = new Date(sub.trialEndsAt).getTime() - Date.now()
-        const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
-        setTrialInfo({ isTrialing: true, daysLeft })
-      }
-    }).catch(() => {})
+    getUserSubscription()
+      .then((sub) => {
+        if (sub.status === 'TRIALING' && sub.trialEndsAt) {
+          const msLeft = new Date(sub.trialEndsAt).getTime() - Date.now()
+          const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)))
+          setTrialInfo({ isTrialing: true, daysLeft })
+        }
+      })
+      .catch(() => {})
   }, [])
 
   if (!trialInfo?.isTrialing || dismissed) return null
@@ -51,25 +53,23 @@ export function TrialBanner() {
   }
 
   return (
-    <div className={`h-8 flex items-center justify-center text-[11px] tracking-wide ${
-      isUrgent
-        ? 'bg-amber-500 text-black'
-        : 'bg-primary text-primary-foreground'
-    }`}>
+    <div
+      className={`h-8 flex items-center justify-center text-[11px] tracking-wide ${
+        isUrgent ? 'bg-warning text-black' : 'bg-primary text-primary-foreground'
+      }`}
+    >
       <span className="font-medium">
         {trialInfo.daysLeft === 0
           ? t('settings.billing.trialEndsToday')
           : trialInfo.daysLeft === 1
-          ? t('settings.billing.trialDaysRemaining', { days: trialInfo.daysLeft })
-          : t('settings.billing.trialDaysRemainingPlural', { days: trialInfo.daysLeft })}
+            ? t('settings.billing.trialDaysRemaining', { days: trialInfo.daysLeft })
+            : t('settings.billing.trialDaysRemainingPlural', { days: trialInfo.daysLeft })}
       </span>
       <button
         onClick={handleUpgrade}
         disabled={upgrading}
         className={`ml-2 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wider transition-opacity ${
-          isUrgent
-            ? 'bg-black/20 hover:bg-black/30'
-            : 'bg-white/20 hover:bg-white/30'
+          isUrgent ? 'bg-black/20 hover:bg-black/30' : 'bg-white/20 hover:bg-white/30'
         }`}
       >
         {upgrading ? '...' : t('settings.billing.upgrade')}

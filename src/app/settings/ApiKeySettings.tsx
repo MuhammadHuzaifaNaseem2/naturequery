@@ -23,7 +23,7 @@ export function ApiKeySettings() {
   const [expiryDays, setExpiryDays] = useState<string>('90')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Custom confirm modal state
   const [keyToRevoke, setKeyToRevoke] = useState<string | null>(null)
 
@@ -123,8 +123,8 @@ export function ApiKeySettings() {
 
       {/* Newly created key banner */}
       {newKey && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
-          <div className="flex items-center gap-2 text-amber-600">
+        <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 space-y-2">
+          <div className="flex items-center gap-2 text-warning">
             <AlertTriangle className="w-4 h-4" />
             <span className="text-sm font-medium">{t('settings.apiKeys.copyKeyNow')}</span>
           </div>
@@ -136,7 +136,7 @@ export function ApiKeySettings() {
               {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <button onClick={() => setNewKey(null)} className="text-xs text-amber-600 hover:underline">
+          <button onClick={() => setNewKey(null)} className="text-xs text-warning hover:underline">
             {t('settings.apiKeys.copiedDismiss')}
           </button>
         </div>
@@ -159,7 +159,9 @@ export function ApiKeySettings() {
             className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t('settings.apiKeys.expiration')}</label>
+            <label className="block text-xs text-muted-foreground mb-1">
+              {t('settings.apiKeys.expiration')}
+            </label>
             <select
               value={expiryDays}
               onChange={(e) => setExpiryDays(e.target.value)}
@@ -173,8 +175,16 @@ export function ApiKeySettings() {
             </select>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleCreate} disabled={creating || !newKeyName.trim()} className="btn-primary text-sm">
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+            <button
+              onClick={handleCreate}
+              disabled={creating || !newKeyName.trim()}
+              className="btn-primary text-sm"
+            >
+              {creating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Key className="w-4 h-4" />
+              )}
               {t('settings.apiKeys.create')}
             </button>
             <button onClick={() => setShowCreate(false)} className="btn-secondary text-sm">
@@ -186,10 +196,11 @@ export function ApiKeySettings() {
 
       {/* Keys List */}
       {keys.length === 0 ? (
-        <div className="text-center py-8">
-          <Key className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">{t('settings.apiKeys.noKeys')}</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
+        <div className="max-w-xl py-4">
+          <p className="font-serif text-2xl leading-snug text-foreground">
+            {t('settings.apiKeys.noKeys')}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {t('settings.apiKeys.noKeysDesc')}
           </p>
         </div>
@@ -198,10 +209,7 @@ export function ApiKeySettings() {
           {keys.map((key) => {
             const expired = isExpired(key.expiresAt)
             return (
-              <div
-                key={key.id}
-                className="card p-4 flex items-center justify-between"
-              >
+              <div key={key.id} className="card p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Key className="w-4 h-4 text-primary" />
@@ -217,9 +225,19 @@ export function ApiKeySettings() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                       <code className="font-mono">{key.prefix}...</code>
-                      <span>{t('settings.apiKeys.created')} {formatDate(key.createdAt)}</span>
-                      {key.lastUsedAt && <span>{t('settings.apiKeys.lastUsedLabel')} {formatDate(key.lastUsedAt)}</span>}
-                      {key.expiresAt && <span>{t('settings.apiKeys.expires')} {formatDate(key.expiresAt)}</span>}
+                      <span>
+                        {t('settings.apiKeys.created')} {formatDate(key.createdAt)}
+                      </span>
+                      {key.lastUsedAt && (
+                        <span>
+                          {t('settings.apiKeys.lastUsedLabel')} {formatDate(key.lastUsedAt)}
+                        </span>
+                      )}
+                      {key.expiresAt && (
+                        <span>
+                          {t('settings.apiKeys.expires')} {formatDate(key.expiresAt)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -239,9 +257,7 @@ export function ApiKeySettings() {
       {/* Usage info */}
       <div className="card p-4">
         <h4 className="text-sm font-medium mb-2">{t('settings.apiKeys.usageTitle')}</h4>
-        <p className="text-xs text-muted-foreground mb-2">
-          {t('settings.apiKeys.usageDesc')}
-        </p>
+        <p className="text-xs text-muted-foreground mb-2">{t('settings.apiKeys.usageDesc')}</p>
         <code className="block px-3 py-2 bg-secondary rounded-lg text-xs font-mono">
           Authorization: Bearer rp_your_api_key_here
         </code>
@@ -249,8 +265,8 @@ export function ApiKeySettings() {
 
       {/* Revoke Confirm Modal */}
       {keyToRevoke && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fadeIn">
-          <div className="relative bg-card border border-border shadow-2xl rounded-2xl p-6 w-full max-w-md animate-scaleIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 animate-fadeIn">
+          <div className="relative bg-card border border-border shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] rounded-lg p-6 w-full max-w-md animate-fadeIn">
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive">
               <AlertTriangle className="w-6 h-6" />
             </div>
@@ -265,10 +281,7 @@ export function ApiKeySettings() {
               >
                 {t('settings.apiKeys.revoke')}
               </button>
-              <button
-                onClick={() => setKeyToRevoke(null)}
-                className="btn-secondary flex-1"
-              >
+              <button onClick={() => setKeyToRevoke(null)} className="btn-secondary flex-1">
                 {t('common.cancel')}
               </button>
             </div>
@@ -278,4 +291,3 @@ export function ApiKeySettings() {
     </div>
   )
 }
-

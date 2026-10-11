@@ -7,15 +7,11 @@ import {
   ArrowUpRight,
   Loader2,
   AlertCircle,
-  Sparkles,
-  Zap,
-  Building2,
   Calendar,
   RefreshCw,
   XCircle,
   CheckCircle2,
   Clock,
-  ShieldCheck,
   Download,
   Receipt,
   Users,
@@ -33,37 +29,35 @@ import { useTranslation } from '@/contexts/LocaleContext'
 
 type SubInfo = Awaited<ReturnType<typeof getUserSubscription>>
 
-const PLAN_FEATURES: Record<string, { icon: typeof Sparkles; features: string[] }> = {
+const PLAN_FEATURES: Record<string, { name: string; features: string[] }> = {
   FREE: {
-    icon: Zap,
+    name: 'Free',
     features: [
-      '50 queries per month',
+      '50 AI questions a month',
       '1 database connection',
-      'Excel & CSV export',
-      'Query history (30 days)',
+      'Excel and CSV export',
+      '30 days of query history',
     ],
   },
   PRO: {
-    icon: Sparkles,
+    name: 'Pro',
     features: [
-      'Unlimited queries',
+      'Unlimited AI questions',
       '10 database connections',
-      'Team collaboration (5 members)',
-      'Data visualization',
-      'Saved queries & bookmarks',
-      'API access',
+      'You and up to 4 team members',
+      'Dashboards and scheduled queries',
+      'Shared query links and API access',
       'Priority support',
     ],
   },
   ENTERPRISE: {
-    icon: Building2,
+    name: 'Enterprise',
     features: [
       'Everything in Pro',
-      'Unlimited connections & members',
-      'SSO / SAML',
-      'Audit log & compliance',
-      'Custom AI models',
-      'Dedicated support & SLA',
+      'Unlimited database connections',
+      'Unlimited team members',
+      'Audit logs',
+      'Dedicated support and SLA',
     ],
   },
 }
@@ -73,16 +67,20 @@ const PLAN_PRICES: Record<string, string> = { FREE: '$0', PRO: '$20', ENTERPRISE
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
   ACTIVE: {
     label: 'Active',
-    color: 'text-green-600 bg-green-50 border-green-200',
+    color: 'text-success bg-success/5 border-success/20',
     icon: CheckCircle2,
   },
-  TRIALING: { label: 'Trial', color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock },
+  TRIALING: { label: 'Trial', color: 'text-primary bg-primary/5 border-primary/20', icon: Clock },
   PAST_DUE: {
     label: 'Past Due',
-    color: 'text-orange-600 bg-orange-50 border-orange-200',
+    color: 'text-warning bg-warning/5 border-warning/20',
     icon: AlertCircle,
   },
-  CANCELED: { label: 'Cancelled', color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle },
+  CANCELED: {
+    label: 'Cancelled',
+    color: 'text-destructive bg-destructive/5 border-destructive/20',
+    icon: XCircle,
+  },
   EXPIRED: {
     label: 'Expired',
     color: 'text-muted-foreground bg-secondary border-border',
@@ -220,13 +218,6 @@ export function BillingSettings() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Billing &amp; Subscription</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage your plan, usage, and billing details.
-        </p>
-      </div>
-
       {error && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -235,8 +226,8 @@ export function BillingSettings() {
       )}
 
       {sub.teamPlan && (
-        <div className="card p-4 flex items-start gap-3 border-primary/20 bg-primary/5">
-          <Users className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+        <div className="card p-4 flex items-start gap-3">
+          <Users className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" aria-hidden />
           <p className="text-sm">
             Your plan comes from the <span className="font-semibold">{sub.teamPlan.teamName}</span>{' '}
             team. Its {sub.teamPlan.planName} plan covers your AI questions and features in
@@ -249,22 +240,17 @@ export function BillingSettings() {
       <div className="card overflow-hidden">
         {/* Header bar */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ShieldCheck className="w-4.5 h-4.5 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                Current Plan
-              </p>
-              <p className="font-bold text-base leading-tight">{sub.planName}</p>
-            </div>
+          <div>
+            <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              Current plan
+            </p>
+            <p className="mt-0.5 font-serif text-2xl leading-tight">{sub.planName}</p>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusCfg.color}`}
+              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${statusCfg.color}`}
             >
-              <StatusIcon className="w-3 h-3" />
+              <StatusIcon className="w-3 h-3" aria-hidden />
               {statusCfg.label}
               {sub.cancelAtPeriodEnd && ' · Cancels at period end'}
             </span>
@@ -316,7 +302,7 @@ export function BillingSettings() {
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 border-t border-border bg-secondary/30 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3 flex-wrap">
           <p className="text-xs text-muted-foreground">
             {sub.cancelAtPeriodEnd
               ? `Your subscription is cancelled. You have access until ${fmt(sub.currentPeriodEnd)}.`
@@ -341,7 +327,7 @@ export function BillingSettings() {
               <button
                 onClick={handleResume}
                 disabled={isPending}
-                className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3 text-green-600 hover:bg-green-50 border-green-200"
+                className="btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3 text-success hover:bg-success/5 border-success/20"
               >
                 {isPending ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -369,8 +355,8 @@ export function BillingSettings() {
       {isPaidPlan && billing?.paymentMethod && (
         <div className="card p-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-5 h-5 text-foreground" aria-hidden />
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-0.5">
@@ -428,9 +414,9 @@ export function BillingSettings() {
                       <span
                         className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
                           isPaid
-                            ? 'bg-green-50 text-green-600'
+                            ? 'bg-success/5 text-success'
                             : isRefunded
-                              ? 'bg-orange-50 text-orange-600'
+                              ? 'bg-warning/5 text-warning'
                               : 'bg-secondary text-muted-foreground'
                         }`}
                       >
@@ -461,7 +447,7 @@ export function BillingSettings() {
       )}
 
       {/* ── Usage Stats ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {[
           {
             label: 'Queries / month',
@@ -483,9 +469,11 @@ export function BillingSettings() {
             limit === -1 || limit === 0 ? 0 : Math.min(100, ((current ?? 0) / limit) * 100)
           const barColor = pct >= 100 ? 'bg-destructive' : pct >= 80 ? 'bg-warning' : 'bg-primary'
           return (
-            <div key={label} className="glass-card rounded-xl p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">{label}</p>
-              <p className="text-xl font-bold stat-number">
+            <div key={label} className="rounded-lg border border-border bg-card p-4">
+              <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                {label}
+              </p>
+              <p className="mt-1.5 font-mono text-xl tabular-nums">
                 {limit === -1
                   ? '∞'
                   : limit === 0
@@ -495,7 +483,7 @@ export function BillingSettings() {
                       : limit}
               </p>
               {limit > 0 && current !== undefined && (
-                <div className="mt-2 h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="mt-3 h-[3px] bg-secondary rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${barColor}`}
                     style={{ width: `${pct}%` }}
@@ -509,63 +497,42 @@ export function BillingSettings() {
 
       {/* ── Plan Cards ── */}
       {!sub.billingEnabled && (
-        <div className="card p-4 bg-warning/5 border-warning/20">
-          <p className="text-sm text-warning font-medium">
-            {t('settings.billing.stripeNotConfigured')}
-          </p>
+        <div className="card p-4 border-warning/40">
+          <p className="text-sm text-foreground">{t('settings.billing.stripeNotConfigured')}</p>
         </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-3">
         {(['FREE', 'PRO', 'ENTERPRISE'] as const).map((planKey) => {
           const planInfo = PLAN_FEATURES[planKey]
-          const Icon = planInfo.icon
           const isCurrent = sub.plan === planKey
           const isPro = planKey === 'PRO'
-          const isEnterprise = planKey === 'ENTERPRISE'
 
           return (
-            <div
-              key={planKey}
-              className={`relative p-5 flex flex-col rounded-xl transition-all duration-300 ${
-                isCurrent
-                  ? 'card-animated-border ring-2 ring-primary/50'
-                  : isPro
-                    ? 'card-gradient-border hover-scale premium-glow'
-                    : 'card hover-scale'
-              }`}
-            >
-              {isPro && !isCurrent && (
-                <span className="badge-popular">{t('settings.billing.mostPopular')}</span>
-              )}
-
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isPro
-                      ? 'bg-gradient-to-br from-primary to-accent'
-                      : isEnterprise
-                        ? 'bg-gradient-to-br from-accent to-primary'
-                        : 'bg-primary/10'
-                  }`}
-                >
-                  <Icon
-                    className={`w-5 h-5 ${isPro || isEnterprise ? 'text-white' : 'text-primary'}`}
-                  />
-                </div>
-                <div>
-                  <h4 className="font-bold text-base">{planKey}</h4>
-                  <div className="price-display">
-                    <span className="amount">{PLAN_PRICES[planKey]}</span>
-                    <span className="period">{t('settings.billing.perMonth')}</span>
-                  </div>
-                </div>
+            <div key={planKey} className="flex flex-col bg-card p-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h4 className="text-base font-semibold">{planInfo.name}</h4>
+                {isCurrent ? (
+                  <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground">
+                    {t('settings.billing.currentPlanBtn')}
+                  </span>
+                ) : isPro ? (
+                  <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-primary">
+                    {t('settings.billing.mostPopular')}
+                  </span>
+                ) : null}
               </div>
+              <p className="mt-3 flex items-baseline gap-1.5">
+                <span className="font-serif text-4xl leading-none">{PLAN_PRICES[planKey]}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('settings.billing.perMonth')}
+                </span>
+              </p>
 
-              <ul className="feature-list flex-1 mb-5">
+              <ul className="mt-5 mb-6 flex-1 space-y-2">
                 {planInfo.features.map((f) => (
-                  <li key={f} className="text-sm text-muted-foreground">
-                    <Check className="check-icon" />
+                  <li key={f} className="flex gap-2 text-sm text-muted-foreground">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" aria-hidden />
                     <span>{f}</span>
                   </li>
                 ))}
@@ -589,7 +556,7 @@ export function BillingSettings() {
                 <button
                   onClick={() => handleUpgrade(planKey as 'PRO' | 'ENTERPRISE')}
                   disabled={isPending || !sub.billingEnabled}
-                  className={`w-full text-sm flex items-center justify-center gap-1.5 ${isPro ? 'btn-gradient' : 'btn-primary'}`}
+                  className={`w-full text-sm flex items-center justify-center gap-1.5 ${isPro ? 'btn-primary' : 'btn-secondary'}`}
                 >
                   {isPending ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -607,31 +574,25 @@ export function BillingSettings() {
 
       {/* ── Cancel Confirm Modal ── */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-fadeIn">
-          <div className="relative bg-card border border-border shadow-2xl rounded-2xl p-6 w-full max-w-md animate-scaleIn">
-            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4 text-destructive">
-              <XCircle className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-semibold">Cancel Subscription</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 animate-fadeIn">
+          <div className="relative bg-card border border-border shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] rounded-lg p-6 w-full max-w-md animate-fadeIn">
+            <h3 className="text-lg font-semibold">Cancel your subscription?</h3>
             <p className="text-sm text-muted-foreground mt-2">
               Your subscription will be cancelled but you keep full access until{' '}
               <span className="font-semibold text-foreground">{fmt(sub.currentPeriodEnd)}</span>. No
               charges after that date.
             </p>
-            <div className="mt-4 p-3 rounded-lg bg-secondary/60 text-xs text-muted-foreground space-y-1">
+            <div className="mt-4 p-3 rounded-md border border-border text-xs text-muted-foreground space-y-1">
               <p>• Access continues until end of billing period</p>
               <p>• No refund for the current period</p>
               <p>• You can re-subscribe anytime</p>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowCancelModal(false)} className="btn-secondary flex-1">
-                Keep Subscription
+                Keep my plan
               </button>
-              <button
-                onClick={confirmCancel}
-                className="btn-primary flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent"
-              >
-                Yes, Cancel
+              <button onClick={confirmCancel} className="btn-destructive flex-1">
+                Cancel subscription
               </button>
             </div>
           </div>

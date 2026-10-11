@@ -7,7 +7,7 @@ import AdminThemeProvider from './AdminThemeProvider'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Admin Console | NatureQuery',
+  title: 'Admin Console',
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -536,7 +536,6 @@ export function useDashboard() {
       setConnections((prev) => [...prev, newConnection])
       setActiveConnectionId(newConnection.id)
       setShowAddConnection(false)
-      toast.success('Connection added', { description: result.connection.name })
 
       // Onboarding: mark "connected DB" step
       updateChecklistItem('connectedDb', true).catch(() => {})
@@ -698,7 +697,6 @@ export function useDashboard() {
     }
     setConnections((prev) => prev.filter((c) => c.id !== connectionId))
     setActiveConnectionId((prev) => (prev === connectionId ? null : prev))
-    toast.success('Connection removed')
   }, [])
 
   // Refresh schema — clears Redis + local cache and refetches from live DB
@@ -741,9 +739,6 @@ export function useDashboard() {
 
       if (result.success && result.data) {
         setQueryResults(result.data)
-        toast.success(`Query returned ${result.data.rowCount} rows`, {
-          description: `${executionTimeMs}ms`,
-        })
 
         // Record into conversation context for follow-ups
         const connId = activeConnection.id
@@ -889,9 +884,6 @@ export function useDashboard() {
 
         setIsExecuting(false)
         setQueryResults(results)
-        toast.success(`Query returned ${results.rowCount} rows`, {
-          description: `${results.executionTime}ms`,
-        })
 
         // Record into conversation context for follow-ups
         const demoHistory = conversationRef.current.get('demo') ?? []
@@ -942,9 +934,6 @@ export function useDashboard() {
           .catch(console.error)
 
         setQueryResults(result.data)
-        toast.success(`Query returned ${result.data.rowCount} rows`, {
-          description: `${executionTimeMs}ms`,
-        })
 
         // Record into conversation context for follow-ups
         const connId = activeConnection.id
@@ -1015,7 +1004,6 @@ export function useDashboard() {
         setGeneratedSQL(result.sql)
         setError(null)
         setQueryResults(null)
-        toast.success(t('dashboard.queryPanel.aiFixedSql'))
       } else {
         toast.error(result.error || t('common.error'))
       }
@@ -1089,7 +1077,6 @@ export function useDashboard() {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-        toast.success(`Exported as ${format === 'excel' ? 'Excel' : 'CSV'}`)
       } else {
         setError(result.error || 'Failed to export')
         toast.error('Export failed', { description: result.error })
@@ -1205,7 +1192,6 @@ export function useDashboard() {
         try {
           const { format } = require('sql-formatter')
           setGeneratedSQL(format(generatedSQL, { language: 'sql' }))
-          toast.success('SQL formatted')
         } catch {
           toast.error('Could not format SQL')
         }

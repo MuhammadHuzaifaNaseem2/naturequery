@@ -4,10 +4,10 @@
  * Streams the AI's reasoning process token-by-token before delivering the
  * final SQL. Client receives two event types:
  *
- *   event: thought   â€” CoT reasoning tokens (before <sql> tag)
- *   event: sql       â€” final validated SQL (once </sql> is detected)
- *   event: error     â€” recoverable error with a message
- *   event: done      â€” stream complete, carries { queryId } for HITL feedback
+ *   event: thought   — CoT reasoning tokens (before <sql> tag)
+ *   event: sql       — final validated SQL (once </sql> is detected)
+ *   event: error     — recoverable error with a message
+ *   event: done      — stream complete, carries { queryId } for HITL feedback
  *
  * Messy data fixes:
  *   1. Sample rows (3 per table) are sent to the AI so it understands actual
@@ -32,7 +32,7 @@ import { getGroqClient, isRateLimitError } from '@/lib/groq-keys'
 import { aiChatCompletion, aiChatCompletionStream, type ChatMessage } from '@/lib/ai-client'
 
 // ---------------------------------------------------------------------------
-// System prompt builder â€” DB-aware + messy data hardened
+// System prompt builder — DB-aware + messy data hardened
 // ---------------------------------------------------------------------------
 
 function buildSystemPrompt(dbType: string, schemaDesc: string): string {
@@ -61,7 +61,7 @@ function buildSystemPrompt(dbType: string, schemaDesc: string): string {
 
 When given a question, a database schema, and SAMPLE DATA, you MUST:
 
-1. STUDY THE SAMPLE DATA FIRST â€” before writing any SQL:
+1. STUDY THE SAMPLE DATA FIRST — before writing any SQL:
    - Identify what each column actually contains (the column name may be cryptic like "col1" or "flag")
    - Spot NULL values, empty strings, mixed formats, inconsistent casing
    - Understand the real data types (e.g. a VARCHAR column storing numbers as "1,200" or "PKR 500")
@@ -78,10 +78,10 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - Use TRIM(col) for columns that may have leading/trailing whitespace
    - Use ${castFn} when a text column stores numbers
    - Use IS NOT NULL / IS NULL filters when NULLs would skew results
-   - For date columns stored as text: NEVER try to cast them directly. Use the row's primary key (integer ID) as a proxy for ordering by "latest" â€” it is always reliable.
-   - Never assume a column is clean â€” do not assume values that were not provided by the user
+   - For date columns stored as text: NEVER try to cast them directly. Use the row's primary key (integer ID) as a proxy for ordering by "latest" — it is always reliable.
+   - Never assume a column is clean — do not assume values that were not provided by the user
 
-4. STRING COMPARISONS (CRITICAL) â€” this is the #1 cause of empty results:
+4. STRING COMPARISONS (CRITICAL) — this is the #1 cause of empty results:
    - YOU WILL BE PENALIZED IF YOU DO NOT FOLLOW THIS: NEVER use regular '=' for strings!
    - Real databases use UPPER ('ACTIVE'), lower ('active'), or Mixed ('Active').
    - YOU MUST ALWAYS, ALWAYS use LOWER(column) = LOWER('value') or ILIKE for ALL string comparisons.
@@ -89,15 +89,15 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - Example RIGHT: LOWER(party_type) = 'customer'
    - Even if column names imply correct casing, YOU MUST USE LOWER() to catch mixed-case rows!
 
-5. JOIN strategy & Logic â€” Critical for accuracy:
+5. JOIN strategy & Logic — Critical for accuracy:
    - ALWAYS use LEFT JOIN by default unless specifically filtering.
-   - If a user asks for "overdue", "active", "pending", etc. â€” ALWAYS look for a status/flag column AND a date column. Do not just use dates, and do not just use statuses. Combine them (e.g. LOWER(status) != 'paid' AND due_dt < CURRENT_DATE).
+   - If a user asks for "overdue", "active", "pending", etc. — ALWAYS look for a status/flag column AND a date column. Do not just use dates, and do not just use statuses. Combine them (e.g. LOWER(status) != 'paid' AND due_dt < CURRENT_DATE).
 
 6. Ordering “last N” or “latest” records:
-   - NEVER ORDER BY a date column that is stored as VARCHAR/TEXT â€” it will sort alphabetically, not chronologically.
+   - NEVER ORDER BY a date column that is stored as VARCHAR/TEXT — it will sort alphabetically, not chronologically.
    - Instead, ORDER BY the table's integer primary key DESC (e.g. ORDER BY ord_id DESC, ORDER BY id DESC). Integer PKs are auto-increment and reliably reflect insertion order.
 
-7. AGGREGATION (CRITICAL) â€” when users ask for summary statistics, you MUST use the correct aggregate function:
+7. AGGREGATION (CRITICAL) — when users ask for summary statistics, you MUST use the correct aggregate function:
    - “average” / “mean” / “avg” â†' use AVG(...) in the SELECT. A single aggregate expression returns ONE row — do NOT add LIMIT.
    - “total” / “sum” â†' use SUM(...)
    - “count” / “how many” â†' use COUNT(*) or COUNT(col)
@@ -107,13 +107,13 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
    - NEVER alias a raw column as “average_X” or “total_X” without wrapping it in AVG() or SUM(). A column name is not an aggregate function.
    - Aggregated queries (those with GROUP BY or a single aggregate) do NOT need LIMIT unless the user asks for “top N”.
 
-8. TIME-DIFFERENCE QUERIES (CRITICAL) â€” when the user asks for "time between X and Y", "duration", "delivery time", "how long does it take", etc:
+8. TIME-DIFFERENCE QUERIES (CRITICAL) — when the user asks for "time between X and Y", "duration", "delivery time", "how long does it take", etc:
    - You need TWO DIFFERENT date/timestamp columns (e.g. ordered_at and delivered_at, or created_at and completed_at).
-   - NEVER subtract a column from itself (e.g. AVG(order_date - order_date)) â€” that always equals zero and is nonsensical.
+   - NEVER subtract a column from itself (e.g. AVG(order_date - order_date)) — that always equals zero and is nonsensical.
    - BEFORE generating SQL: scan the schema for two distinct datetime columns that represent the start and end of the period in question.
    - If only ONE relevant date column exists in the schema, DO NOT fabricate the second one. Instead, return an explanation in your reasoning that the requested calculation is impossible with the available schema and emit a single-column query that approximates the request (e.g. just show order_date) rather than a meaningless subtraction.
 
-9. COLUMN-TABLE BINDING (CRITICAL) â€” the #1 cause of "column does not exist" errors:
+9. COLUMN-TABLE BINDING (CRITICAL) — the #1 cause of "column does not exist" errors:
    - Every column you reference MUST exist on the EXACT table alias you attach it to.
    - Example: if the schema shows order_date only on the "orders" table, you may write o.order_date (where o = orders) but NEVER oi.order_date (where oi = order_items) even if it seems logical.
    - When in doubt, JOIN to the table that actually owns the column instead of guessing.
@@ -121,20 +121,20 @@ When given a question, a database schema, and SAMPLE DATA, you MUST:
 10. Output your final SQL wrapped in <sql></sql> tags.
 
 CRITICAL RULES:
-- Use ${dialect} syntax ONLY â€” not other SQL dialects
-- SELECT statements ONLY â€” no INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE
+- Use ${dialect} syntax ONLY — not other SQL dialects
+- SELECT statements ONLY — no INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE
 - Use ${limitSyntax} for open-ended queries without aggregation
 - Use table aliases for readability
 - ALWAYS give every computed expression a meaningful AS alias (e.g. AS on_time_pct, AS avg_days). Never leave a computed column without an alias — PostgreSQL will show it as "?column?" which is confusing.
 - NEVER reference a column that does not exist in the schema
-- NEVER invent or assume table names â€” ONLY use table names listed in DATABASE SCHEMA below.
-- ALWAYS USE LOWER(col) = LOWER('val') FOR EVERY STRING COMPARISON â€” NEVER USE = WITHOUT LOWER!
+- NEVER invent or assume table names — ONLY use table names listed in DATABASE SCHEMA below.
+- ALWAYS USE LOWER(col) = LOWER('val') FOR EVERY STRING COMPARISON — NEVER USE = WITHOUT LOWER!
 - Interpret business terms robustly (e.g., "overdue" means date passed AND status not paid).
 - Always generate PostgreSQL-compatible SQL only. Never use MySQL syntax such as SHOW TABLES, SHOW DATABASES, or DESCRIBE table. Instead use information_schema equivalents, for example: SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
 - Never generate multiple SQL statements in a single response. Always return exactly one SQL query. If the user's question requires data from multiple tables, use UNION ALL, subqueries, or JOINs within a single statement.
 
 Output format:
-[Step-by-step reasoning â€” what the schema establishes, which tables and columns to use, how to handle data quality issues]
+[Step-by-step reasoning — what the schema establishes, which tables and columns to use, how to handle data quality issues]
 
 <sql>
 [Your final ${dialect} SELECT query]
@@ -173,7 +173,7 @@ function makeSSEMessage(event: string, data: unknown): Uint8Array {
 }
 
 // ---------------------------------------------------------------------------
-// SQL extractor â€” parse <sql>...</sql> from AI response
+// SQL extractor — parse <sql>...</sql> from AI response
 // ---------------------------------------------------------------------------
 
 function extractSQL(text: string): string {
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
     }
     if (!question || !connectionId) throw new Error('missing fields')
   } catch {
-    return new Response('Invalid JSON body â€” question and connectionId required', { status: 400 })
+    return new Response('Invalid JSON body — question and connectionId required', { status: 400 })
   }
 
   const MAX_QUESTION_LENGTH = 2000
@@ -338,7 +338,7 @@ export async function POST(request: NextRequest) {
 
   ;(async () => {
     try {
-      // 1. Decrypt credentials & get driver (always â€” needed for sample rows)
+      // 1. Decrypt credentials & get driver (always — needed for sample rows)
       let decryptedPassword: string
       try {
         decryptedPassword = decrypt(conn.password)
@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
       }
       const driver = getOrCreateDriver(credentials, credentials.dbType)
 
-      // 2. Fetch schema â€” Redis cache first
+      // 2. Fetch schema — Redis cache first
       let schema: DatabaseSchema | null = await getCachedSchema<DatabaseSchema>(connectionId)
       if (!schema) {
         const tables = await driver.fetchSchema()
@@ -378,7 +378,7 @@ export async function POST(request: NextRequest) {
       const hasContext = conversationContext && conversationContext.length > 0
       const systemPrompt = hasContext
         ? baseSystemPrompt +
-          '\n\nCONVERSATION MODE: The user is refining a previous query. If they say "filter", "sort", "add", "change", "now", "break down", etc., MODIFY the most recent SQL â€” do not start from scratch.\n'
+          '\n\nCONVERSATION MODE: The user is refining a previous query. If they say "filter", "sort", "add", "change", "now", "break down", etc., MODIFY the most recent SQL — do not start from scratch.\n'
         : baseSystemPrompt
 
       // 6a. Intent short-circuit: handle common meta-queries directly, no AI needed
@@ -441,7 +441,7 @@ export async function POST(request: NextRequest) {
         return
       }
 
-      // 6. Get Groq client from key pool â€” mock mode if no keys configured
+      // 6. Get Groq client from key pool — mock mode if no keys configured
       // Check if any AI provider is configured; fall back to mock if not
       const groqEntry = getGroqClient()
       if (!groqEntry && !process.env.CEREBRAS_API_KEY) {
@@ -585,7 +585,7 @@ Output only the corrected SQL in <sql></sql> tags.`
         }
       }
 
-      // 10. Auto-retry: execute to validate â€” handles both SQL errors AND empty results
+      // 10. Auto-retry: execute to validate — handles both SQL errors AND empty results
       let correctedSQL = finalSQL
       let testResult: { rows: unknown[] } | null = null
       try {
@@ -593,7 +593,7 @@ Output only the corrected SQL in <sql></sql> tags.`
       } catch (execError: unknown) {
         const errMsg = execError instanceof Error ? execError.message : String(execError)
         await send('thought', {
-          token: `\n\nâš ï¸ SQL had an error: "${errMsg}" â€” fixing automatically...\n`,
+          token: `\n\n⚠️ SQL had an error: "${errMsg}" — fixing automatically...\n`,
         })
 
         const isPsqlOrMysqlError =
@@ -682,18 +682,18 @@ Output only the corrected SQL in <sql></sql> tags.`
             const fixValidation = validateSQLSafety(fixedSQL)
             if (fixValidation.valid) {
               correctedSQL = fixedSQL
-              await send('thought', { token: 'âœ… SQL fixed successfully.\n' })
+              await send('thought', { token: '✅ SQL fixed successfully.\n' })
             }
           }
         } catch {
-          // Retry failed â€” emit original SQL, let user see the error
+          // Retry failed — emit original SQL, let user see the error
         }
       }
 
       // Zero-row retry: if query ran but returned nothing, ask AI to reconsider
       if (testResult && testResult.rows.length === 0) {
         await send('thought', {
-          token: `\n\nðŸ” Query returned 0 rows â€” reconsidering JOIN strategy and filters...\n`,
+          token: `\n\n🔍 Query returned 0 rows — reconsidering JOIN strategy and filters...\n`,
         })
 
         const zeroRowMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
@@ -702,14 +702,14 @@ Output only the corrected SQL in <sql></sql> tags.`
           { role: 'assistant', content: `<sql>\n${finalSQL}\n</sql>` },
           {
             role: 'user',
-            content: `The SQL above executed successfully but returned 0 rows. This is a query logic problem â€” the data exists in the database.
+            content: `The SQL above executed successfully but returned 0 rows. This is a query logic problem — the data exists in the database.
 
-Diagnose systematically â€” check EVERY one of these before rewriting:
+Diagnose systematically — check EVERY one of these before rewriting:
 
 1. STRING CASE MISMATCH (most common cause): Your WHERE clause may use the wrong case.
-   - PostgreSQL string comparisons are case-sensitive: 'Customer' â‰  'CUSTOMER' â‰  'customer'
+   - PostgreSQL string comparisons are case-sensitive: 'Customer' ≠ 'CUSTOMER' ≠ 'customer'
    - Fix: use LOWER(column) = LOWER('value') for EVERY string equality check in WHERE
-   - Check the SAMPLE DATA â€” it shows the exact case stored in the database
+   - Check the SAMPLE DATA — it shows the exact case stored in the database
    - Wrong: WHERE status = 'Active'  |  Right: WHERE LOWER(status) = 'active'
    - Wrong: WHERE party_type = 'Customer'  |  Right: WHERE LOWER(party_type) = 'customer'
 
@@ -741,11 +741,11 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
             const fixValidation = validateSQLSafety(fixedSQL)
             if (fixValidation.valid) {
               correctedSQL = fixedSQL
-              await send('thought', { token: 'âœ… Query rebuilt with corrected JOIN strategy.\n' })
+              await send('thought', { token: '✅ Query rebuilt with corrected JOIN strategy.\n' })
             }
           }
         } catch {
-          // Zero-row retry failed â€” emit original
+          // Zero-row retry failed — emit original
         }
       }
 

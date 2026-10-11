@@ -40,36 +40,31 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4 animate-fadeIn"
       onClick={onCancel}
     >
       <div
-        className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-scaleIn"
+        className="relative w-full max-w-md bg-card border border-border rounded-lg shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] overflow-hidden animate-fadeIn"
         onClick={(e) => e.stopPropagation()}
         role="alertdialog"
         aria-labelledby="confirm-title"
         aria-describedby="confirm-desc"
       >
-        <div
-          className={`h-1 w-full ${isDanger ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-primary to-accent'}`}
-        />
-
         <button
           onClick={onCancel}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="p-8">
-          <div
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${isDanger ? 'bg-red-500/10' : 'bg-primary/10'}`}
-          >
-            <AlertTriangle className={`w-7 h-7 ${isDanger ? 'text-red-500' : 'text-primary'}`} />
-          </div>
+        <div className="p-6">
+          <AlertTriangle
+            className={`w-5 h-5 mb-3 ${isDanger ? 'text-destructive' : 'text-warning'}`}
+            aria-hidden
+          />
 
-          <h2 id="confirm-title" className="text-xl font-bold mb-2">
+          <h2 id="confirm-title" className="text-lg font-semibold mb-1.5">
             {title}
           </h2>
           {description && (
@@ -89,7 +84,7 @@ export function ConfirmDialog({
               onClick={onConfirm}
               autoFocus
               className={`px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors ${
-                isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'
+                isDanger ? 'bg-destructive hover:bg-destructive' : 'bg-primary hover:bg-primary/90'
               }`}
             >
               {confirmLabel}

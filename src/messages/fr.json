@@ -317,7 +317,7 @@
       "instant": "Instantané",
       "format": "Formater",
       "template": "Modèle",
-      "aiFixIt": "Corriger par IA",
+      "aiFixIt": "Corriger avec l’IA",
       "askAi": "Demander à l'IA",
       "sqlEditor": "Éditeur SQL",
       "sqlEditorDescription": "Écrivez et exécutez du SQL directement avec coloration syntaxique complète",
@@ -325,7 +325,25 @@
       "schemaInsights": "Aperçus du schéma",
       "conversation": "Conversation",
       "conversationExchange": "échange",
-      "conversationExchanges": "échanges"
+      "conversationExchanges": "échanges",
+      "stepAsk": "Votre question",
+      "stepWrites": "NatureQuery écrit",
+      "stepAnswer": "La réponse",
+      "modeQuestion": "Langage courant",
+      "modeSql": "SQL",
+      "followUpOne": "Fait suite à votre dernière question",
+      "followUpMany": "Fait suite à vos {{count}} dernières questions",
+      "startOver": "Recommencer",
+      "questionsToTry": "Questions à essayer",
+      "checkedReadOnly": "Lecture seule. Vérifiée avant l’exécution.",
+      "performance": "Performances",
+      "emptyLabel": "Commencez ici",
+      "emptyTitle": "Connectez une base de données,",
+      "emptyTitleRest": "ou essayez d’abord la boutique d’exemple.",
+      "emptyBody": "Pour écrire une requête, NatureQuery lit les noms des tables et des colonnes, pas vos données. Il n’exécute que du SQL en lecture seule.",
+      "worksWith": "Compatible avec",
+      "tryDemoDatabase": "Essayer la base d’exemple",
+      "csvOrExcel": "et des fichiers CSV ou Excel"
     },
     "header": {
       "queryWorkspace": "Espace de travail des requêtes",
@@ -404,7 +422,8 @@
       "searchPlaceholder": "Rechercher dans l'historique...",
       "allStatus": "Tous les statuts",
       "historyNoResults": "Aucun résultat pour votre recherche/filtres.",
-      "exportHistory": "Exporter"
+      "exportHistory": "Exporter",
+      "newQuestion": "Nouvelle question"
     },
     "schemaBrowser": {
       "noSchemaLoaded": "Aucun schéma chargé",
@@ -657,12 +676,15 @@
       "askPlain": "Posez votre question en langage courant",
       "askPlainExample": "Montrez-moi toutes les commandes de la semaine dernière",
       "instantResults": "Obtenez des résultats instantanés",
-      "instantResultsSub": "L'IA génère et exécute la requête pour vous"
+      "instantResultsSub": "L'IA génère et exécute la requête pour vous",
+      "label": "Bienvenue",
+      "skipSetup": "Passer la configuration"
     },
     "step1": {
       "title": "Connectez votre base de données",
       "subtitle": "Ajoutez votre première connexion de base de données pour commencer.",
-      "skip": "Passer pour l'instant"
+      "skip": "Passer pour l'instant",
+      "label": "Vos données"
     },
     "step2": {
       "title": "Essayez votre première requête",
@@ -678,7 +700,8 @@
       "dbConnected": "Votre base de données est connectée. Rendez-vous sur le tableau de bord pour commencer à poser vos questions.",
       "noDatabase": "Rendez-vous sur le tableau de bord pour connecter une base de données et commencer à interroger en langage naturel.",
       "tryAsking": "Essayez de demander quelque chose comme :",
-      "exampleQuery": "Montrez-moi tous les clients inscrits ce mois-ci"
+      "exampleQuery": "Montrez-moi tous les clients inscrits ce mois-ci",
+      "label": "Prêt"
     },
     "checklist": {
       "gettingStarted": "Premiers pas",
@@ -698,7 +721,8 @@
         "setupSchedule": "Configurer un rapport planifié",
         "setupScheduleDesc": "Automatisez les requêtes récurrentes avec livraison par e-mail."
       }
-    }
+    },
+    "progress": "Étape {{step}} sur {{total}}"
   },
   "pages": {
     "notFound": {

@@ -2,16 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { AppLogo } from '@/components/AppLogo'
-import {
-  Database,
-  Plus,
-  Search,
-  Sparkles,
-  Trash2,
-  X,
-  UploadCloud,
-  AlertTriangle,
-} from 'lucide-react'
+import { Database, Plus, Search, Trash2, X, UploadCloud, AlertTriangle } from 'lucide-react'
 
 // Mini logos for each DB type shown in the sidebar connection list
 const DB_MINI_LOGOS: Record<string, React.ReactNode> = {
@@ -214,19 +205,11 @@ const DB_MINI_LOGOS: Record<string, React.ReactNode> = {
   ),
   magic: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="magicBg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7C3AED" />
-          <stop offset="100%" stopColor="#06B6D4" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="6" fill="url(#magicBg)" />
+      <rect width="32" height="32" rx="6" className="fill-primary" />
       <path
         d="M16 7 L17.8 13.2 L24 15 L17.8 16.8 L16 23 L14.2 16.8 L8 15 L14.2 13.2Z"
-        fill="white"
+        className="fill-primary-foreground"
       />
-      <circle cx="23" cy="9" r="1.5" fill="white" opacity="0.85" />
-      <circle cx="9" cy="23" r="1.2" fill="white" opacity="0.7" />
     </svg>
   ),
 }
@@ -273,24 +256,26 @@ export function ConnectionSidebar({
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const label =
+    'font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground'
   return (
-    <aside className="w-60 h-full border-r border-border bg-card flex flex-col">
-      {/* Logo & Header */}
-      <div className="tour-step-1 p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <AppLogo size="lg" showText={false} />
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">NatureQuery</h1>
-              <p className="text-xs text-muted-foreground">{t('dashboard.sidebar.nlToSql')}</p>
-            </div>
+    <aside className="w-60 h-full border-r border-border bg-background flex flex-col">
+      {/* Brand and new question */}
+      <div className="tour-step-1 px-3 pb-3 pt-3.5 border-b border-border">
+        <div className="flex items-center justify-between gap-2 px-1 mb-3.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <AppLogo size="xs" showText={false} />
+            <span className="text-[15px] font-semibold tracking-[-0.01em] truncate">
+              NatureQuery
+            </span>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             <ThemeToggle />
             {onClose && (
               <button
                 onClick={onClose}
-                className="lg:hidden p-1.5 hover:bg-secondary rounded-lg transition-colors"
+                aria-label={t('common.close')}
+                className="lg:hidden p-1.5 hover:bg-secondary rounded-md transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -298,25 +283,22 @@ export function ConnectionSidebar({
           </div>
         </div>
 
-        {/* New Chat Button */}
         <button
           onClick={() => onNewChat?.()}
-          className="w-full btn-gradient text-sm font-semibold py-3 px-4 flex items-center justify-center gap-2"
+          className="btn-secondary w-full justify-start h-9 px-3"
         >
-          <Plus className="w-4 h-4" />
-          {t('common.newChat')}
+          <Plus className="w-4 h-4" aria-hidden />
+          {t('dashboard.sidebar.newQuestion')}
         </button>
-      </div>
 
-      {/* Search */}
-      <div className="p-3 border-b border-border">
-        <label className="flex items-center gap-2 input py-1.5 text-sm cursor-text">
-          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <label className="mt-2 flex items-center gap-2 h-9 px-3 rounded-md border border-transparent bg-secondary/70 text-sm cursor-text focus-within:border-input focus-within:bg-card transition-colors">
+          <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" aria-hidden />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={`${t('common.search')}...`}
+            aria-label={t('common.search')}
             className="bg-transparent outline-none w-full placeholder:text-muted-foreground"
           />
         </label>
@@ -330,31 +312,30 @@ export function ConnectionSidebar({
         </div>
 
         {/* Connections */}
-        <div className="px-3 pb-2">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {t('dashboard.sidebar.connections')}
-            </h2>
+        <div className="px-3 pb-3 pt-1">
+          <div className="flex items-center justify-between px-1 mb-1.5">
+            <h2 className={label}>{t('dashboard.sidebar.connections')}</h2>
             <button
               onClick={onAddConnection}
-              className="p-1 hover:bg-secondary rounded transition-colors"
+              aria-label={t('dashboard.sidebar.addConnection')}
+              title={t('dashboard.sidebar.addConnection')}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             >
-              <Plus className="w-4 h-4 text-muted-foreground" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {isLoading ? (
             <ConnectionListSkeleton />
           ) : filteredConnections.length === 0 ? (
-            <div className="text-center py-6">
-              <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-secondary/50 flex items-center justify-center">
-                <Database className="w-5 h-5 text-muted-foreground/50" />
-              </div>
+            <div className="px-1 py-4">
               <p className="text-xs text-muted-foreground mb-3">
                 {t('dashboard.sidebar.noConnections')}
               </p>
-              <button onClick={onAddDemoConnection} className="btn-gradient text-xs py-1.5 px-3">
-                <Sparkles className="w-3.5 h-3.5" />
+              <button
+                onClick={onAddDemoConnection}
+                className="btn-secondary w-full h-8 px-3 text-xs"
+              >
                 {t('dashboard.sidebar.tryDemo')}
               </button>
             </div>
@@ -372,35 +353,43 @@ export function ConnectionSidebar({
                 )
               ).map(([group, conns]) => (
                 <div key={group}>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 pl-1">
+                  <h3 className="px-1 mb-1 text-[11px] text-muted-foreground">
                     {group === 'Personal' ? t('dashboard.connectionSidebar.personal') : group}
                   </h3>
-                  <div className="space-y-1">
-                    {conns.map((connection) => (
-                      <div
-                        key={connection.id}
-                        className={clsx(
-                          'relative p-2.5 rounded-lg border transition-all duration-200 group cursor-pointer',
-                          activeConnectionId === connection.id
-                            ? 'border-primary/40 bg-primary/5 shadow-sm'
-                            : 'border-border hover:border-primary/20 hover:bg-secondary/30'
-                        )}
-                        onClick={() => onSelectConnection(connection.id)}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-background border border-border/50 overflow-hidden shadow-sm">
+                  <ul className="space-y-0.5">
+                    {conns.map((connection) => {
+                      const active = activeConnectionId === connection.id
+                      return (
+                        <li
+                          key={connection.id}
+                          className={clsx(
+                            'relative flex items-center gap-2.5 rounded-md px-2 py-1.5 group cursor-pointer transition-colors',
+                            active ? 'bg-secondary text-foreground' : 'hover:bg-secondary/60'
+                          )}
+                          onClick={() => onSelectConnection(connection.id)}
+                          aria-current={active ? 'true' : undefined}
+                        >
+                          <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 bg-card border border-border overflow-hidden">
                             {DB_MINI_LOGOS[connection.dbType] ?? (
                               <Database className="w-3.5 h-3.5 text-muted-foreground" />
                             )}
                           </div>
-                          <div className="flex-1 min-w-0 pr-6">
+                          <div className="flex-1 min-w-0 pr-5">
                             <div className="flex items-center gap-1.5">
-                              <h3 className="font-medium text-sm truncate">{connection.name}</h3>
+                              <span className={clsx('text-sm truncate', active && 'font-medium')}>
+                                {connection.name}
+                              </span>
                               {connection.status === 'active' && (
-                                <span className="flex h-1.5 w-1.5 rounded-full bg-success flex-shrink-0" />
+                                <span
+                                  className="flex h-1.5 w-1.5 rounded-full bg-success flex-shrink-0"
+                                  aria-label="Connected"
+                                />
                               )}
                               {connection.status === 'error' && (
-                                <span className="flex h-1.5 w-1.5 rounded-full bg-destructive flex-shrink-0" />
+                                <span
+                                  className="flex h-1.5 w-1.5 rounded-full bg-destructive flex-shrink-0"
+                                  aria-label="Connection problem"
+                                />
                               )}
                             </div>
                             {connection.status === 'error' && connection.schemaError ? (
@@ -411,45 +400,48 @@ export function ConnectionSidebar({
                                 {connection.schemaError}
                               </p>
                             ) : (
-                              <p className="text-[11px] text-muted-foreground truncate">
+                              <p className="font-mono text-[10.5px] text-muted-foreground truncate">
                                 {connection.schema
                                   ? `${connection.schema.tables.length} ${t('common.tables')}`
                                   : '…'}
                               </p>
                             )}
                           </div>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDeleteConfirmId(connection.id)
-                          }}
-                          className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 rounded transition-all"
-                        >
-                          <Trash2 className="w-3 h-3 text-destructive" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDeleteConfirmId(connection.id)
+                            }}
+                            aria-label={`${t('common.delete')} ${connection.name}`}
+                            title={t('common.delete')}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="flex gap-1.5 mt-2">
+          <div className="flex items-center gap-1 mt-2">
             <button
               onClick={onAddConnection}
-              className="flex-1 p-1.5 border border-dashed border-border hover:border-primary/30 rounded-lg text-[11px] text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1"
+              className="flex-1 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" aria-hidden />
               {t('dashboard.sidebar.addConnection')}
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-1.5 border border-dashed border-border/50 hover:border-primary/30 rounded-lg text-muted-foreground hover:text-primary transition-all"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               title={t('dashboard.connectionSidebar.uploadCsv')}
             >
-              <UploadCloud className="w-3.5 h-3.5" />
+              <UploadCloud className="w-3.5 h-3.5" aria-hidden />
+              <span className="sr-only">{t('dashboard.connectionSidebar.uploadCsv')}</span>
             </button>
           </div>
           <input
@@ -471,49 +463,50 @@ export function ConnectionSidebar({
         </div>
       </div>
 
-      {/* Delete confirmation modal */}
+      {/* Delete confirmation */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDeleteConfirmId(null)} />
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setDeleteConfirmId(null)}
-          />
-          <div className="relative bg-card border border-border rounded-2xl shadow-2xl p-6 w-[380px] max-w-[90vw] animate-fadeIn">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-                <AlertTriangle className="w-6 h-6 text-destructive" />
+            role="alertdialog"
+            aria-labelledby="delete-connection-title"
+            className="relative w-[400px] max-w-full rounded-lg border border-border bg-card p-6 shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] animate-fadeIn"
+          >
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive"
+                aria-hidden
+              />
+              <div className="min-w-0">
+                <h3 id="delete-connection-title" className="text-base font-semibold">
+                  {t('dashboard.connectionSidebar.deleteTitle')}
+                </h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  {t('dashboard.connectionSidebar.deleteConfirmText')}{' '}
+                  <span className="font-medium text-foreground">
+                    {filteredConnections.find((c) => c.id === deleteConfirmId)?.name ||
+                      t('dashboard.connectionSidebar.thisConnection')}
+                  </span>
+                  ?
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t('dashboard.connectionSidebar.deleteWarning')}
+                </p>
               </div>
-              <h3 className="text-lg font-semibold mb-2">
-                {t('dashboard.connectionSidebar.deleteTitle')}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-1">
-                {t('dashboard.connectionSidebar.deleteConfirmText')}
-              </p>
-              <p className="text-sm font-medium mb-1">
-                {filteredConnections.find((c) => c.id === deleteConfirmId)?.name ||
-                  t('dashboard.connectionSidebar.thisConnection')}
-                ?
-              </p>
-              <p className="text-xs text-muted-foreground mb-6">
-                {t('dashboard.connectionSidebar.deleteWarning')}
-              </p>
-              <div className="flex items-center gap-3 w-full">
-                <button
-                  onClick={() => setDeleteConfirmId(null)}
-                  className="flex-1 py-2.5 text-sm font-medium rounded-xl bg-secondary hover:bg-secondary/80 transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={() => {
-                    onDeleteConnection(deleteConfirmId)
-                    setDeleteConfirmId(null)
-                  }}
-                  className="flex-1 py-2.5 text-sm font-medium rounded-xl bg-destructive text-white hover:bg-destructive/90 transition-colors"
-                >
-                  {t('common.delete')}
-                </button>
-              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={() => setDeleteConfirmId(null)} className="btn-secondary">
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={() => {
+                  onDeleteConnection(deleteConfirmId)
+                  setDeleteConfirmId(null)
+                }}
+                className="btn-destructive"
+              >
+                {t('common.delete')}
+              </button>
             </div>
           </div>
         </div>

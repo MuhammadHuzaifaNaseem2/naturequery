@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Trash2, AlertCircle, CheckCircle2, Clock, ExternalLink, Search, Filter, Download, AlertTriangle, X } from 'lucide-react'
+import { Trash2, AlertCircle, ExternalLink, Search, Download } from 'lucide-react'
 import Link from 'next/link'
 import type { QueryHistoryItem } from '@/actions/queries'
 import { useTranslation } from '@/contexts/LocaleContext'
@@ -14,9 +14,14 @@ interface QueryHistoryProps {
   compact?: boolean
 }
 
-export function QueryHistory({ history, onSelectQuery, onClearHistory, onDeleteEntry, compact }: QueryHistoryProps) {
+export function QueryHistory({
+  history,
+  onSelectQuery,
+  onClearHistory,
+  onDeleteEntry,
+  compact,
+}: QueryHistoryProps) {
   const { t, locale } = useTranslation()
-  const [isExpanded, setIsExpanded] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'error'>('all')
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; question: string } | null>(null)
@@ -24,14 +29,34 @@ export function QueryHistory({ history, onSelectQuery, onClearHistory, onDeleteE
 
   const handleExportCSV = () => {
     if (history.length === 0) return
-    const headers = ['Date', 'Time', 'Question', 'SQL', 'Status', 'Rows', 'Execution Time (ms)', 'Connection']
+    const headers = [
+      'Date',
+      'Time',
+      'Question',
+      'SQL',
+      'Status',
+      'Rows',
+      'Execution Time (ms)',
+      'Connection',
+    ]
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
     const csvContent = [
       headers.join(','),
-      ...filteredHistory.map(h => {
+      ...filteredHistory.map((h) => {
         const d = new Date(h.createdAt)
-        const localDate = new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: tz }).format(d)
-        const localTime = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: tz }).format(d)
+        const localDate = new Intl.DateTimeFormat(locale, {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          timeZone: tz,
+        }).format(d)
+        const localTime = new Intl.DateTimeFormat(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+          timeZone: tz,
+        }).format(d)
         return [
           `"${localDate}"`,
           `"${localTime}"`,
@@ -40,9 +65,9 @@ export function QueryHistory({ history, onSelectQuery, onClearHistory, onDeleteE
           `"${h.status}"`,
           `"${h.rowCount ?? ''}"`,
           `"${h.executionTimeMs ?? ''}"`,
-          `"${h.connectionName ?? ''}"`
+          `"${h.connectionName ?? ''}"`,
         ].join(',')
-      })
+      }),
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -55,105 +80,101 @@ export function QueryHistory({ history, onSelectQuery, onClearHistory, onDeleteE
     document.body.removeChild(link)
   }
 
-  const formatTime = useCallback((dateStr: string) => {
-    const d = new Date(dateStr)
-    return new Intl.DateTimeFormat(locale, {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    }).format(d)
-  }, [locale])
+  const formatTime = useCallback(
+    (dateStr: string) => {
+      const d = new Date(dateStr)
+      return new Intl.DateTimeFormat(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }).format(d)
+    },
+    [locale]
+  )
 
-  const formatDate = useCallback((dateStr: string) => {
-    const d = new Date(dateStr)
-    const now = new Date()
-    
-    // Compare using local date strings to handle timezone properly
-    const itemDate = d.toLocaleDateString()
-    const todayDate = now.toLocaleDateString()
-    const yesterday = new Date(now)
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayDate = yesterday.toLocaleDateString()
+  const formatDate = useCallback(
+    (dateStr: string) => {
+      const d = new Date(dateStr)
+      const now = new Date()
 
-    if (itemDate === todayDate) {
-      return t('common.today')
-    } else if (itemDate === yesterdayDate) {
-      return t('common.yesterday')
-    }
-    return new Intl.DateTimeFormat(locale, {
-      month: 'short',
-      day: 'numeric',
-      year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    }).format(d)
-  }, [locale, t])
+      // Compare using local date strings to handle timezone properly
+      const itemDate = d.toLocaleDateString()
+      const todayDate = now.toLocaleDateString()
+      const yesterday = new Date(now)
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayDate = yesterday.toLocaleDateString()
+
+      if (itemDate === todayDate) {
+        return t('common.today')
+      } else if (itemDate === yesterdayDate) {
+        return t('common.yesterday')
+      }
+      return new Intl.DateTimeFormat(locale, {
+        month: 'short',
+        day: 'numeric',
+        year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }).format(d)
+    },
+    [locale, t]
+  )
 
   // Filter history
-  const filteredHistory = history.filter(item => {
-    const matchesSearch = item.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          item.sql.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredHistory = history.filter((item) => {
+    const matchesSearch =
+      item.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sql.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
   // Group history by date
-  const groupedHistory = filteredHistory.reduce((groups, item) => {
-    const dateKey = formatDate(item.createdAt)
-    if (!groups[dateKey]) {
-      groups[dateKey] = []
-    }
-    groups[dateKey].push(item)
-    return groups
-  }, {} as Record<string, QueryHistoryItem[]>)
+  const groupedHistory = filteredHistory.reduce(
+    (groups, item) => {
+      const dateKey = formatDate(item.createdAt)
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
+      }
+      groups[dateKey].push(item)
+      return groups
+    },
+    {} as Record<string, QueryHistoryItem[]>
+  )
 
   if (history.length === 0 && !searchTerm && statusFilter === 'all') {
     return (
-      <div className="p-4 text-center text-muted-foreground text-sm">
-        <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p>{t('dashboard.history.noHistory')}</p>
-        <p className="text-xs mt-1">{t('dashboard.history.yourRecent')}</p>
+      <div className="px-4 py-8">
+        <p className="font-serif text-lg leading-snug text-foreground">
+          {t('dashboard.history.noHistory')}
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+          {t('dashboard.history.yourRecent')}
+        </p>
       </div>
     )
   }
 
+  const dialogCard =
+    'w-full max-w-sm overflow-hidden rounded-lg border border-border bg-card shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] animate-fadeIn'
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Delete Confirmation Dialog */}
+    <div className="flex h-full flex-col">
+      {/* Delete one entry */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-          <div className="bg-card w-full max-w-sm rounded-2xl border border-border shadow-2xl overflow-hidden animate-fadeIn">
-            {/* Header with icon */}
-            <div className="flex items-center gap-3 p-5 pb-3">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold">Delete History Entry</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">This action cannot be undone</p>
-              </div>
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="p-1 rounded-md hover:bg-secondary transition-colors"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4">
+          <div role="alertdialog" aria-labelledby="delete-history-title" className={dialogCard}>
+            <div className="p-5">
+              <h3 id="delete-history-title" className="text-sm font-semibold">
+                Delete this question from history?
+              </h3>
+              <p className="mt-2 line-clamp-2 font-serif text-[15px] italic leading-snug text-foreground/85">
+                {deleteConfirm.question}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">This can’t be undone.</p>
             </div>
-            {/* Body */}
-            <div className="px-5 pb-4">
-              <div className="p-3 bg-secondary/50 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground">Query:</p>
-                <p className="text-sm font-medium mt-0.5 line-clamp-2">{deleteConfirm.question}</p>
-              </div>
-            </div>
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border bg-secondary/20">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-secondary transition-colors"
-              >
+            <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+              <button onClick={() => setDeleteConfirm(null)} className="btn-secondary px-3 py-1.5">
                 Cancel
               </button>
               <button
@@ -161,7 +182,7 @@ export function QueryHistory({ history, onSelectQuery, onClearHistory, onDeleteE
                   onDeleteEntry?.(deleteConfirm.id)
                   setDeleteConfirm(null)
                 }}
-                className="px-4 py-2 text-sm font-medium bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+                className="btn-destructive px-3 py-1.5"
               >
                 Delete
               </button>
@@ -170,30 +191,20 @@ export function QueryHistory({ history, onSelectQuery, onClearHistory, onDeleteE
         </div>
       )}
 
-      {/* Clear All Confirmation Dialog */}
+      {/* Clear everything */}
       {clearConfirm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-          <div className="bg-card w-full max-w-sm rounded-2xl border border-border shadow-2xl overflow-hidden animate-fadeIn">
-            <div className="flex items-center gap-3 p-5 pb-3">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold">Clear All History</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">This will permanently delete all {history.length} entries</p>
-              </div>
-              <button
-                onClick={() => setClearConfirm(false)}
-                className="p-1 rounded-md hover:bg-secondary transition-colors"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4">
+          <div role="alertdialog" aria-labelledby="clear-history-title" className={dialogCard}>
+            <div className="p-5">
+              <h3 id="clear-history-title" className="text-sm font-semibold">
+                Clear all history?
+              </h3>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                This permanently deletes all {history.length} entries.
+              </p>
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border bg-secondary/20">
-              <button
-                onClick={() => setClearConfirm(false)}
-                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-secondary transition-colors"
-              >
+            <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+              <button onClick={() => setClearConfirm(false)} className="btn-secondary px-3 py-1.5">
                 Cancel
               </button>
               <button
@@ -201,171 +212,130 @@ export function QueryHistory({ history, onSelectQuery, onClearHistory, onDeleteE
                   onClearHistory()
                   setClearConfirm(false)
                 }}
-                className="px-4 py-2 text-sm font-medium bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+                className="btn-destructive px-3 py-1.5"
               >
-                Clear All
+                Clear all
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
-        >
-          <svg
-            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      {/* Search and filters */}
+      <div className="flex flex-col gap-2 border-b border-border p-3">
+        <label className="flex h-8 items-center gap-2 rounded-md border border-transparent bg-secondary/70 px-2.5 focus-within:border-input focus-within:bg-card">
+          <Search className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" aria-hidden />
+          <input
+            type="text"
+            placeholder={t('dashboard.sidebar.searchPlaceholder')}
+            aria-label={t('dashboard.sidebar.searchPlaceholder')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+          />
+        </label>
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            aria-label="Filter by result"
+            className="cursor-pointer border-none bg-transparent p-0 text-xs text-muted-foreground outline-none hover:text-foreground focus:ring-0"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          {t('dashboard.sidebar.history')}
-          <span className="text-xs text-muted-foreground">({history.length})</span>
-        </button>
-        <button
-          onClick={() => setClearConfirm(true)}
-          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-          title={t('dashboard.history.clear')}
-        >
-          {t('dashboard.history.clear')}
-        </button>
+            <option value="all" className="bg-card text-foreground">
+              {t('dashboard.sidebar.allStatus')}
+            </option>
+            <option value="success" className="bg-card text-foreground">
+              {t('dashboard.history.success')}
+            </option>
+            <option value="error" className="bg-card text-foreground">
+              {t('dashboard.history.failed')}
+            </option>
+          </select>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+              title="Export as CSV"
+            >
+              <Download className="h-3 w-3" aria-hidden />
+              {t('dashboard.sidebar.exportHistory')}
+            </button>
+            <button
+              onClick={() => setClearConfirm(true)}
+              className="transition-colors hover:text-destructive"
+            >
+              {t('dashboard.history.clear')}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* History list */}
-      {isExpanded && (
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Controls Bar */}
-          <div className="p-3 border-b border-border/50 flex flex-col gap-3 bg-secondary/10">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder={t('dashboard.sidebar.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="text-xs bg-transparent text-muted-foreground border-none focus:ring-0 p-0 cursor-pointer hover:text-foreground outline-none"
-                >
-                  <option value="all" className="bg-card text-foreground">{t('dashboard.sidebar.allStatus')}</option>
-                  <option value="success" className="bg-card text-foreground">{t('dashboard.history.success')}</option>
-                  <option value="error" className="bg-card text-foreground">{t('dashboard.history.failed')}</option>
-                </select>
-              </div>
-              <button
-                onClick={handleExportCSV}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                title="Export CSV"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {t('dashboard.sidebar.exportHistory')}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {filteredHistory.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground text-xs">
-                {t('dashboard.sidebar.historyNoResults')}
-              </div>
-            ) : Object.entries(groupedHistory).map(([dateKey, items]) => (
+      {/* The questions, newest first */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {filteredHistory.length === 0 ? (
+          <p className="p-6 text-center text-xs text-muted-foreground">
+            {t('dashboard.sidebar.historyNoResults')}
+          </p>
+        ) : (
+          Object.entries(groupedHistory).map(([dateKey, items]) => (
             <div key={dateKey}>
-              <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50 sticky top-0">
+              <p className="sticky top-0 z-[1] border-b border-border bg-background px-3 py-1.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                 {dateKey}
-              </div>
+              </p>
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="w-full p-3 text-left hover:bg-secondary/50 border-b border-border/50 transition-colors group cursor-pointer"
+                  className="group relative cursor-pointer border-b border-border/70 px-3 py-2.5 transition-colors hover:bg-secondary/50"
                   onClick={() => onSelectQuery(item)}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      {/* Status indicator */}
-                      {item.status === 'error' ? (
-                        <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
-                      ) : (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                      )}
-                      <p className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
-                        {item.question}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatTime(item.createdAt)}
-                      </span>
-                      {onDeleteEntry && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDeleteConfirm({ id: item.id, question: item.question })
-                          }}
-                          className="p-0.5 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 rounded transition-all"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3 h-3 text-destructive" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 ml-5">
-                    <code className="text-xs text-muted-foreground font-mono truncate max-w-[140px]">
-                      {item.sql.substring(0, 50)}{item.sql.length > 50 ? '...' : ''}
-                    </code>
+                  <p className="line-clamp-2 pr-5 font-serif text-[15px] leading-snug text-foreground">
+                    {item.question || item.sql}
+                  </p>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 font-mono text-[10.5px] tabular-nums text-muted-foreground">
+                    {item.status === 'error' ? (
+                      <AlertCircle className="h-3 w-3 text-destructive" aria-label="Failed" />
+                    ) : null}
+                    <span>{formatTime(item.createdAt)}</span>
                     {item.rowCount != null && (
-                      <span className="text-xs text-muted-foreground">
+                      <span>
                         {item.rowCount} {t('common.rows')}
                       </span>
                     )}
-                    {item.executionTimeMs != null && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                        <Clock className="w-2.5 h-2.5" />
-                        {item.executionTimeMs}ms
-                      </span>
-                    )}
-                  </div>
-                  {item.connectionName && (
-                    <div className="mt-1 ml-5">
-                      <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                        {item.connectionName}
-                      </span>
-                    </div>
-                  )}
+                    {item.executionTimeMs != null && <span>{item.executionTimeMs} ms</span>}
+                  </p>
                   {item.status === 'error' && item.errorMessage && (
-                    <p className="text-xs text-destructive mt-1 ml-5 truncate">{item.errorMessage}</p>
+                    <p className="mt-1 truncate text-xs text-destructive">{item.errorMessage}</p>
+                  )}
+                  {onDeleteEntry && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setDeleteConfirm({ id: item.id, question: item.question })
+                      }}
+                      className="absolute right-2 top-2.5 rounded p-1 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                      title="Delete"
+                      aria-label="Delete from history"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   )}
                 </div>
               ))}
             </div>
-          ))}
+          ))
+        )}
 
-          {/* View All link */}
-          {!compact && history.length >= 10 && (
-            <Link
-              href="/dashboard/history"
-              className="flex items-center justify-center gap-1 p-3 text-xs text-primary hover:bg-primary/5 transition-colors"
-            >
-              {t('dashboard.history.viewAllHistory')}
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-          )}
-          </div>
-        </div>
-      )}
+        {/* View All link */}
+        {!compact && history.length >= 10 && (
+          <Link
+            href="/dashboard/history"
+            className="flex items-center justify-center gap-1 p-3 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t('dashboard.history.viewAllHistory')}
+            <ExternalLink className="h-3 w-3" aria-hidden />
+          </Link>
+        )}
+      </div>
     </div>
   )
 }
-

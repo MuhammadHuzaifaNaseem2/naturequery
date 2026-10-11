@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle2, Clock3, FolderSearch, Scale } from 'lucide-react'
-import { AppLogo } from '@/components/AppLogo'
+import { CheckCircle2, Clock3, FolderSearch, Scale } from 'lucide-react'
+import { AppPageHeader } from '@/components/AppPageHeader'
 import { getSavedInvestigations } from '@/actions/investigations'
 import type { InvestigationCaseStatus } from '@/lib/investigation-record'
 
 const STATUS_STYLE: Record<InvestigationCaseStatus, string> = {
-  OPEN: 'border-amber-500/20 bg-amber-500/10 text-amber-500',
-  IN_REVIEW: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
+  OPEN: 'border-warning/20 bg-warning/10 text-warning',
+  IN_REVIEW: 'border-primary/20 bg-primary/10 text-primary',
   RESOLVED: 'border-success/20 bg-success/10 text-success',
 }
 
@@ -30,25 +30,20 @@ export default async function InvestigationHistoryPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <AppLogo size="md" showText={false} />
-            <div>
-              <p className="font-bold leading-tight">Saved investigations</p>
-              <p className="text-xs text-muted-foreground">Tamper-evident discrepancy history</p>
-            </div>
-          </div>
-          <Link href="/dashboard/investigate" className="btn-secondary text-sm">
-            <ArrowLeft className="w-4 h-4" /> New investigation
-          </Link>
-        </div>
-      </header>
+      <AppPageHeader
+        crumbs={[{ label: 'Investigate', href: '/dashboard/investigate' }, { label: 'Saved' }]}
+      >
+        <Link href="/dashboard/investigate" className="btn-secondary px-3 py-1.5 text-sm">
+          New investigation
+        </Link>
+      </AppPageHeader>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">Investigation history</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        <div className="mb-8">
+          <h1 className="font-serif text-[clamp(2rem,4vw,2.75rem)] font-normal leading-[1.08] tracking-[-0.02em]">
+            Saved investigations
+          </h1>
+          <p className="text-muted-foreground mt-3">
             Reopen evidence, review confirmed causes, and preserve every saved version.
           </p>
         </div>
