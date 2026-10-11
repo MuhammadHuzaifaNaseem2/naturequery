@@ -1,4 +1,25 @@
 import type { QueryResultRow } from '@/actions/db'
+import { DEMO_DATA } from '@/app/dashboard/demo-data'
+
+/**
+ * Runs SQL against the sample store: picks the table the SQL names, then applies the
+ * filters below. Used in the browser and when the server copies charts for sharing.
+ */
+export function runDemoQuery(sql: string): { rows: QueryResultRow[]; fields: string[] } {
+  const sqlLower = sql.toLowerCase()
+  let rows = DEMO_DATA.customers
+  let fields = ['id', 'name', 'email', 'city', 'created_at']
+
+  if (sqlLower.includes('orders')) {
+    rows = DEMO_DATA.orders
+    fields = ['id', 'customer_id', 'product', 'amount', 'status', 'order_date']
+  } else if (sqlLower.includes('products')) {
+    rows = DEMO_DATA.products
+    fields = ['id', 'name', 'price', 'category', 'stock']
+  }
+
+  return { rows: applyDemoQueryFilters(rows, sql), fields }
+}
 
 /**
  * Apply the small subset of SQL filters supported by the in-browser demo database.

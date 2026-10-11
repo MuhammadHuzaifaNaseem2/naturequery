@@ -8,6 +8,7 @@ import { executeSQLByConnection } from '@/actions/connections'
 import { updateChecklistItem } from '@/actions/onboarding-checklist'
 import { SavedConnection } from '@/app/dashboard/types'
 import { getUserConnections } from '@/actions/connections'
+import { runDemoQuery } from '@/lib/demo-query'
 
 export function useDashboardWidgets(
   activeConnectionId: string | null,
@@ -52,6 +53,7 @@ export function useDashboardWidgets(
             name: w.title,
             question: w.question,
             sql: w.sql,
+            connectionId: w.connectionId,
             chartType: 'bar',
             data,
             fields,
@@ -85,18 +87,34 @@ export function useDashboardWidgets(
   const handleRefreshWidget = useCallback(
     async (id: string) => {
       const widget = dashboardWidgets.find((w) => w.id === id)
-      if (!widget || !activeConnection) return
+      // A widget runs on the connection it was pinned from, not whichever is open now.
+      const connectionId = widget?.connectionId || activeConnection?.id
+      if (!widget || !connectionId) return
       setIsRefreshingWidget(id)
       try {
-        if (activeConnection.isDemo) return
-        const result = await executeSQLByConnection(activeConnection.id, widget.sql)
-        if (result.success && result.data) {
-          setDashboardWidgets((prev) =>
-            prev.map((w) =>
-              w.id === id ? { ...w, data: result.data!.rows, lastRefreshed: new Date() } : w
-            )
-          )
-        }
+        const result =
+          connectionId === 'demo'
+            ? { success: true, data: runDemoQuery(widget.sql), error: undefined }
+            : await executeSQLByConnection(connectionId, widget.sql)
+        setDashboardWidgets((prev) =>
+          prev.map((w) => {
+            if (w.id !== id) return w
+            if (!result.success || !result.data) {
+              return { ...w, error: result.error || 'This query could not run.' }
+            }
+            return {
+              ...w,
+              data: result.data.rows,
+              fields: result.data.fields,
+              lastRefreshed: new Date(),
+              error: undefined,
+            }
+          })
+        )
+      } catch {
+        setDashboardWidgets((prev) =>
+          prev.map((w) => (w.id === id ? { ...w, error: 'This query could not run.' } : w))
+        )
       } finally {
         setIsRefreshingWidget(null)
       }

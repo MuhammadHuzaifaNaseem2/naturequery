@@ -384,7 +384,7 @@
       "insights": "Insights",
       "share": "Share",
       "shareDashboard": "Share Dashboard",
-      "shareDescription": "Turn on a public link that lists the questions on your dashboard. People who open it see the questions, not your data or SQL.",
+      "shareDescription": "Turn on a public link to your dashboard. People who open it see your questions. Your SQL and connection details always stay private.",
       "publicLinkAccess": "Public Link Access",
       "publicDashboardLink": "Your Public Dashboard Link",
       "aiInsights": "AI Insights",
@@ -392,7 +392,13 @@
       "dashboardIsPublic": "Dashboard is now public",
       "dashboardIsPrivate": "Dashboard is now private",
       "linkCopied": "Public link copied",
-      "failedToShare": "Failed to change dashboard sharing setting"
+      "failedToShare": "Failed to change dashboard sharing setting",
+      "shareCharts": "Show charts and numbers",
+      "shareChartsHint": "People with the link also see each chart with its numbers. Turning this on runs each chart's query once.",
+      "shareChartsUpdated": "Numbers from {{time}}. Update them when your data changes.",
+      "shareChartsUpdating": "Running each chart's query…",
+      "shareChartsUpdate": "Update numbers",
+      "shareChartsFailed": "{{count}} of the charts could not run. Check their connections, then update again."
     },
     "statusBar": {
       "noConnection": "No connection",

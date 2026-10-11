@@ -384,7 +384,7 @@
       "insights": "Insights",
       "share": "Partager",
       "shareDashboard": "Partager le tableau de bord",
-      "shareDescription": "Créez un lien public pour partager vos graphiques avec votre équipe ou vos clients. Ils ne verront pas vos données brutes ni le SQL.",
+      "shareDescription": "Activez un lien public vers votre tableau de bord. Les personnes qui l'ouvrent voient vos questions. Votre SQL et vos informations de connexion restent toujours privés.",
       "publicLinkAccess": "Accès par lien public",
       "publicDashboardLink": "Votre lien public du tableau de bord",
       "aiInsights": "Insights IA",
@@ -392,7 +392,13 @@
       "dashboardIsPublic": "Le tableau de bord est maintenant public",
       "dashboardIsPrivate": "Le tableau de bord est maintenant privé",
       "linkCopied": "Lien public copié dans le presse-papiers !",
-      "failedToShare": "Échec de la modification du paramètre de partage du tableau de bord"
+      "failedToShare": "Échec de la modification du paramètre de partage du tableau de bord",
+      "shareCharts": "Afficher les graphiques et les chiffres",
+      "shareChartsHint": "Les personnes qui ont le lien voient aussi chaque graphique avec ses chiffres. L'activation exécute une fois la requête de chaque graphique.",
+      "shareChartsUpdated": "Chiffres du {{time}}. Mettez-les à jour quand vos données changent.",
+      "shareChartsUpdating": "Exécution de la requête de chaque graphique…",
+      "shareChartsUpdate": "Mettre à jour les chiffres",
+      "shareChartsFailed": "{{count}} graphiques n'ont pas pu s'exécuter. Vérifiez leurs connexions, puis relancez la mise à jour."
     },
     "statusBar": {
       "noConnection": "Aucune connexion",

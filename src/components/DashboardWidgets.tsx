@@ -11,6 +11,7 @@ export interface DashboardWidget {
   name: string
   question: string
   sql: string
+  connectionId?: string | null
   chartType: 'bar' | 'line' | 'area' | 'pie'
   data: QueryResultRow[]
   fields: string[]
@@ -18,6 +19,8 @@ export interface DashboardWidget {
   lastRefreshed: Date
   refreshInterval?: number
   position: number
+  /** Why the last run failed, shown in place of the chart. */
+  error?: string
 }
 
 interface DashboardWidgetsProps {
@@ -94,10 +97,12 @@ export function DashboardWidgets({
                   <div className="min-w-0">
                     <h3 className="truncate text-sm font-medium">{widget.name}</h3>
                     <p className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
-                      {widget.fields.length > 0 && (
+                      {widget.fields.length > 0 && !widget.error && (
                         <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
                       )}
-                      Refreshed {formatTimeAgo(widget.lastRefreshed)}
+                      {widget.error
+                        ? 'Not loaded'
+                        : `Refreshed ${formatTimeAgo(widget.lastRefreshed)}`}
                     </p>
                   </div>
                 </div>
@@ -138,7 +143,14 @@ export function DashboardWidgets({
 
               {/* Chart area */}
               <div className="min-h-0 flex-1 p-3">
-                {widget.fields.length === 0 ? (
+                {widget.error ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-1.5 px-6 text-center">
+                    <p className="text-sm text-foreground">This chart could not load.</p>
+                    <p className="line-clamp-3 max-w-sm text-xs text-muted-foreground">
+                      {widget.error}
+                    </p>
+                  </div>
+                ) : widget.fields.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center gap-2">
                     <div className="flex h-24 w-full items-end gap-1.5 px-6" aria-hidden>
                       {[55, 80, 40, 90, 65, 50, 75, 60].map((h, i) => (

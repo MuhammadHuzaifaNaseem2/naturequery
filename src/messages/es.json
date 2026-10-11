@@ -384,7 +384,7 @@
       "insights": "Perspectivas",
       "share": "Compartir",
       "shareDashboard": "Compartir panel",
-      "shareDescription": "Crea un enlace público para compartir tus gráficos con tu equipo o clientes. No verán tus datos brutos ni el SQL.",
+      "shareDescription": "Activa un enlace público a tu panel. Quien lo abra verá tus preguntas. Tu SQL y los datos de conexión siempre siguen siendo privados.",
       "publicLinkAccess": "Acceso por enlace público",
       "publicDashboardLink": "Tu enlace público del panel",
       "aiInsights": "Perspectivas IA",
@@ -392,7 +392,13 @@
       "dashboardIsPublic": "El panel ahora es público",
       "dashboardIsPrivate": "El panel ahora es privado",
       "linkCopied": "¡Enlace público copiado al portapapeles!",
-      "failedToShare": "Error al cambiar la configuración de compartir el panel"
+      "failedToShare": "Error al cambiar la configuración de compartir el panel",
+      "shareCharts": "Mostrar gráficos y cifras",
+      "shareChartsHint": "Quien tenga el enlace verá también cada gráfico con sus cifras. Al activarlo, la consulta de cada gráfico se ejecuta una vez.",
+      "shareChartsUpdated": "Cifras del {{time}}. Actualízalas cuando cambien tus datos.",
+      "shareChartsUpdating": "Ejecutando la consulta de cada gráfico…",
+      "shareChartsUpdate": "Actualizar cifras",
+      "shareChartsFailed": "{{count}} gráficos no se pudieron ejecutar. Revisa sus conexiones y vuelve a actualizar."
     },
     "statusBar": {
       "noConnection": "Sin conexión",

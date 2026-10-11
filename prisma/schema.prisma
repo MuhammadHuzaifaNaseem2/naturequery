@@ -67,8 +67,10 @@ model User {
   groqApiKey String? // encrypted with same lib as DB passwords
 
   // Dashboard Sharing
-  isDashboardPublic   Boolean @default(false)
-  dashboardShareToken String? @unique
+  isDashboardPublic    Boolean @default(false)
+  dashboardShareToken  String? @unique
+  // The shared page also shows each chart with its numbers (DashboardWidget.snapshot)
+  dashboardShareCharts Boolean @default(false)
 
   @@index([email])
 }
@@ -420,16 +422,20 @@ model UsageRecord {
 // ============================================
 
 model DashboardWidget {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   userId         String
   title          String
-  question       String   @db.Text
-  sql            String   @db.Text
+  question       String    @db.Text
+  sql            String    @db.Text
   connectionId   String?
   connectionName String?
-  position       Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  position       Int       @default(0)
+  // Rows for the shared dashboard, { fields, rows } capped at what the chart draws.
+  // Kept only while the owner shares charts (User.dashboardShareCharts).
+  snapshot       Json?
+  snapshotAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

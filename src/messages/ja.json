@@ -384,7 +384,7 @@
       "insights": "インサイト",
       "share": "共有",
       "shareDashboard": "ダッシュボードを共有",
-      "shareDescription": "ダッシュボードのグラフをチームやクライアントと共有するための公開リンクを作成します。生データやSQLは表示されません。",
+      "shareDescription": "ダッシュボードの公開リンクを有効にします。リンクを開いた人にはあなたの質問が表示されます。SQLと接続情報は常に非公開です。",
       "publicLinkAccess": "公開リンクアクセス",
       "publicDashboardLink": "あなたの公開ダッシュボードリンク",
       "aiInsights": "AIインサイト",
@@ -392,7 +392,13 @@
       "dashboardIsPublic": "ダッシュボードが公開されました",
       "dashboardIsPrivate": "ダッシュボードが非公開になりました",
       "linkCopied": "公開リンクをクリップボードにコピーしました！",
-      "failedToShare": "ダッシュボード共有設定の変更に失敗しました"
+      "failedToShare": "ダッシュボード共有設定の変更に失敗しました",
+      "shareCharts": "グラフと数値を表示",
+      "shareChartsHint": "リンクを持つ人に、各グラフとその数値も表示されます。オンにすると、各グラフのクエリが1回実行されます。",
+      "shareChartsUpdated": "{{time}}時点の数値です。データが変わったら更新してください。",
+      "shareChartsUpdating": "各グラフのクエリを実行しています…",
+      "shareChartsUpdate": "数値を更新",
+      "shareChartsFailed": "{{count}}件のグラフを実行できませんでした。接続を確認して、もう一度更新してください。"
     },
     "statusBar": {
       "noConnection": "接続なし",

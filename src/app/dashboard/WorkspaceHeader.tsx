@@ -19,14 +19,20 @@ import {
   Clock,
   Scale,
   Shield,
+  RefreshCw,
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/NotificationCenter'
 import { signOut, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { clsx } from 'clsx'
-import { toggleDashboardSharing, getDashboardShareStatus } from '@/actions/share-dashboard'
+import {
+  toggleDashboardSharing,
+  getDashboardShareStatus,
+  setDashboardChartSharing,
+  updateSharedCharts,
+} from '@/actions/share-dashboard'
 import { adminSwitchPersonalPlan } from '@/actions/admin'
 import type { QueryHistoryItem } from '@/actions/queries'
 import { SavedConnection } from './types'
@@ -75,35 +81,90 @@ export function WorkspaceHeader({
 }: WorkspaceHeaderProps) {
   const { data: session } = useSession()
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
 
-  const [shareStatus, setShareStatus] = useState<{ isPublic: boolean; token?: string }>({
+  const [shareStatus, setShareStatus] = useState<{
+    isPublic: boolean
+    token?: string
+    showCharts?: boolean
+    chartsUpdatedAt?: string
+  }>({
     isPublic: false,
   })
   const [showShareModal, setShowShareModal] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
+  const [chartsBusy, setChartsBusy] = useState(false)
+  const [chartsFailed, setChartsFailed] = useState(0)
+  const [shareLoaded, setShareLoaded] = useState(false)
 
-  useEffect(() => {
-    if (session?.user) {
-      getDashboardShareStatus()
-        .then((res) => {
-          if (res.success) {
-            setShareStatus({ isPublic: res.isPublic, token: res.token })
-          }
+  // Read the settings each time the dialog opens and keep its switches off until they
+  // arrive: flipping the link switch from a stale "off" would replace the link people have.
+  const openShareModal = () => {
+    setShowShareModal(true)
+    setShareLoaded(false)
+    setChartsFailed(0)
+    getDashboardShareStatus()
+      .then((res) => {
+        if (!res.success) return
+        setShareStatus({
+          isPublic: res.isPublic,
+          token: res.token,
+          showCharts: res.showCharts,
+          chartsUpdatedAt: res.chartsUpdatedAt,
         })
-        .catch(() => {})
-    }
-  }, [session])
+        setShareLoaded(true)
+      })
+      .catch(() => {})
+  }
 
   // The switch and the link field show the result, so these don't toast on success.
   const handleToggleShare = async (isPublic: boolean) => {
     const res = await toggleDashboardSharing(isPublic)
     if (res.success) {
+      // Turning the link off also stops sharing the charts.
       setShareStatus({ isPublic, token: res.token })
+      setChartsFailed(0)
     } else {
       toast.error(t('dashboard.header.failedToShare'))
     }
   }
+
+  // Showing the charts runs each chart's query once, so the switch waits for it.
+  const handleToggleCharts = async (show: boolean) => {
+    setChartsBusy(true)
+    setChartsFailed(0)
+    try {
+      const res = await setDashboardChartSharing(show)
+      if (!res.success) throw new Error(res.error)
+      setShareStatus((s) => ({ ...s, showCharts: show, chartsUpdatedAt: res.chartsUpdatedAt }))
+      setChartsFailed(res.failed ?? 0)
+    } catch {
+      toast.error(t('dashboard.header.failedToShare'))
+    } finally {
+      setChartsBusy(false)
+    }
+  }
+
+  const handleUpdateCharts = async () => {
+    setChartsBusy(true)
+    setChartsFailed(0)
+    try {
+      const res = await updateSharedCharts()
+      if (!res.success) throw new Error(res.error)
+      setShareStatus((s) => ({ ...s, chartsUpdatedAt: res.chartsUpdatedAt }))
+      setChartsFailed(res.failed ?? 0)
+    } catch {
+      toast.error(t('dashboard.header.failedToShare'))
+    } finally {
+      setChartsBusy(false)
+    }
+  }
+
+  const chartsUpdatedText = shareStatus.chartsUpdatedAt
+    ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
+        new Date(shareStatus.chartsUpdatedAt)
+      )
+    : null
 
   const handleCopyLink = () => {
     if (!shareStatus.token) return
@@ -205,7 +266,7 @@ export function WorkspaceHeader({
             <span className="hidden 2xl:inline">Investigate</span>
           </button>
           <button
-            onClick={() => setShowShareModal(true)}
+            onClick={openShareModal}
             className={clsx(tool, 'hidden sm:inline-flex')}
             title={t('dashboard.header.shareDashboard')}
             aria-label={t('dashboard.header.share')}
@@ -411,16 +472,12 @@ export function WorkspaceHeader({
 
             <div className="mt-5 flex items-center justify-between rounded-md border border-border px-3 py-2.5">
               <span className="text-sm font-medium">{t('dashboard.header.publicLinkAccess')}</span>
-              <label className="relative inline-flex cursor-pointer items-center">
-                <input
-                  type="checkbox"
-                  className="peer sr-only"
-                  checked={shareStatus.isPublic}
-                  onChange={(e) => handleToggleShare(e.target.checked)}
-                  aria-label={t('dashboard.header.publicLinkAccess')}
-                />
-                <div className="h-6 w-11 rounded-full bg-muted transition-colors after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-focus-visible:ring-2 peer-focus-visible:ring-ring/60"></div>
-              </label>
+              <ShareSwitch
+                checked={shareStatus.isPublic}
+                onChange={handleToggleShare}
+                disabled={!shareLoaded}
+                label={t('dashboard.header.publicLinkAccess')}
+              />
             </div>
 
             {shareStatus.isPublic && shareStatus.token ? (
@@ -447,6 +504,47 @@ export function WorkspaceHeader({
                     {isCopied ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
                   </button>
                 </div>
+
+                {/* Charts stay off until the owner chooses to share the numbers too */}
+                <div className="mt-4 rounded-md border border-border px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium">{t('dashboard.header.shareCharts')}</span>
+                    <ShareSwitch
+                      checked={!!shareStatus.showCharts}
+                      onChange={handleToggleCharts}
+                      disabled={chartsBusy || !shareLoaded}
+                      label={t('dashboard.header.shareCharts')}
+                    />
+                  </div>
+                  <p
+                    className="mt-1.5 text-xs leading-relaxed text-muted-foreground"
+                    aria-live="polite"
+                  >
+                    {chartsBusy
+                      ? t('dashboard.header.shareChartsUpdating')
+                      : shareStatus.showCharts && chartsUpdatedText
+                        ? t('dashboard.header.shareChartsUpdated', { time: chartsUpdatedText })
+                        : t('dashboard.header.shareChartsHint')}
+                  </p>
+                  {chartsFailed > 0 && !chartsBusy && (
+                    <p className="mt-1.5 text-xs leading-relaxed text-destructive">
+                      {t('dashboard.header.shareChartsFailed', { count: chartsFailed })}
+                    </p>
+                  )}
+                  {shareStatus.showCharts && (
+                    <button
+                      onClick={handleUpdateCharts}
+                      disabled={chartsBusy}
+                      className="btn-ghost -ml-2 mt-1.5 h-8 px-2 text-xs"
+                    >
+                      <RefreshCw
+                        className={clsx('h-3.5 w-3.5', chartsBusy && 'animate-spin')}
+                        aria-hidden
+                      />
+                      {t('dashboard.header.shareChartsUpdate')}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -459,5 +557,36 @@ export function WorkspaceHeader({
         </div>
       )}
     </>
+  )
+}
+
+function ShareSwitch({
+  checked,
+  onChange,
+  label,
+  disabled,
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label: string
+  disabled?: boolean
+}) {
+  return (
+    <label
+      className={clsx(
+        'relative inline-flex shrink-0 items-center',
+        disabled ? 'cursor-wait opacity-60' : 'cursor-pointer'
+      )}
+    >
+      <input
+        type="checkbox"
+        className="peer sr-only"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-label={label}
+      />
+      <div className="h-6 w-11 rounded-full bg-muted transition-colors after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-focus-visible:ring-2 peer-focus-visible:ring-ring/60"></div>
+    </label>
   )
 }

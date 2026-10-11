@@ -384,7 +384,7 @@
       "insights": "Einblicke",
       "share": "Teilen",
       "shareDashboard": "Dashboard teilen",
-      "shareDescription": "Erstellen Sie einen öffentlichen Link, um Ihre Dashboard-Diagramme mit Ihrem Team oder Kunden zu teilen. Diese sehen weder Ihre Rohdaten noch SQL.",
+      "shareDescription": "Aktivieren Sie einen öffentlichen Link zu Ihrem Dashboard. Wer ihn öffnet, sieht Ihre Fragen. Ihr SQL und Ihre Verbindungsdaten bleiben immer privat.",
       "publicLinkAccess": "Öffentlicher Link-Zugang",
       "publicDashboardLink": "Ihr öffentlicher Dashboard-Link",
       "aiInsights": "KI-Einblicke",
@@ -392,7 +392,13 @@
       "dashboardIsPublic": "Dashboard ist jetzt öffentlich",
       "dashboardIsPrivate": "Dashboard ist jetzt privat",
       "linkCopied": "Öffentlicher Link in die Zwischenablage kopiert!",
-      "failedToShare": "Fehler beim Ändern der Dashboard-Freigabeeinstellung"
+      "failedToShare": "Fehler beim Ändern der Dashboard-Freigabeeinstellung",
+      "shareCharts": "Diagramme und Zahlen zeigen",
+      "shareChartsHint": "Wer den Link hat, sieht dann auch jedes Diagramm mit seinen Zahlen. Beim Einschalten wird die Abfrage jedes Diagramms einmal ausgeführt.",
+      "shareChartsUpdated": "Zahlen vom {{time}}. Aktualisieren Sie sie, wenn sich Ihre Daten ändern.",
+      "shareChartsUpdating": "Die Abfragen der Diagramme laufen…",
+      "shareChartsUpdate": "Zahlen aktualisieren",
+      "shareChartsFailed": "{{count}} Diagramme konnten nicht ausgeführt werden. Prüfen Sie ihre Verbindungen und aktualisieren Sie erneut."
     },
     "statusBar": {
       "noConnection": "Keine Verbindung",

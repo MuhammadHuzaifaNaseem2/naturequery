@@ -58,15 +58,16 @@ export default async function PublicDashboard({ params }: PublicDashboardProps) 
           {result.ownerName}&apos;s dashboard
         </h1>
         <p className="mt-4 max-w-xl leading-relaxed text-mk-ink-2">
-          The questions {result.ownerName} keeps an eye on in NatureQuery. Their data and SQL stay
-          private.
+          {result.chartsShared
+            ? `The questions ${result.ownerName} keeps an eye on in NatureQuery, with the numbers they chose to share. Their SQL stays private.`
+            : `The questions ${result.ownerName} keeps an eye on in NatureQuery. Their data and SQL stay private.`}
         </p>
 
         <div className="mt-10">
           {result.widgets.length === 0 ? (
             <p className="border-t border-mk-rule pt-6 text-mk-ink-3">This dashboard is empty.</p>
           ) : (
-            <PublicDashboardWidgets widgets={result.widgets} />
+            <PublicDashboardWidgets widgets={result.widgets} chartsShared={!!result.chartsShared} />
           )}
         </div>
       </main>

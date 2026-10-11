@@ -34,8 +34,8 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useTheme } from '@/components/ThemeProvider'
 import { friendlySqlError } from '@/lib/friendly-sql-error'
 import { SavedConnection, QueryResults } from './types'
-import { DEMO_SCHEMA, DEMO_DATA } from './demo-data'
-import { applyDemoQueryFilters } from '@/lib/demo-query'
+import { DEMO_SCHEMA } from './demo-data'
+import { runDemoQuery } from '@/lib/demo-query'
 import { useDashboardUI } from '@/hooks/dashboard/useDashboardUI'
 import { useDashboardHistory } from '@/hooks/dashboard/useDashboardHistory'
 import { useDashboardWidgets } from '@/hooks/dashboard/useDashboardWidgets'
@@ -275,39 +275,43 @@ export function useDashboard() {
             }))
             setDashboardWidgets(widgets)
 
-            // Execute each widget's SQL — use saved connectionId or fall back to best available
-            const execResults = await Promise.allSettled(
+            // Run each widget's SQL on its saved connection, or the best available one.
+            // Sample-store widgets run in the browser, like the sample store itself.
+            const execResults = await Promise.all(
               res.data
                 .filter((w: any) => w.sql && (w.connectionId || fallbackConnId))
-                .map((w: any) =>
-                  executeSQLByConnection(w.connectionId || fallbackConnId, w.sql).then(
-                    (result) => ({
-                      id: w.id,
-                      result,
-                    })
-                  )
-                )
+                .map(async (w: any) => {
+                  try {
+                    const result =
+                      w.connectionId === 'demo'
+                        ? { success: true, data: runDemoQuery(w.sql), error: undefined }
+                        : await executeSQLByConnection(w.connectionId || fallbackConnId, w.sql)
+                    return { id: w.id as string, result }
+                  } catch {
+                    return {
+                      id: w.id as string,
+                      result: { success: false, data: undefined, error: undefined },
+                    }
+                  }
+                })
             )
 
             if (cancelled) return
 
+            // A chart that cannot run says so instead of loading forever.
             setDashboardWidgets((prev) =>
               prev.map((widget) => {
-                const found = execResults.find(
-                  (r) => r.status === 'fulfilled' && (r as any).value.id === widget.id
-                )
-                if (found && found.status === 'fulfilled') {
-                  const { result } = (found as any).value
-                  if (result.success && result.data) {
-                    return {
-                      ...widget,
-                      data: result.data.rows,
-                      fields: result.data.fields,
-                      lastRefreshed: new Date(),
-                    }
+                const result = execResults.find((r) => r.id === widget.id)?.result
+                if (result?.success && result.data) {
+                  return {
+                    ...widget,
+                    data: result.data.rows,
+                    fields: result.data.fields,
+                    lastRefreshed: new Date(),
+                    error: undefined,
                   }
                 }
-                return widget
+                return { ...widget, error: result?.error || 'This query could not run.' }
               })
             )
           })
@@ -839,19 +843,7 @@ export function useDashboard() {
       if (activeConnection.isDemo) {
         await new Promise((resolve) => setTimeout(resolve, 500))
 
-        const sqlLower = sqlToRun.toLowerCase()
-        let demoRows = DEMO_DATA.customers
-        let fields = ['id', 'name', 'email', 'city', 'created_at']
-
-        if (sqlLower.includes('orders')) {
-          demoRows = DEMO_DATA.orders
-          fields = ['id', 'customer_id', 'product', 'amount', 'status', 'order_date']
-        } else if (sqlLower.includes('products')) {
-          demoRows = DEMO_DATA.products
-          fields = ['id', 'name', 'price', 'category', 'stock']
-        }
-
-        demoRows = applyDemoQueryFilters(demoRows, sqlToRun)
+        const { rows: demoRows, fields } = runDemoQuery(sqlToRun)
 
         const results = {
           rows: demoRows,
