@@ -545,7 +545,15 @@
       "createSchedule": "Zeitplan erstellen",
       "pause": "Pausieren",
       "resume": "Fortsetzen",
-      "delete": "Löschen"
+      "delete": "Löschen",
+      "everyDay": "Jeden Tag",
+      "everyWeek": "Jede Woche",
+      "everyMonth": "Jeden Monat",
+      "summaryHourly": "Läuft einmal pro Stunde.",
+      "summaryDaily": "Läuft jeden Tag zwischen {{start}} und {{end}} ({{zone}}).",
+      "summaryWeekly": "Läuft jeden {{day}} zwischen {{start}} und {{end}} ({{zone}}).",
+      "summaryMonthly": "Läuft am {{day}}. jedes Monats zwischen {{start}} und {{end}} ({{zone}}).",
+      "shortMonths": "In kürzeren Monaten läuft sie am letzten Tag."
     }
   },
   "settings": {

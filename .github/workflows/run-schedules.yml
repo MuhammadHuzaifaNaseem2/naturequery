@@ -1,0 +1,44 @@
+name: Run scheduled queries
+
+# Vercel's Hobby plan runs its cron at most once a day, so this calls the schedule
+# runner once an hour. It needs the repository secret CRON_SECRET, the same value as
+# CRON_SECRET in the Vercel project.
+
+on:
+  schedule:
+    # A few minutes past the hour, when GitHub's queue is shorter.
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: run-schedules
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    # Forks have no secret and must not call production.
+    if: github.repository == 'MuhammadHuzaifaNaseem2/naturequery'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the schedule runner
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          RUNNER_URL: https://www.naturequery.app/api/cron/run-schedules
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Add CRON_SECRET under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          # This repository is public, so the response (schedule names, errors) stays out of the log.
+          status=$(curl --silent --show-error --max-time 240 --output /dev/null \
+            --write-out '%{http_code}' \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "$RUNNER_URL")
+          echo "Schedule runner answered HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::The schedule runner did not answer 200."
+            exit 1
+          fi

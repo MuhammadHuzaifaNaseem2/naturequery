@@ -545,7 +545,15 @@
       "createSchedule": "スケジュールを作成",
       "pause": "一時停止",
       "resume": "再開",
-      "delete": "削除"
+      "delete": "削除",
+      "everyDay": "毎日",
+      "everyWeek": "毎週",
+      "everyMonth": "毎月",
+      "summaryHourly": "1時間に1回実行されます。",
+      "summaryDaily": "毎日{{start}}〜{{end}}（{{zone}}）に実行されます。",
+      "summaryWeekly": "毎週{{day}}の{{start}}〜{{end}}（{{zone}}）に実行されます。",
+      "summaryMonthly": "毎月{{day}}日の{{start}}〜{{end}}（{{zone}}）に実行されます。",
+      "shortMonths": "その日がない月は、月の最終日に実行されます。"
     }
   },
   "settings": {

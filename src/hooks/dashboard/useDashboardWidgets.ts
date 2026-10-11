@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import Papa from 'papaparse'
 import { normalizeRegionalDates } from '@/lib/normalize-dates'
 import { DashboardWidget } from '@/components/DashboardWidgets'
-import { ScheduledQuery } from '@/components/QueryScheduler'
+import { ScheduledQuery, scheduleFromApi } from '@/components/QueryScheduler'
 import { executeSQLByConnection } from '@/actions/connections'
 import { updateChecklistItem } from '@/actions/onboarding-checklist'
 import { SavedConnection } from '@/app/dashboard/types'
@@ -324,41 +324,19 @@ export function useDashboardWidgets(
             question: schedule.question,
             sql: schedule.sql,
             connectionId: schedule.connectionId,
+            connectionName: schedule.connectionName,
             frequency,
+            timeOfDay: schedule.schedule.time,
+            dayOfWeek: schedule.schedule.dayOfWeek,
+            dayOfMonth: schedule.schedule.dayOfMonth,
+            timezone: schedule.schedule.timezone,
             notifyEmails: schedule.notifyEmails ?? [],
           }),
         })
         const json = await res.json()
         if (!json.success) throw new Error(json.error || 'Failed to create schedule')
-        const s = json.data
-        setScheduledQueries((prev) => [
-          ...prev,
-          {
-            id: s.id,
-            name: s.name,
-            question: s.question,
-            sql: s.sql,
-            connectionId: s.connectionId ?? '',
-            connectionName: s.connectionName ?? '',
-            schedule: {
-              type: (s.frequency as string).toLowerCase() as
-                | 'hourly'
-                | 'daily'
-                | 'weekly'
-                | 'monthly',
-              time: '09:00',
-            },
-            notifications: {},
-            notifyEmails: s.notifyEmails ?? [],
-            isActive: s.enabled,
-            lastStatus: s.lastStatus ?? null,
-            lastError: s.lastError ?? null,
-            createdAt: new Date(s.createdAt),
-            nextRun: s.nextRunAt ? new Date(s.nextRunAt) : undefined,
-          },
-        ])
-        setShowScheduler(false)
-        toast.success('Query scheduled')
+        // The list stays open with the new schedule and its next run at the top.
+        setScheduledQueries((prev) => [scheduleFromApi(json.data), ...prev])
         updateChecklistItem('setupSchedule', true).catch(() => {})
         window.dispatchEvent(
           new CustomEvent('onboarding:complete', { detail: { item: 'setupSchedule' } })
@@ -368,7 +346,7 @@ export function useDashboardWidgets(
         toast.error(message)
       }
     },
-    [setShowScheduler]
+    []
   )
 
   const handleDeleteSchedule = useCallback(async (id: string) => {
@@ -385,13 +363,16 @@ export function useDashboardWidgets(
       const current = scheduledQueries.find((s) => s.id === id)
       if (!current) return
       try {
-        await fetch(`/api/scheduled-queries/${id}`, {
+        const res = await fetch(`/api/scheduled-queries/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ enabled: !current.isActive }),
         })
+        const json = await res.json()
+        if (!json.success) throw new Error(json.error)
+        // A resumed schedule comes back with its next time.
         setScheduledQueries((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s))
+          prev.map((s) => (s.id === id ? scheduleFromApi(json.data) : s))
         )
       } catch {
         toast.error('Failed to update schedule')

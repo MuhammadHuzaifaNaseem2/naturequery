@@ -13,16 +13,17 @@ import { auditQueryExecuted } from '@/lib/audit-immutable'
 import { checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
 import { createNotification } from '@/actions/notifications'
 import { runDueReconciliationMonitors } from '@/lib/reconciliation-monitor-runner'
+import { nextRunAt } from '@/lib/schedule-time'
 
 /**
  * GET /api/cron/run-schedules
  *
- * Executes all enabled scheduled queries whose nextRunAt is in the past.
- * Protected by CRON_SECRET — call from Vercel Cron or an external scheduler:
+ * Executes all enabled scheduled queries whose nextRunAt is in the past, then moves
+ * each to its next time (src/lib/schedule-time.ts). Protected by CRON_SECRET:
  *   Authorization: Bearer <CRON_SECRET>
  *
- * Vercel cron.json example:
- *   { "crons": [{ "path": "/api/cron/run-schedules", "schedule": "0 * * * *" }] }
+ * Called once an hour by .github/workflows/run-schedules.yml, and once a day by the
+ * Vercel cron in vercel.json (the Hobby plan allows no more than daily).
  */
 export async function GET(request: Request) {
   // Auth: CRON_SECRET is always required — no secret = no access.
@@ -69,6 +70,14 @@ export async function GET(request: Request) {
   const results: Array<{ id: string; name: string; status: string; error?: string }> = []
 
   for (const schedule of due) {
+    // Move the schedule to its next time before running it. If another call got there
+    // first (the hourly trigger and Vercel's daily cron can overlap), leave it to that one.
+    const claimed = await prisma.scheduledQuery.updateMany({
+      where: { id: schedule.id, enabled: true, nextRunAt: schedule.nextRunAt },
+      data: { nextRunAt: nextRunAt(schedule, now) },
+    })
+    if (claimed.count === 0) continue
+
     let status: 'success' | 'failed' = 'failed'
     let lastError: string | null = null
     let emailResult: ScheduleEmailResult | undefined
@@ -167,16 +176,12 @@ export async function GET(request: Request) {
       ).catch(() => {})
     }
 
-    // Compute next run time
-    const nextRunAt = getNextRunAt(schedule.frequency, now)
-
     await prisma.scheduledQuery.update({
       where: { id: schedule.id },
       data: {
         lastRunAt: now,
         lastStatus: status,
         lastError,
-        nextRunAt,
       },
     })
 
@@ -219,19 +224,4 @@ export async function GET(request: Request) {
       results: monitorResults,
     },
   })
-}
-
-function getNextRunAt(frequency: string, from: Date): Date {
-  switch (frequency) {
-    case 'HOURLY':
-      return new Date(from.getTime() + 60 * 60 * 1000)
-    case 'DAILY':
-      return new Date(from.getTime() + 24 * 60 * 60 * 1000)
-    case 'WEEKLY':
-      return new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000)
-    case 'MONTHLY':
-      return new Date(from.getTime() + 30 * 24 * 60 * 60 * 1000)
-    default:
-      return new Date(from.getTime() + 24 * 60 * 60 * 1000)
-  }
 }

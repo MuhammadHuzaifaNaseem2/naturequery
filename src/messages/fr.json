@@ -545,7 +545,15 @@
       "createSchedule": "Créer un calendrier",
       "pause": "Pause",
       "resume": "Reprendre",
-      "delete": "Supprimer"
+      "delete": "Supprimer",
+      "everyDay": "Tous les jours",
+      "everyWeek": "Chaque semaine",
+      "everyMonth": "Chaque mois",
+      "summaryHourly": "S'exécute une fois par heure.",
+      "summaryDaily": "S'exécute tous les jours entre {{start}} et {{end}} ({{zone}}).",
+      "summaryWeekly": "S'exécute chaque {{day}} entre {{start}} et {{end}} ({{zone}}).",
+      "summaryMonthly": "S'exécute le {{day}} de chaque mois entre {{start}} et {{end}} ({{zone}}).",
+      "shortMonths": "Les mois plus courts, elle s'exécute le dernier jour."
     }
   },
   "settings": {

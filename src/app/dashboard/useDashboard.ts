@@ -28,7 +28,7 @@ import {
 import { uploadDataset } from '@/actions/upload-dataset'
 import { generateShareLink } from '@/actions/sharing'
 import { DashboardWidget } from '@/components/DashboardWidgets'
-import { ScheduledQuery } from '@/components/QueryScheduler'
+import { ScheduledQuery, scheduleFromApi } from '@/components/QueryScheduler'
 import { toast } from 'sonner'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useTheme } from '@/components/ThemeProvider'
@@ -433,29 +433,7 @@ export function useDashboard() {
       .then((r) => r.json())
       .then((res) => {
         if (cancelled || !res.success) return
-        setScheduledQueries(
-          res.data.map((s: any) => ({
-            id: s.id,
-            name: s.name,
-            question: s.question,
-            sql: s.sql,
-            connectionId: s.connectionId ?? '',
-            connectionName: s.connectionName ?? '',
-            schedule: {
-              type: (s.frequency as string).toLowerCase() as
-                | 'hourly'
-                | 'daily'
-                | 'weekly'
-                | 'monthly',
-              time: '09:00',
-            },
-            notifications: {},
-            isActive: s.enabled,
-            createdAt: new Date(s.createdAt),
-            nextRun: s.nextRunAt ? new Date(s.nextRunAt) : undefined,
-            lastRun: s.lastRunAt ? new Date(s.lastRunAt) : undefined,
-          }))
-        )
+        setScheduledQueries(res.data.map(scheduleFromApi))
       })
       .catch(() => {})
 

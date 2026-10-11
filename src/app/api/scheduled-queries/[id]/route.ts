@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { nextRunAt } from '@/lib/schedule-time'
 
 // PATCH — enable/disable a schedule
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
@@ -22,9 +20,13 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: 'Schedule not found' }, { status: 404 })
   }
 
+  const enabled = typeof body.enabled === 'boolean' ? body.enabled : schedule.enabled
+  // A resumed schedule waits for its next time instead of running for the ones it missed.
+  const resumed = enabled && !schedule.enabled
+
   const updated = await prisma.scheduledQuery.update({
     where: { id },
-    data: { enabled: body.enabled ?? schedule.enabled },
+    data: { enabled, ...(resumed ? { nextRunAt: nextRunAt(schedule) } : {}) },
   })
 
   return NextResponse.json({ success: true, data: updated })

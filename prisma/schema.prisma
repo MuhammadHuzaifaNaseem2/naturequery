@@ -457,6 +457,12 @@ model ScheduledQuery {
   connectionId   String?
   connectionName String?
   frequency      ScheduleFrequency
+  // When it runs, on the clock of `timezone` (see src/lib/schedule-time.ts).
+  // Null on schedules made before times were saved; those keep a fixed interval.
+  timeOfDay      String? // "HH:MM", 24-hour
+  dayOfWeek      Int? // 0 = Sunday, weekly schedules
+  dayOfMonth     Int? // 1-31, monthly schedules; short months use their last day
+  timezone       String? // IANA zone, e.g. "Asia/Karachi"
   enabled        Boolean           @default(true)
   notifyEmails   String[]          @default([]) // email addresses to notify on completion/failure
   lastRunAt      DateTime?

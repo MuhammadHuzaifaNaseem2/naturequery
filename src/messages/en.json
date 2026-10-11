@@ -545,7 +545,15 @@
       "createSchedule": "Create Schedule",
       "pause": "Pause",
       "resume": "Resume",
-      "delete": "Delete"
+      "delete": "Delete",
+      "everyDay": "Every day",
+      "everyWeek": "Every week",
+      "everyMonth": "Every month",
+      "summaryHourly": "Runs once every hour.",
+      "summaryDaily": "Runs every day between {{start}} and {{end}} ({{zone}}).",
+      "summaryWeekly": "Runs every {{day}} between {{start}} and {{end}} ({{zone}}).",
+      "summaryMonthly": "Runs on day {{day}} of every month between {{start}} and {{end}} ({{zone}}).",
+      "shortMonths": "In shorter months it runs on the last day."
     }
   },
   "settings": {

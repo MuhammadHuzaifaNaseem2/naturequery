@@ -16,6 +16,8 @@ import {
 import { clsx } from 'clsx'
 import { useTranslation } from '@/contexts/LocaleContext'
 
+type ScheduleType = 'hourly' | 'daily' | 'weekly' | 'monthly'
+
 export interface ScheduledQuery {
   id: string
   name: string
@@ -24,10 +26,11 @@ export interface ScheduledQuery {
   connectionId: string
   connectionName: string
   schedule: {
-    type: 'hourly' | 'daily' | 'weekly' | 'monthly'
-    time?: string // HH:MM format
+    type: ScheduleType
+    time?: string // HH:MM, 24-hour; missing on schedules saved before times were stored
     dayOfWeek?: number // 0-6 for weekly
     dayOfMonth?: number // 1-31 for monthly
+    timezone?: string // IANA zone the time is on, e.g. "Asia/Karachi"
   }
   notifications: {
     email?: boolean
@@ -41,6 +44,57 @@ export interface ScheduledQuery {
   lastError?: string | null
   createdAt: Date
 }
+
+/** A schedule as /api/scheduled-queries returns it. */
+export interface ScheduleRecord {
+  id: string
+  name: string
+  question: string
+  sql: string
+  connectionId?: string | null
+  connectionName?: string | null
+  frequency: string
+  timeOfDay?: string | null
+  dayOfWeek?: number | null
+  dayOfMonth?: number | null
+  timezone?: string | null
+  enabled: boolean
+  notifyEmails?: string[]
+  lastStatus?: string | null
+  lastError?: string | null
+  createdAt: string
+  nextRunAt?: string | null
+  lastRunAt?: string | null
+}
+
+export function scheduleFromApi(s: ScheduleRecord): ScheduledQuery {
+  return {
+    id: s.id,
+    name: s.name,
+    question: s.question,
+    sql: s.sql,
+    connectionId: s.connectionId ?? '',
+    connectionName: s.connectionName ?? '',
+    schedule: {
+      type: s.frequency.toLowerCase() as ScheduleType,
+      time: s.timeOfDay ?? undefined,
+      dayOfWeek: s.dayOfWeek ?? undefined,
+      dayOfMonth: s.dayOfMonth ?? undefined,
+      timezone: s.timezone ?? undefined,
+    },
+    notifications: {},
+    notifyEmails: s.notifyEmails ?? [],
+    isActive: s.enabled,
+    lastStatus: s.lastStatus === 'success' || s.lastStatus === 'failed' ? s.lastStatus : null,
+    lastError: s.lastError ?? null,
+    createdAt: new Date(s.createdAt),
+    nextRun: s.nextRunAt ? new Date(s.nextRunAt) : undefined,
+    lastRun: s.lastRunAt ? new Date(s.lastRunAt) : undefined,
+  }
+}
+
+// The runner is called once an hour, so schedules offer whole hours.
+const HOURS = Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, '0')}:00`)
 
 interface QuerySchedulerProps {
   queries: ScheduledQuery[]
@@ -67,14 +121,15 @@ export function QueryScheduler({
   connectionId,
   connectionName,
 }: QuerySchedulerProps) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newSchedule, setNewSchedule] = useState({
     name: '',
-    type: 'daily' as 'hourly' | 'daily' | 'weekly' | 'monthly',
+    type: 'daily' as ScheduleType,
     time: '09:00',
     dayOfWeek: 1,
     dayOfMonth: 1,
+    timeZone: 'UTC',
     notifyEmails: [] as string[],
     emailInput: '',
   })
@@ -86,6 +141,7 @@ export function QueryScheduler({
       time: '09:00',
       dayOfWeek: 1,
       dayOfMonth: 1,
+      timeZone: browserTimeZone(),
       notifyEmails: [],
       emailInput: '',
     })
@@ -106,6 +162,7 @@ export function QueryScheduler({
         time: newSchedule.type !== 'hourly' ? newSchedule.time : undefined,
         dayOfWeek: newSchedule.type === 'weekly' ? newSchedule.dayOfWeek : undefined,
         dayOfMonth: newSchedule.type === 'monthly' ? newSchedule.dayOfMonth : undefined,
+        timezone: newSchedule.timeZone,
       },
       notifications: {},
       notifyEmails: newSchedule.notifyEmails,
@@ -117,26 +174,61 @@ export function QueryScheduler({
   const getNextRunText = (query: ScheduledQuery) => {
     if (!query.isActive) return t('dashboard.scheduler.paused')
     if (!query.nextRun) return t('dashboard.scheduler.pending')
-    return formatDateTime(query.nextRun)
+    return formatDateTime(query.nextRun, locale)
   }
 
   const getScheduleText = (schedule: ScheduledQuery['schedule']) => {
-    switch (schedule.type) {
-      case 'hourly':
-        return t('dashboard.scheduler.everyHour')
-      case 'daily':
-        return t('dashboard.scheduler.dailyAt').replace('{{time}}', schedule.time || '')
-      case 'weekly':
-        return t('dashboard.scheduler.weeklyOn')
-          .replace('{{day}}', getDayName(schedule.dayOfWeek!))
-          .replace('{{time}}', schedule.time || '')
-      case 'monthly':
-        return t('dashboard.scheduler.monthlyOn')
-          .replace('{{day}}', String(schedule.dayOfMonth))
-          .replace('{{time}}', schedule.time || '')
-      default:
-        return ''
+    if (schedule.type === 'hourly') return t('dashboard.scheduler.everyHour')
+
+    // Schedules saved before times were stored only know how often they run.
+    if (!schedule.time) {
+      if (schedule.type === 'weekly') return t('dashboard.scheduler.everyWeek')
+      if (schedule.type === 'monthly') return t('dashboard.scheduler.everyMonth')
+      return t('dashboard.scheduler.everyDay')
     }
+
+    const time = formatTimeOfDay(schedule.time, locale)
+    let text: string
+    if (schedule.type === 'weekly') {
+      text = t('dashboard.scheduler.weeklyOn', {
+        day: weekdayName(schedule.dayOfWeek ?? 1, locale),
+        time,
+      })
+    } else if (schedule.type === 'monthly') {
+      text = t('dashboard.scheduler.monthlyOn', { day: schedule.dayOfMonth ?? 1, time })
+    } else {
+      text = t('dashboard.scheduler.dailyAt', { time })
+    }
+    // Name the time zone when it is not the viewer's own.
+    if (schedule.timezone && schedule.timezone !== browserTimeZone()) {
+      text += ` (${zoneName(schedule.timezone, locale)})`
+    }
+    return text
+  }
+
+  // Reads the schedule being made back in one sentence, with the hour it runs in.
+  const getRunSummary = () => {
+    const { type, time, dayOfWeek, dayOfMonth, timeZone } = newSchedule
+    if (type === 'hourly') return t('dashboard.scheduler.summaryHourly')
+
+    const hour = Number(time.slice(0, 2))
+    const start = formatTimeOfDay(time, locale)
+    const end = formatTimeOfDay(`${String((hour + 1) % 24).padStart(2, '0')}:00`, locale)
+    const zone = zoneName(timeZone, locale)
+
+    if (type === 'weekly') {
+      return t('dashboard.scheduler.summaryWeekly', {
+        day: weekdayName(dayOfWeek, locale),
+        start,
+        end,
+        zone,
+      })
+    }
+    if (type === 'monthly') {
+      const text = t('dashboard.scheduler.summaryMonthly', { day: dayOfMonth, start, end, zone })
+      return dayOfMonth > 28 ? `${text} ${t('dashboard.scheduler.shortMonths')}` : text
+    }
+    return t('dashboard.scheduler.summaryDaily', { start, end, zone })
   }
 
   return (
@@ -219,7 +311,7 @@ export function QueryScheduler({
                       {query.lastError}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {getScheduleText(query.schedule)}
@@ -270,8 +362,8 @@ export function QueryScheduler({
 
       {/* Create Schedule Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 flex justify-center z-50 overflow-y-auto p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md my-auto shadow-[0_32px_64px_-32px_rgb(0_0_0/0.5)] animate-fadeIn">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold text-lg">{t('dashboard.scheduler.scheduleQuery')}</h3>
               <button
@@ -285,10 +377,11 @@ export function QueryScheduler({
             <div className="space-y-4">
               {/* Name */}
               <div>
-                <label className="text-sm font-medium mb-1.5 block">
+                <label htmlFor="schedule-name" className="text-sm font-medium mb-1.5 block">
                   {t('dashboard.scheduler.name')}
                 </label>
                 <input
+                  id="schedule-name"
                   type="text"
                   value={newSchedule.name}
                   onChange={(e) => setNewSchedule((s) => ({ ...s, name: e.target.value }))}
@@ -323,42 +416,41 @@ export function QueryScheduler({
               {/* Time (for non-hourly) */}
               {newSchedule.type !== 'hourly' && (
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">
+                  <label htmlFor="schedule-time" className="text-sm font-medium mb-1.5 block">
                     {t('dashboard.scheduler.time')}
                   </label>
-                  <input
-                    type="time"
+                  <select
+                    id="schedule-time"
                     value={newSchedule.time}
                     onChange={(e) => setNewSchedule((s) => ({ ...s, time: e.target.value }))}
                     className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  >
+                    {HOURS.map((hour) => (
+                      <option key={hour} value={hour}>
+                        {formatTimeOfDay(hour, locale)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
               {/* Day of Week (for weekly) */}
               {newSchedule.type === 'weekly' && (
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">
+                  <label htmlFor="schedule-weekday" className="text-sm font-medium mb-1.5 block">
                     {t('dashboard.scheduler.dayOfWeek')}
                   </label>
                   <select
+                    id="schedule-weekday"
                     value={newSchedule.dayOfWeek}
                     onChange={(e) =>
                       setNewSchedule((s) => ({ ...s, dayOfWeek: Number(e.target.value) }))
                     }
                     className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
-                    {[
-                      'Sunday',
-                      'Monday',
-                      'Tuesday',
-                      'Wednesday',
-                      'Thursday',
-                      'Friday',
-                      'Saturday',
-                    ].map((day, i) => (
-                      <option key={i} value={i}>
-                        {day}
+                    {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+                      <option key={day} value={day}>
+                        {weekdayName(day, locale)}
                       </option>
                     ))}
                   </select>
@@ -368,10 +460,11 @@ export function QueryScheduler({
               {/* Day of Month (for monthly) */}
               {newSchedule.type === 'monthly' && (
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">
+                  <label htmlFor="schedule-monthday" className="text-sm font-medium mb-1.5 block">
                     {t('dashboard.scheduler.dayOfMonth')}
                   </label>
                   <select
+                    id="schedule-monthday"
                     value={newSchedule.dayOfMonth}
                     onChange={(e) =>
                       setNewSchedule((s) => ({ ...s, dayOfMonth: Number(e.target.value) }))
@@ -389,7 +482,7 @@ export function QueryScheduler({
 
               {/* Notify emails */}
               <div>
-                <label className="text-sm font-medium mb-1.5 block">
+                <label htmlFor="schedule-email" className="text-sm font-medium mb-1.5 block">
                   <span className="flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5" />
                     Email notifications
@@ -423,6 +516,7 @@ export function QueryScheduler({
                 )}
                 <div className="flex gap-2">
                   <input
+                    id="schedule-email"
                     type="email"
                     value={newSchedule.emailInput}
                     onChange={(e) => setNewSchedule((s) => ({ ...s, emailInput: e.target.value }))}
@@ -440,7 +534,7 @@ export function QueryScheduler({
                       }
                     }}
                     className="flex-1 px-3 py-2 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="email@example.com — press Enter to add"
+                    placeholder="email@example.com, then press Enter"
                   />
                   <button
                     type="button"
@@ -464,10 +558,12 @@ export function QueryScheduler({
                 </p>
               </div>
 
-              {/* Info */}
+              {/* When it runs, read back in one sentence */}
               <div className="flex items-start gap-2 p-3 bg-primary/5 border border-primary/10 rounded-lg">
                 <AlertCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-muted-foreground">{t('dashboard.scheduler.infoText')}</p>
+                <p className="text-xs text-muted-foreground" aria-live="polite">
+                  {getRunSummary()}
+                </p>
               </div>
             </div>
 
@@ -489,15 +585,48 @@ export function QueryScheduler({
 }
 
 // Helper functions
-function formatDateTime(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+function browserTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
 }
 
-function getDayName(day: number): string {
-  return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day]
+function formatDateTime(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date)
+}
+
+// "09:00" in the reader's own style, such as "9:00 AM".
+function formatTimeOfDay(time: string, locale: string): string {
+  const [hour, minute] = time.split(':').map(Number)
+  return new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(2000, 0, 1, hour, minute)))
+}
+
+function weekdayName(day: number, locale: string): string {
+  // 2023-01-01 was a Sunday.
+  return new Intl.DateTimeFormat(locale, { weekday: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(2023, 0, 1 + day))
+  )
+}
+
+// A readable name for a time zone, such as "Pakistan Standard Time", or its ID.
+function zoneName(timeZone: string, locale: string): string {
+  try {
+    const part = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'longGeneric' })
+      .formatToParts(new Date())
+      .find((p) => p.type === 'timeZoneName')
+    return part?.value ?? timeZone
+  } catch {
+    return timeZone
+  }
 }
