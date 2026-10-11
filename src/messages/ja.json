@@ -53,7 +53,19 @@
       "noAccount": "アカウントをお持ちでないですか？",
       "signUp": "サインアップ",
       "twoFactorCode": "2FAコード",
-      "twoFactorPlaceholder": "6桁のコードを入力"
+      "twoFactorPlaceholder": "6桁のコードを入力",
+      "eyebrow": "サインイン",
+      "orEmail": "またはメールで",
+      "continueWith": "{{provider}} で続ける",
+      "signingIn": "サインイン中…",
+      "twoFactorEyebrow": "2 段階認証",
+      "twoFactorTitle": "コードを入力してください。",
+      "twoFactorHelp": "認証アプリを開き、NatureQuery の 6 桁のコードを入力してください。",
+      "backupHelp": "2 段階認証を有効にしたときに保存したバックアップコードを入力してください。",
+      "backupCode": "バックアップコード",
+      "verify": "確認",
+      "useBackup": "バックアップコードを使う",
+      "useApp": "認証アプリを使う"
     },
     "register": {
       "title": "アカウント作成",
@@ -76,7 +88,17 @@
       "and": "および",
       "privacyLink": "プライバシーポリシー",
       "successTitle": "アカウントが作成されました！",
-      "successMessage": "確認リンクが記載されたメールをご確認ください。サインインする前にメールアドレスを確認する必要があります。"
+      "successMessage": "確認リンクが記載されたメールをご確認ください。サインインする前にメールアドレスを確認する必要があります。",
+      "eyebrow": "アカウント作成",
+      "creating": "アカウントを作成中…",
+      "checkInbox": "受信トレイを確認してください。",
+      "readyTitle": "アカウントの準備ができました。",
+      "goToSignIn": "サインインへ",
+      "strength": "強度",
+      "strengthWeak": "弱い",
+      "strengthFair": "普通",
+      "strengthGood": "良い",
+      "strengthStrong": "強い"
     },
     "forgotPassword": {
       "title": "パスワードを忘れた場合",
@@ -91,7 +113,9 @@
       "emailLabel": "メールアドレス",
       "checkEmail": "メールをご確認ください",
       "accountExists": "{{email}}のアカウントが存在する場合、パスワードリセットリンクを送信しました。",
-      "backToSignIn": "サインインに戻る"
+      "backToSignIn": "サインインに戻る",
+      "eyebrow": "パスワードのヘルプ",
+      "devFallback": "メールを送信できませんでした。このリンクからパスワードを再設定してください:"
     },
     "resetPassword": {
       "title": "パスワードリセット",
@@ -107,7 +131,8 @@
       "passwordUpdatedMessage": "パスワードが正常にリセットされました。",
       "atLeast8": "8文字以上",
       "confirmPlaceholder": "パスワードを再入力",
-      "passwordMinLength": "パスワードは8文字以上である必要があります"
+      "passwordMinLength": "パスワードは8文字以上である必要があります",
+      "eyebrow": "新しいパスワード"
     },
     "verifyEmail": {
       "title": "メール確認",
@@ -122,7 +147,9 @@
       "verifiedMessage": "メールアドレスが正常に確認されました。すべての機能をご利用いただけます。",
       "goToDashboard": "ダッシュボードへ",
       "continueToDesktop": "NatureQuery Desktop に進む",
-      "failed": "確認に失敗しました"
+      "failed": "確認に失敗しました",
+      "eyebrow": "メール",
+      "checking": "リンクを確認しています…"
     }
   },
   "landing": {

@@ -53,7 +53,19 @@
       "noAccount": "Noch kein Konto?",
       "signUp": "Registrieren",
       "twoFactorCode": "2FA-Code",
-      "twoFactorPlaceholder": "Geben Sie Ihren 6-stelligen Code ein"
+      "twoFactorPlaceholder": "Geben Sie Ihren 6-stelligen Code ein",
+      "eyebrow": "Anmelden",
+      "orEmail": "oder mit E-Mail",
+      "continueWith": "Weiter mit {{provider}}",
+      "signingIn": "Anmeldung…",
+      "twoFactorEyebrow": "Zwei-Schritt-Verifizierung",
+      "twoFactorTitle": "Code eingeben.",
+      "twoFactorHelp": "Öffnen Sie Ihre Authenticator-App und geben Sie den 6-stelligen Code für NatureQuery ein.",
+      "backupHelp": "Geben Sie einen der Backup-Codes ein, die Sie beim Einrichten gespeichert haben.",
+      "backupCode": "Backup-Code",
+      "verify": "Bestätigen",
+      "useBackup": "Backup-Code verwenden",
+      "useApp": "Authenticator-App verwenden"
     },
     "register": {
       "title": "Konto erstellen",
@@ -76,7 +88,17 @@
       "and": "und",
       "privacyLink": "Datenschutzrichtlinie",
       "successTitle": "Konto erfolgreich erstellt!",
-      "successMessage": "Bitte überprüfen Sie Ihren E-Mail-Posteingang für den Bestätigungslink. Sie müssen Ihre E-Mail verifizieren, bevor Sie sich anmelden können."
+      "successMessage": "Bitte überprüfen Sie Ihren E-Mail-Posteingang für den Bestätigungslink. Sie müssen Ihre E-Mail verifizieren, bevor Sie sich anmelden können.",
+      "eyebrow": "Konto erstellen",
+      "creating": "Konto wird erstellt…",
+      "checkInbox": "Prüfen Sie Ihr Postfach.",
+      "readyTitle": "Ihr Konto ist bereit.",
+      "goToSignIn": "Zur Anmeldung",
+      "strength": "Stärke",
+      "strengthWeak": "schwach",
+      "strengthFair": "mittel",
+      "strengthGood": "gut",
+      "strengthStrong": "stark"
     },
     "forgotPassword": {
       "title": "Passwort vergessen",
@@ -91,7 +113,9 @@
       "emailLabel": "E-Mail-Adresse",
       "checkEmail": "Überprüfen Sie Ihre E-Mail",
       "accountExists": "Falls ein Konto für {{email}} existiert, haben wir Ihnen einen Link zum Zurücksetzen des Passworts gesendet.",
-      "backToSignIn": "Zurück zur Anmeldung"
+      "backToSignIn": "Zurück zur Anmeldung",
+      "eyebrow": "Passwort-Hilfe",
+      "devFallback": "Die E-Mail wurde nicht zugestellt. Nutzen Sie diesen Link, um Ihr Passwort zurückzusetzen:"
     },
     "resetPassword": {
       "title": "Passwort zurücksetzen",
@@ -107,7 +131,8 @@
       "passwordUpdatedMessage": "Ihr Passwort wurde erfolgreich zurückgesetzt.",
       "atLeast8": "Mindestens 8 Zeichen",
       "confirmPlaceholder": "Passwort bestätigen",
-      "passwordMinLength": "Das Passwort muss mindestens 8 Zeichen lang sein"
+      "passwordMinLength": "Das Passwort muss mindestens 8 Zeichen lang sein",
+      "eyebrow": "Neues Passwort"
     },
     "verifyEmail": {
       "title": "E-Mail verifizieren",
@@ -122,7 +147,9 @@
       "verifiedMessage": "Ihre E-Mail wurde erfolgreich verifiziert. Sie können jetzt alle Funktionen nutzen.",
       "goToDashboard": "Zum Dashboard",
       "continueToDesktop": "Weiter zu NatureQuery Desktop",
-      "failed": "Verifizierung fehlgeschlagen"
+      "failed": "Verifizierung fehlgeschlagen",
+      "eyebrow": "E-Mail",
+      "checking": "Ihr Link wird geprüft…"
     }
   },
   "landing": {

@@ -3,14 +3,24 @@
 import { Suspense, useState, useRef } from 'react'
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
-import { AppLogo } from '@/components/AppLogo'
 import Link from 'next/link'
-import { Mail, Lock, Loader2, AlertCircle, Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { clsx } from 'clsx'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { AuthLayout } from '@/components/AuthLayout'
+import {
+  AuthAlert,
+  AuthDivider,
+  AuthHeading,
+  OAuthButtons,
+  PasswordInput,
+  authFieldError,
+  authInput,
+  authLabel,
+} from '@/components/auth/AuthParts'
 import { useOAuthProviders } from '@/hooks/useOAuthProviders'
 import { preFlightCheck } from '@/actions/auth'
 import { requestEmailVerification } from '@/actions/auth-email'
@@ -36,6 +46,8 @@ function withSignInTimeout<T>(operation: Promise<T>): Promise<T> {
   ]).finally(() => clearTimeout(timer))
 }
 
+const EMPTY_CODE = ['', '', '', '', '', '']
+
 function LoginForm() {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
@@ -44,13 +56,12 @@ function LoginForm() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle')
 
   // 2FA challenge state
   const [show2FA, setShow2FA] = useState(false)
-  const [twoFactorCode, setTwoFactorCode] = useState(['', '', '', '', '', ''])
+  const [twoFactorCode, setTwoFactorCode] = useState(EMPTY_CODE)
   const [savedCredentials, setSavedCredentials] = useState<LoginFormData | null>(null)
   const [useBackupCode, setUseBackupCode] = useState(false)
   const [backupCode, setBackupCode] = useState('')
@@ -148,8 +159,8 @@ function LoginForm() {
       )
 
       if (result?.error) {
-        setError('Invalid 2FA code. Please try again.')
-        setTwoFactorCode(['', '', '', '', '', ''])
+        setError('That code did not work. Please try again.')
+        setTwoFactorCode(EMPTY_CODE)
         codeInputsRef.current[0]?.focus()
       } else if (result?.url) {
         window.location.href = result.url
@@ -168,12 +179,22 @@ function LoginForm() {
   }
 
   const handleCodeChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return
-    const newCode = [...twoFactorCode]
-    newCode[index] = value.slice(-1)
-    setTwoFactorCode(newCode)
+    const digits = value.replace(/\D/g, '')
+    if (value && !digits) return
 
-    if (value && index < 5) {
+    // A pasted or auto-filled code arrives all at once: spread it across the boxes.
+    if (digits.length > 1) {
+      const next = [...twoFactorCode]
+      for (let i = 0; i < digits.length && index + i < 6; i++) next[index + i] = digits[i]
+      setTwoFactorCode(next)
+      codeInputsRef.current[Math.min(index + digits.length, 5)]?.focus()
+      return
+    }
+
+    const next = [...twoFactorCode]
+    next[index] = digits.slice(-1)
+    setTwoFactorCode(next)
+    if (digits && index < 5) {
       codeInputsRef.current[index + 1]?.focus()
     }
   }
@@ -215,46 +236,40 @@ function LoginForm() {
     }
   }
 
-  // 2FA Challenge Screen
+  // Two-step verification
   if (show2FA) {
     return (
-      <div className="glass-card rounded-lg p-8 shadow-[0_24px_48px_-24px_rgb(0_0_0/0.45)] animate-fadeIn border border-border">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold">{t('auth.login.twoFactorCode')}</h1>
-          <p className="text-sm text-muted-foreground mt-1 text-center">
-            {useBackupCode
-              ? 'Enter one of your backup codes'
-              : t('auth.login.twoFactorPlaceholder')}
-          </p>
-        </div>
+      <div className="animate-fadeIn">
+        <AuthHeading
+          eyebrow={t('auth.login.twoFactorEyebrow')}
+          title={t('auth.login.twoFactorTitle')}
+        >
+          {useBackupCode ? t('auth.login.backupHelp') : t('auth.login.twoFactorHelp')}
+        </AuthHeading>
 
-        {error && (
-          <div className="mb-6 p-3 bg-destructive/10 border border-destructive/30 rounded-xl flex items-start gap-2 animate-slideUp">
-            <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-destructive">{error}</p>
-          </div>
-        )}
+        <div className="mt-8 space-y-5">
+          {error && <AuthAlert>{error}</AuthAlert>}
 
-        <div className="space-y-5">
           {useBackupCode ? (
             <div>
-              <label className="block text-sm font-medium mb-2">Backup Code</label>
+              <label htmlFor="backup-code" className={authLabel}>
+                {t('auth.login.backupCode')}
+              </label>
               <input
+                id="backup-code"
                 type="text"
                 value={backupCode}
                 onChange={(e) => setBackupCode(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handle2FASubmit()}
                 placeholder="XXXX-XXXX-XXXX"
-                className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
+                autoComplete="one-time-code"
+                className={clsx(authInput, 'font-nq-mono tracking-[0.12em]')}
                 autoFocus
                 disabled={isLoading}
               />
             </div>
           ) : (
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-2" role="group" aria-label={t('auth.login.twoFactorTitle')}>
               {twoFactorCode.map((digit, index) => (
                 <input
                   key={index}
@@ -263,11 +278,12 @@ function LoginForm() {
                   }}
                   type="text"
                   inputMode="numeric"
-                  maxLength={1}
+                  autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                  aria-label={`Digit ${index + 1}`}
                   value={digit}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyDown={(e) => handleCodeKeyDown(index, e)}
-                  className="w-12 h-14 text-center text-2xl font-bold bg-secondary/30 border-2 border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                  className="h-14 w-full min-w-0 rounded-md border border-mk-rule bg-mk-surface text-center font-nq-mono text-2xl text-mk-ink transition-colors focus:border-mk-violet focus:outline-none focus:ring-[3px] focus:ring-mk-violet/15 disabled:opacity-60"
                   autoFocus={index === 0}
                   disabled={isLoading}
                 />
@@ -278,15 +294,15 @@ function LoginForm() {
           <button
             onClick={handle2FASubmit}
             disabled={isLoading}
-            className="btn-gradient w-full py-3"
+            className="mk-btn mk-btn-primary w-full disabled:opacity-70"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {t('common.loading')}
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                {t('auth.login.signingIn')}
               </>
             ) : (
-              t('common.confirm')
+              t('auth.login.verify')
             )}
           </button>
 
@@ -296,24 +312,23 @@ function LoginForm() {
                 setShow2FA(false)
                 setSavedCredentials(null)
                 setError(null)
-                setTwoFactorCode(['', '', '', '', '', ''])
+                setTwoFactorCode(EMPTY_CODE)
                 setBackupCode('')
                 setUseBackupCode(false)
               }}
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+              className="inline-flex items-center gap-1 text-mk-ink-3 transition-colors hover:text-mk-ink"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
               {t('common.back')}
             </button>
-
             <button
               onClick={() => {
                 setUseBackupCode(!useBackupCode)
                 setError(null)
               }}
-              className="text-primary hover:underline font-medium"
+              className="mk-link"
             >
-              {useBackupCode ? 'Use authenticator app' : 'Use backup code'}
+              {useBackupCode ? t('auth.login.useApp') : t('auth.login.useBackup')}
             </button>
           </div>
         </div>
@@ -321,181 +336,113 @@ function LoginForm() {
     )
   }
 
-  // Normal Login Screen
-  return (
-    <div className="glass-card rounded-lg p-8 shadow-[0_24px_48px_-24px_rgb(0_0_0/0.45)] animate-fadeIn border border-border">
-      {/* Logo */}
-      <div className="flex flex-col items-center mb-8">
-        <AppLogo size="xl" showText={false} className="mb-4" />
-        <h1 className="text-2xl font-bold">{t('auth.login.title')}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t('auth.login.subtitle')}</p>
-      </div>
+  const hasOAuth = oauthProviders.google || oauthProviders.github
 
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 p-3 bg-destructive/10 border border-destructive/30 rounded-xl flex items-start gap-2 animate-slideUp">
-          <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-destructive flex-1">
+  return (
+    <div className="animate-fadeIn">
+      <AuthHeading eyebrow={t('auth.login.eyebrow')} title={t('auth.login.title')}>
+        {t('auth.login.subtitle')}
+      </AuthHeading>
+
+      <div className="mt-8 space-y-6">
+        {hasOAuth && (
+          <>
+            <OAuthButtons
+              google={oauthProviders.google}
+              github={oauthProviders.github}
+              disabled={isLoading}
+              onSelect={handleOAuthSignIn}
+              label={(provider) => t('auth.login.continueWith', { provider })}
+            />
+            <AuthDivider label={t('auth.login.orEmail')} />
+          </>
+        )}
+
+        {error && (
+          <AuthAlert>
             <p>{error}</p>
             {unverifiedEmail && (
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {resendState === 'sent' ? (
-                  <p className="text-xs text-muted-foreground">
-                    Verification email sent. Check your inbox (and spam folder).
+                  <p className="text-mk-ink-2">
+                    Verification email sent. Check your inbox and your spam folder.
                   </p>
                 ) : (
                   <button
                     type="button"
                     onClick={handleResendVerification}
                     disabled={resendState === 'sending'}
-                    className="text-xs font-medium text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mk-link disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {resendState === 'sending' ? 'Sending…' : 'Resend verification email'}
                   </button>
                 )}
               </div>
             )}
-          </div>
-        </div>
-      )}
+          </AuthAlert>
+        )}
 
-      {/* Login Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div>
-          <label htmlFor="email" className="flex items-center gap-1.5 text-sm font-medium mb-2">
-            <Mail className="w-4 h-4 text-muted-foreground" />
-            {t('auth.login.email')}
-          </label>
-          <input
-            {...register('email')}
-            id="email"
-            type="text"
-            inputMode="email"
-            autoComplete="username"
-            placeholder={t('auth.login.emailPlaceholder')}
-            className="input rounded-xl py-3"
-            disabled={isLoading}
-            suppressHydrationWarning
-          />
-          {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="password" className="flex items-center gap-1.5 text-sm font-medium mb-2">
-            <Lock className="w-4 h-4 text-muted-foreground" />
-            {t('auth.login.password')}
-          </label>
-          <div className="relative">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label htmlFor="email" className={authLabel}>
+              {t('auth.login.email')}
+            </label>
             <input
-              {...register('password')}
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              placeholder={t('auth.login.passwordPlaceholder')}
-              className="input rounded-xl py-3 pr-10"
+              {...register('email')}
+              id="email"
+              type="text"
+              inputMode="email"
+              autoComplete="username"
+              placeholder={t('auth.login.emailPlaceholder')}
+              className={authInput}
               disabled={isLoading}
+              aria-invalid={errors.email ? true : undefined}
               suppressHydrationWarning
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            {errors.email && <p className={authFieldError}>{errors.email.message}</p>}
+          </div>
+
+          <div>
+            <div className="mb-1.5 flex items-baseline justify-between gap-3">
+              <label htmlFor="password" className="text-sm font-medium text-mk-ink">
+                {t('auth.login.password')}
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-mk-ink-3 transition-colors hover:text-mk-ink"
+              >
+                {t('auth.login.forgotPassword')}
+              </Link>
+            </div>
+            <PasswordInput
+              {...register('password')}
+              id="password"
+              autoComplete="current-password"
+              disabled={isLoading}
+              aria-invalid={errors.password ? true : undefined}
               suppressHydrationWarning
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="btn-gradient w-full py-3"
-          suppressHydrationWarning
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              {t('common.loading')}
-            </>
-          ) : (
-            t('auth.login.submit')
-          )}
-        </button>
-      </form>
-
-      {/* OAuth Buttons — only shown when providers are configured */}
-      {(oauthProviders.google || oauthProviders.github) && (
-        <>
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                {t('auth.register.orContinueWith')}
-              </span>
-            </div>
+            />
+            {errors.password && <p className={authFieldError}>{errors.password.message}</p>}
           </div>
 
-          <div
-            className={`grid gap-3 ${oauthProviders.google && oauthProviders.github ? 'grid-cols-2' : 'grid-cols-1'}`}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="mk-btn mk-btn-primary !mt-6 w-full disabled:opacity-70"
+            suppressHydrationWarning
           >
-            {oauthProviders.google && (
-              <button
-                onClick={() => handleOAuthSignIn('google')}
-                disabled={isLoading}
-                className="btn-secondary text-sm py-2"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                {t('auth.register.google')}
-              </button>
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                {t('auth.login.signingIn')}
+              </>
+            ) : (
+              t('auth.login.submit')
             )}
-            {oauthProviders.github && (
-              <button
-                onClick={() => handleOAuthSignIn('github')}
-                disabled={isLoading}
-                className="btn-secondary text-sm py-2"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                </svg>
-                {t('auth.register.github')}
-              </button>
-            )}
-          </div>
-        </>
-      )}
+          </button>
+        </form>
 
-      {/* Forgot Password & Sign Up Links */}
-      <div className="text-center text-sm text-muted-foreground mt-6 space-y-2">
-        <p>
-          <Link href="/forgot-password" className="text-primary hover:underline font-medium">
-            {t('auth.login.forgotPassword')}
-          </Link>
-        </p>
-        <p>
+        <p className="text-sm text-mk-ink-2">
           {t('auth.login.noAccount')}{' '}
           {/* New accounts continue where sign-in was going, for example NatureQuery Desktop. */}
           <Link
@@ -504,7 +451,7 @@ function LoginForm() {
                 ? '/register'
                 : `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
             }
-            className="text-primary hover:underline font-medium"
+            className="mk-link"
           >
             {t('auth.login.signUp')}
           </Link>
@@ -517,13 +464,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <AuthLayout>
-      <Suspense
-        fallback={
-          <div className="glass-card rounded-lg p-8 animate-fadeIn">
-            <div className="text-center text-muted-foreground">Loading...</div>
-          </div>
-        }
-      >
+      <Suspense fallback={<div className="h-80" aria-hidden />}>
         <LoginForm />
       </Suspense>
     </AuthLayout>

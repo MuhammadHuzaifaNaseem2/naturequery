@@ -53,7 +53,19 @@
       "noAccount": "Pas de compte ?",
       "signUp": "S'inscrire",
       "twoFactorCode": "Code 2FA",
-      "twoFactorPlaceholder": "Entrez votre code à 6 chiffres"
+      "twoFactorPlaceholder": "Entrez votre code à 6 chiffres",
+      "eyebrow": "Connexion",
+      "orEmail": "ou avec votre e-mail",
+      "continueWith": "Continuer avec {{provider}}",
+      "signingIn": "Connexion…",
+      "twoFactorEyebrow": "Vérification en deux étapes",
+      "twoFactorTitle": "Saisissez votre code.",
+      "twoFactorHelp": "Ouvrez votre application d’authentification et saisissez le code à 6 chiffres de NatureQuery.",
+      "backupHelp": "Saisissez l’un des codes de secours enregistrés lors de l’activation de la vérification en deux étapes.",
+      "backupCode": "Code de secours",
+      "verify": "Vérifier",
+      "useBackup": "Utiliser un code de secours",
+      "useApp": "Utiliser l’application d’authentification"
     },
     "register": {
       "title": "Créer un compte",
@@ -76,7 +88,17 @@
       "and": "et",
       "privacyLink": "Politique de confidentialité",
       "successTitle": "Compte créé avec succès !",
-      "successMessage": "Veuillez vérifier votre boîte de réception pour le lien de vérification. Vous devez vérifier votre email avant de vous connecter."
+      "successMessage": "Veuillez vérifier votre boîte de réception pour le lien de vérification. Vous devez vérifier votre email avant de vous connecter.",
+      "eyebrow": "Créer un compte",
+      "creating": "Création de votre compte…",
+      "checkInbox": "Consultez votre boîte de réception.",
+      "readyTitle": "Votre compte est prêt.",
+      "goToSignIn": "Aller à la connexion",
+      "strength": "Robustesse",
+      "strengthWeak": "faible",
+      "strengthFair": "moyenne",
+      "strengthGood": "bonne",
+      "strengthStrong": "forte"
     },
     "forgotPassword": {
       "title": "Mot de passe oublié",
@@ -91,7 +113,9 @@
       "emailLabel": "Adresse email",
       "checkEmail": "Vérifiez votre email",
       "accountExists": "Si un compte existe pour {{email}}, nous avons envoyé un lien de réinitialisation du mot de passe.",
-      "backToSignIn": "Retour à la connexion"
+      "backToSignIn": "Retour à la connexion",
+      "eyebrow": "Aide mot de passe",
+      "devFallback": "L’e-mail n’a pas été envoyé. Utilisez ce lien pour réinitialiser votre mot de passe :"
     },
     "resetPassword": {
       "title": "Réinitialiser le mot de passe",
@@ -107,7 +131,8 @@
       "passwordUpdatedMessage": "Votre mot de passe a été réinitialisé avec succès.",
       "atLeast8": "Au moins 8 caractères",
       "confirmPlaceholder": "Confirmez votre mot de passe",
-      "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères"
+      "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
+      "eyebrow": "Nouveau mot de passe"
     },
     "verifyEmail": {
       "title": "Vérifier l'email",
@@ -122,7 +147,9 @@
       "verifiedMessage": "Votre email a été vérifié avec succès. Vous pouvez maintenant utiliser toutes les fonctionnalités.",
       "goToDashboard": "Aller au tableau de bord",
       "continueToDesktop": "Continuer vers NatureQuery Desktop",
-      "failed": "Échec de la vérification"
+      "failed": "Échec de la vérification",
+      "eyebrow": "E-mail",
+      "checking": "Vérification de votre lien…"
     }
   },
   "landing": {

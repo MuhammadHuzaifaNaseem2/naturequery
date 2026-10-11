@@ -53,7 +53,19 @@
       "noAccount": "¿No tienes una cuenta?",
       "signUp": "Regístrate",
       "twoFactorCode": "Código 2FA",
-      "twoFactorPlaceholder": "Ingresa tu código de 6 dígitos"
+      "twoFactorPlaceholder": "Ingresa tu código de 6 dígitos",
+      "eyebrow": "Iniciar sesión",
+      "orEmail": "o con tu correo",
+      "continueWith": "Continuar con {{provider}}",
+      "signingIn": "Iniciando sesión…",
+      "twoFactorEyebrow": "Verificación en dos pasos",
+      "twoFactorTitle": "Introduce tu código.",
+      "twoFactorHelp": "Abre tu app de autenticación y escribe el código de 6 dígitos de NatureQuery.",
+      "backupHelp": "Escribe uno de los códigos de respaldo que guardaste al activar la verificación en dos pasos.",
+      "backupCode": "Código de respaldo",
+      "verify": "Verificar",
+      "useBackup": "Usar un código de respaldo",
+      "useApp": "Usar la app de autenticación"
     },
     "register": {
       "title": "Crear cuenta",
@@ -76,7 +88,17 @@
       "and": "y",
       "privacyLink": "Política de privacidad",
       "successTitle": "¡Cuenta creada exitosamente!",
-      "successMessage": "Por favor revisa tu bandeja de entrada para el enlace de verificación. Debes verificar tu correo antes de iniciar sesión."
+      "successMessage": "Por favor revisa tu bandeja de entrada para el enlace de verificación. Debes verificar tu correo antes de iniciar sesión.",
+      "eyebrow": "Crear una cuenta",
+      "creating": "Creando tu cuenta…",
+      "checkInbox": "Revisa tu bandeja de entrada.",
+      "readyTitle": "Tu cuenta está lista.",
+      "goToSignIn": "Ir a iniciar sesión",
+      "strength": "Seguridad",
+      "strengthWeak": "débil",
+      "strengthFair": "aceptable",
+      "strengthGood": "buena",
+      "strengthStrong": "fuerte"
     },
     "forgotPassword": {
       "title": "Olvidé mi contraseña",
@@ -91,7 +113,9 @@
       "emailLabel": "Dirección de correo electrónico",
       "checkEmail": "Revisa tu correo",
       "accountExists": "Si existe una cuenta para {{email}}, hemos enviado un enlace de restablecimiento de contraseña.",
-      "backToSignIn": "Volver a Iniciar sesión"
+      "backToSignIn": "Volver a Iniciar sesión",
+      "eyebrow": "Ayuda con la contraseña",
+      "devFallback": "El correo no se entregó. Usa este enlace para restablecer tu contraseña:"
     },
     "resetPassword": {
       "title": "Restablecer contraseña",
@@ -107,7 +131,8 @@
       "passwordUpdatedMessage": "Tu contraseña ha sido restablecida exitosamente.",
       "atLeast8": "Al menos 8 caracteres",
       "confirmPlaceholder": "Confirma tu contraseña",
-      "passwordMinLength": "La contraseña debe tener al menos 8 caracteres"
+      "passwordMinLength": "La contraseña debe tener al menos 8 caracteres",
+      "eyebrow": "Nueva contraseña"
     },
     "verifyEmail": {
       "title": "Verificar correo",
@@ -122,7 +147,9 @@
       "verifiedMessage": "Tu correo ha sido verificado exitosamente. Ahora puedes usar todas las funciones.",
       "goToDashboard": "Ir al panel de control",
       "continueToDesktop": "Continuar a NatureQuery Desktop",
-      "failed": "Verificación fallida"
+      "failed": "Verificación fallida",
+      "eyebrow": "Correo",
+      "checking": "Comprobando tu enlace…"
     }
   },
   "landing": {

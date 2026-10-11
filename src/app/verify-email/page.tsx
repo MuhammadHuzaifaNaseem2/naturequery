@@ -1,14 +1,14 @@
 'use client'
 
-import { brandFonts } from '@/app/fonts'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { AppLogo } from '@/components/AppLogo'
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { verifyEmail } from '@/actions/auth-email'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { safeCallbackUrl } from '@/lib/safe-redirect'
+import { AuthLayout } from '@/components/AuthLayout'
+import { AuthHeading } from '@/components/auth/AuthParts'
 
 function VerifyEmailContent() {
   const { t } = useTranslation()
@@ -37,22 +37,23 @@ function VerifyEmailContent() {
 
   if (status === 'loading') {
     return (
-      <div className="card p-8 text-center">
-        <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">{t('common.loading')}</p>
+      <div className="animate-fadeIn" role="status">
+        <AuthHeading
+          eyebrow={t('auth.verifyEmail.eyebrow')}
+          title={t('auth.verifyEmail.checking')}
+        />
+        <Loader2 className="mt-8 h-5 w-5 animate-spin text-mk-ink-3" aria-hidden />
       </div>
     )
   }
 
   if (status === 'success') {
     return (
-      <div className="card p-8 text-center">
-        <CheckCircle2 className="w-12 h-12 text-success mx-auto mb-4" />
-        <h2 className="font-semibold text-lg mb-2">{t('auth.verifyEmail.verified')}</h2>
-        <p className="text-sm text-muted-foreground mb-6">
+      <div className="animate-fadeIn">
+        <AuthHeading eyebrow={t('auth.verifyEmail.eyebrow')} title={t('auth.verifyEmail.verified')}>
           {t('auth.verifyEmail.verifiedMessage')}
-        </p>
-        <Link href={next} className="btn-primary text-sm">
+        </AuthHeading>
+        <Link href={next} className="mk-btn mk-btn-primary mt-8">
           {toDesktop
             ? t('auth.verifyEmail.continueToDesktop')
             : t('auth.verifyEmail.goToDashboard')}
@@ -62,11 +63,11 @@ function VerifyEmailContent() {
   }
 
   return (
-    <div className="card p-8 text-center">
-      <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-      <h2 className="font-semibold text-lg mb-2">{t('auth.verifyEmail.failed')}</h2>
-      <p className="text-sm text-muted-foreground mb-6">{error}</p>
-      <Link href="/login" className="btn-primary text-sm">
+    <div className="animate-fadeIn">
+      <AuthHeading eyebrow={t('auth.verifyEmail.eyebrow')} title={t('auth.verifyEmail.failed')}>
+        {error}
+      </AuthHeading>
+      <Link href="/login" className="mk-btn mk-btn-quiet mt-8">
         {t('auth.forgotPassword.backToSignIn')}
       </Link>
     </div>
@@ -75,23 +76,10 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className={`mk ${brandFonts} min-h-screen flex items-center justify-center p-4`}>
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <AppLogo size="lg" />
-          </Link>
-        </div>
-        <Suspense
-          fallback={
-            <div className="card p-8 flex justify-center">
-              <Loader2 className="w-5 h-5 animate-spin" />
-            </div>
-          }
-        >
-          <VerifyEmailContent />
-        </Suspense>
-      </div>
-    </div>
+    <AuthLayout>
+      <Suspense fallback={<div className="h-56" aria-hidden />}>
+        <VerifyEmailContent />
+      </Suspense>
+    </AuthLayout>
   )
 }
