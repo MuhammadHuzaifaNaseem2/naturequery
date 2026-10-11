@@ -7,6 +7,7 @@ import { QuestionPath } from '@/components/marketing/QuestionPath'
 import { QuestionToAnswer } from '@/components/marketing/QuestionToAnswer'
 import { Shot } from '@/components/marketing/Shot'
 import { StoreBadge } from '@/components/StoreBadge'
+import { DemoVideo } from '@/components/marketing/DemoVideo'
 import { DESKTOP_ONLY_DATABASES, WEB_DATABASES } from '@/lib/supported-databases'
 
 export const metadata: Metadata = {
@@ -14,8 +15,6 @@ export const metadata: Metadata = {
   description:
     'Ask questions in plain English. NatureQuery writes read-only SQL for PostgreSQL, SQL Server, Snowflake, BigQuery and 10 more databases, runs it, and returns tables, charts and summaries.',
 }
-
-const DEMO_VIDEO = 'https://www.youtube.com/watch?v=0h5kmva3wq0'
 
 const SHOWCASE = [
   {
@@ -149,14 +148,8 @@ export default function LandingPage() {
             <p className="mt-4 text-sm text-mk-ink-3">
               Free plan: 50 AI questions a month. No card needed.
             </p>
-            <a
-              href={DEMO_VIDEO}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mk-link mt-1.5 inline-flex items-center gap-1 text-sm"
-            >
-              Watch the 90-second demo
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            <a href="#demo" className="mk-link mt-1.5 inline-flex items-center gap-1 text-sm">
+              Watch the demo (1:22)
             </a>
           </div>
         </div>
@@ -191,6 +184,29 @@ export default function LandingPage() {
         />
         <div className="mt-14 sm:mt-16">
           <QuestionPath />
+        </div>
+      </section>
+
+      {/* The demo video */}
+      <section id="demo" className="scroll-mt-16 border-t border-mk-rule">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end lg:gap-16">
+            <SectionHeading
+              label="Demo"
+              title={
+                <>
+                  Watch a question <em className="text-mk-ink-2">become an answer.</em>
+                </>
+              }
+            />
+            <p className="max-w-md text-[1.0625rem] leading-relaxed text-mk-ink-2">
+              Connect a database, ask in plain English, and get the SQL and the results. The whole
+              flow, in a minute and twenty-two seconds.
+            </p>
+          </div>
+          <div className="mt-10 sm:mt-12">
+            <DemoVideo />
+          </div>
         </div>
       </section>
 
