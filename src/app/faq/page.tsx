@@ -24,7 +24,7 @@ const FAQ_ITEMS: FAQItem[] = [
     category: 'Getting started',
     question: 'Which databases are supported?',
     answer:
-      'PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, IBM Db2, Amazon Redshift, BigQuery, Snowflake, CockroachDB, ClickHouse, DuckDB, Neon, PlanetScale, Turso, MongoDB, Cassandra, DynamoDB and Firestore. You can also upload CSV and Excel files. No data migration or ETL needed.',
+      'PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, Amazon Redshift, BigQuery, Snowflake, CockroachDB, ClickHouse, Neon, PlanetScale and MongoDB. You can also upload CSV and Excel files, with no data migration or ETL. NatureQuery Desktop also connects to Turso, DynamoDB, Firestore and Cassandra.',
   },
   {
     category: 'Getting started',

@@ -7,37 +7,15 @@ import { QuestionPath } from '@/components/marketing/QuestionPath'
 import { QuestionToAnswer } from '@/components/marketing/QuestionToAnswer'
 import { Shot } from '@/components/marketing/Shot'
 import { StoreBadge } from '@/components/StoreBadge'
+import { DESKTOP_ONLY_DATABASES, WEB_DATABASES } from '@/lib/supported-databases'
 
 export const metadata: Metadata = {
   title: 'NatureQuery - Natural Language to SQL',
   description:
-    'Ask questions in plain English. NatureQuery writes read-only SQL for PostgreSQL, SQL Server, Snowflake, BigQuery and 16 more databases, runs it, and returns tables, charts and summaries.',
+    'Ask questions in plain English. NatureQuery writes read-only SQL for PostgreSQL, SQL Server, Snowflake, BigQuery and 10 more databases, runs it, and returns tables, charts and summaries.',
 }
 
 const DEMO_VIDEO = 'https://www.youtube.com/watch?v=0h5kmva3wq0'
-
-const DATABASES = [
-  'PostgreSQL',
-  'MySQL',
-  'MariaDB',
-  'SQL Server',
-  'Oracle',
-  'SQLite',
-  'IBM Db2',
-  'Amazon Redshift',
-  'BigQuery',
-  'Snowflake',
-  'CockroachDB',
-  'ClickHouse',
-  'DuckDB',
-  'Neon',
-  'PlanetScale',
-  'Turso',
-  'MongoDB',
-  'Cassandra',
-  'DynamoDB',
-  'Firestore',
-]
 
 const SHOWCASE = [
   {
@@ -193,11 +171,15 @@ export default function LandingPage() {
         <div className="mt-20 grid gap-5 border-y border-mk-rule py-8 md:grid-cols-[11rem_1fr] md:gap-8">
           <p className="mk-label md:pt-1">Works with</p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2.5 text-[0.9375rem] text-mk-ink-2">
-            {DATABASES.map((name) => (
+            {WEB_DATABASES.map((name) => (
               <li key={name}>{name}</li>
             ))}
             <li className="text-mk-ink-3">and CSV or Excel files</li>
           </ul>
+          <p className="text-sm text-mk-ink-3 md:col-start-2">
+            NatureQuery Desktop also connects to {DESKTOP_ONLY_DATABASES.slice(0, -1).join(', ')}{' '}
+            and {DESKTOP_ONLY_DATABASES.at(-1)}.
+          </p>
         </div>
       </section>
 
