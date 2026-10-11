@@ -787,3 +787,209 @@
   outline-offset: 4px !important;
   border-radius: 8px !important;
 }
+
+/* ── Public site identity ─────────────────────────────────────
+   Layout: left-aligned editorial grid, hairline rules, real product
+   artifacts instead of icon cards.
+   Two voices: Newsreader for what people ask, IBM Plex Mono for what the
+   database speaks, Schibsted Grotesk for the interface. Violet ink from the
+   logo on violet-tinted paper; marigold marks the answer, like a highlighter. */
+@layer base {
+  .mk {
+    --mk-paper: 252 30% 97%;
+    --mk-surface: 0 0% 100%;
+    --mk-sunken: 252 28% 94%;
+    --mk-ink: 252 40% 11%;
+    --mk-ink-2: 252 12% 34%;
+    --mk-ink-3: 252 9% 48%;
+    --mk-rule: 252 22% 87%;
+    --mk-violet: 251 64% 52%;
+    --mk-violet-soft: 252 90% 95%;
+    --mk-signal: 40 92% 60%;
+    --mk-signal-soft: 43 96% 84%;
+    --mk-signal-ink: 32 82% 30%;
+    --mk-band: 252 40% 11%;
+    --mk-band-ink: 252 30% 96%;
+    --mk-band-ink-2: 252 14% 72%;
+    --mk-band-rule: 252 22% 24%;
+    color-scheme: light;
+    background: hsl(var(--mk-paper));
+    color: hsl(var(--mk-ink));
+    font-family: var(--font-sans), ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+
+    /* The app's tokens, mapped onto the identity, so shared components and the
+       sign-in forms match the public site without their own styles. */
+    --background: var(--mk-paper);
+    --foreground: var(--mk-ink);
+    --card: var(--mk-surface);
+    --card-foreground: var(--mk-ink);
+    --popover: var(--mk-surface);
+    --popover-foreground: var(--mk-ink);
+    --primary: var(--mk-violet);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--mk-sunken);
+    --secondary-foreground: var(--mk-ink);
+    --muted: var(--mk-sunken);
+    --muted-foreground: var(--mk-ink-2);
+    --accent: var(--mk-violet);
+    --accent-foreground: 0 0% 100%;
+    --border: var(--mk-rule);
+    --input: var(--mk-rule);
+    --ring: var(--mk-violet);
+  }
+
+  :is(.dark, .dim, .forest) .mk {
+    --mk-paper: 252 30% 7%;
+    --mk-surface: 252 26% 10%;
+    --mk-sunken: 252 30% 5%;
+    --mk-ink: 252 30% 94%;
+    --mk-ink-2: 252 12% 72%;
+    --mk-ink-3: 252 9% 58%;
+    --mk-rule: 252 18% 20%;
+    --mk-violet: 252 92% 76%;
+    --mk-violet-soft: 252 40% 17%;
+    --mk-signal: 40 92% 62%;
+    --mk-signal-soft: 40 50% 22%;
+    --mk-signal-ink: 42 92% 70%;
+    --mk-band: 252 32% 4%;
+    --mk-band-ink: 252 30% 94%;
+    --mk-band-ink-2: 252 12% 68%;
+    --mk-band-rule: 252 18% 17%;
+    --primary-foreground: var(--mk-paper);
+    --accent-foreground: var(--mk-paper);
+    color-scheme: dark;
+  }
+
+  .mk ::selection {
+    background: hsl(var(--mk-signal) / 0.45);
+    color: inherit;
+  }
+
+  .mk :focus-visible {
+    outline: 2px solid hsl(var(--mk-violet));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .mk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding: 0 1.15rem;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+  .mk-btn-sm {
+    height: 2.25rem;
+    padding: 0 0.9rem;
+    font-size: 0.875rem;
+  }
+  .mk-btn-primary {
+    background: hsl(var(--mk-ink));
+    color: hsl(var(--mk-paper));
+  }
+  .mk-btn-primary:hover {
+    background: hsl(var(--mk-violet));
+    color: hsl(0 0% 100%);
+  }
+  :is(.dark, .dim, .forest) .mk .mk-btn-primary:hover {
+    color: hsl(var(--mk-paper));
+  }
+  .mk-btn-quiet {
+    border: 1px solid hsl(var(--mk-rule));
+    background: hsl(var(--mk-surface));
+    color: hsl(var(--mk-ink));
+  }
+  .mk-btn-quiet:hover {
+    border-color: hsl(var(--mk-ink-3));
+  }
+  /* Older template styles, made plain inside the public site. */
+  .mk .glass-card {
+    background: hsl(var(--mk-surface));
+    border: 1px solid hsl(var(--mk-rule));
+    border-radius: 12px;
+    backdrop-filter: none;
+    box-shadow: 0 30px 60px -40px hsl(var(--mk-ink) / 0.35);
+  }
+  .mk .btn-gradient {
+    background: hsl(var(--mk-ink));
+    color: hsl(var(--mk-paper));
+    box-shadow: none;
+  }
+  .mk .btn-gradient:hover {
+    background: hsl(var(--mk-violet));
+  }
+  .mk-label {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--mk-ink-3));
+  }
+  .mk-link {
+    color: hsl(var(--mk-violet));
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: hsl(var(--mk-violet) / 0.35);
+    transition: text-decoration-color 0.15s ease;
+  }
+  .mk-link:hover {
+    text-decoration-color: hsl(var(--mk-violet));
+  }
+  /* A marigold highlighter stroke behind the answer. */
+  .mk-highlight {
+    background-image: linear-gradient(
+      100deg,
+      hsl(var(--mk-signal) / 0) 0.4em,
+      hsl(var(--mk-signal) / 0.55) 0.6em,
+      hsl(var(--mk-signal) / 0.5) 92%,
+      hsl(var(--mk-signal) / 0) 100%
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 62%;
+    background-position: 0 70%;
+    padding: 0 0.15em;
+    margin: 0 -0.15em;
+  }
+  /* On dark grounds a translucent stroke turns muddy: use a solid one with dark text. */
+  .bg-mk-band .mk-highlight,
+  :is(.dark, .dim, .forest) .mk .mk-highlight {
+    color: hsl(252 40% 11%);
+    background-image: linear-gradient(
+      100deg,
+      hsl(var(--mk-signal) / 0) 0.25em,
+      hsl(var(--mk-signal) / 0.95) 0.4em,
+      hsl(var(--mk-signal) / 0.9) 94%,
+      hsl(var(--mk-signal) / 0) 100%
+    );
+    background-size: 100% 78%;
+    background-position: 0 60%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .mk-highlight-sweep {
+      animation: mk-sweep 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.5s both;
+    }
+  }
+}
+
+@keyframes mk-sweep {
+  from {
+    background-size: 0% 62%;
+  }
+  to {
+    background-size: 100% 62%;
+  }
+}

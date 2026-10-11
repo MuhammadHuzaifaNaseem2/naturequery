@@ -1,5 +1,6 @@
 'use client'
 
+import { brandFonts } from '@/app/fonts'
 import { useState, useTransition, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -31,9 +32,11 @@ function ResetPasswordForm() {
       setError('Password must be between 8 and 128 characters')
       return
     }
-    const cats = [/[A-Z]/, /[a-z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(r => r.test(password)).length
+    const cats = [/[A-Z]/, /[a-z]/, /[0-9]/, /[^A-Za-z0-9]/].filter((r) => r.test(password)).length
     if (cats < 3) {
-      setError('Password must contain at least 3 of: uppercase, lowercase, number, special character')
+      setError(
+        'Password must contain at least 3 of: uppercase, lowercase, number, special character'
+      )
       return
     }
 
@@ -81,9 +84,7 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="card p-6 space-y-4">
       {error && (
-        <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
-        </div>
+        <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>
       )}
 
       <div>
@@ -164,7 +165,13 @@ function ResetPasswordPageContent() {
         </Link>
         <h1 className="text-2xl font-bold">{t('auth.resetPassword.pageTitle')}</h1>
       </div>
-      <Suspense fallback={<div className="card p-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" /></div>}>
+      <Suspense
+        fallback={
+          <div className="card p-6 flex justify-center">
+            <Loader2 className="w-5 h-5 animate-spin" />
+          </div>
+        }
+      >
         <ResetPasswordForm />
       </Suspense>
     </div>
@@ -173,10 +180,8 @@ function ResetPasswordPageContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className={`mk ${brandFonts} min-h-screen flex items-center justify-center p-4`}>
       <ResetPasswordPageContent />
     </div>
   )
 }
-
-

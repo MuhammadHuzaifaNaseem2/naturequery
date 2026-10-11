@@ -24,7 +24,7 @@ export function PricingCTAButton({ planKey, fallbackHref, label, highlighted }: 
       const { url } = await createCheckoutSession(planKey)
       if (url) window.location.assign(url)
     } catch {
-      // Not logged in or Stripe not configured — send to register
+      // Not signed in or billing not configured: send them to sign up first.
       window.location.href = fallbackHref
     } finally {
       setIsLoading(false)
@@ -35,11 +35,9 @@ export function PricingCTAButton({ planKey, fallbackHref, label, highlighted }: 
     <button
       onClick={handleClick}
       disabled={isLoading}
-      className={`w-full py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-70 ${
-        highlighted ? 'btn-primary shadow-lg' : 'btn-secondary'
-      }`}
+      className={`mk-btn w-full disabled:opacity-70 ${highlighted ? 'mk-btn-primary' : 'mk-btn-quiet'}`}
     >
-      {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+      {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
       {label}
     </button>
   )

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'NatureQuery Pricing: Start Free, Upgrade When Ready',
     description:
-      'Free plan with 50 queries/month. Pro at $19/month for unlimited queries. Enterprise for teams. No credit card required to start.',
+      'Free plan with 50 AI questions a month. Pro at $20 a month covers a team of five. Enterprise for larger teams. No credit card required to start.',
     url: 'https://naturequery.app/pricing',
   },
 }

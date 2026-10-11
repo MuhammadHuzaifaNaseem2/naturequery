@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'FAQ | NatureQuery',
+  title: 'Frequently Asked Questions',
   description:
     'Frequently asked questions about NatureQuery: databases supported, billing, security, AI accuracy, and enterprise features.',
 }

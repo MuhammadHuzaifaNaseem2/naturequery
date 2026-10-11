@@ -2,50 +2,31 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { AppLogo } from '@/components/AppLogo'
-import { Mail, MessageSquare, Building2, Clock, Send, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, Loader2 } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
 
 const CONTACT_REASONS = [
-  { value: 'general', label: 'General Inquiry' },
-  { value: 'sales', label: 'Sales & Enterprise' },
-  { value: 'support', label: 'Technical Support' },
+  { value: 'general', label: 'General question' },
+  { value: 'sales', label: 'Sales and Enterprise' },
+  { value: 'support', label: 'Technical support' },
   { value: 'partnership', label: 'Partnership' },
-  { value: 'feedback', label: 'Product Feedback' },
+  { value: 'feedback', label: 'Product feedback' },
 ]
 
-const CARDS = [
-  {
-    icon: Mail,
-    title: 'Email Us',
-    description: 'For general inquiries and support',
-    action: 'hello@naturequery.app',
-    href: 'mailto:hello@naturequery.app',
-  },
-  {
-    icon: Building2,
-    title: 'Enterprise Sales',
-    description: 'Custom plans, SLA, and integrations',
-    action: 'hello@naturequery.app',
-    href: 'mailto:hello@naturequery.app',
-  },
-  {
-    icon: Clock,
-    title: 'Response Time',
-    description: 'We typically respond within',
-    action: '< 24 hours',
-    href: null,
-  },
-]
+const EMPTY_FORM = {
+  name: '',
+  email: '',
+  reason: 'general',
+  company: '',
+  message: '',
+  website: '',
+}
+
+const field =
+  'h-11 w-full rounded-md border border-mk-rule bg-mk-surface px-3.5 text-[0.9375rem] text-mk-ink placeholder:text-mk-ink-3 transition-colors focus:border-mk-violet focus:outline-none'
 
 export default function ContactPage() {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    reason: 'general',
-    company: '',
-    message: '',
-    website: '',
-  })
+  const [form, setForm] = useState(EMPTY_FORM)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -75,314 +56,215 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <AppLogo size="md" />
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/download"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Download
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Get Started Free
-            </Link>
-          </div>
-          <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-8 relative text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <MessageSquare className="w-3.5 h-3.5" />
-            Get in Touch
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
-            We&apos;d love to
-            <span className="gradient-text"> hear from you</span>
+    <MarketingShell current="/contact">
+      <section className="mx-auto grid max-w-[1200px] gap-14 px-5 py-14 sm:px-8 sm:py-24 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
+        <div>
+          <p className="mk-label">Contact</p>
+          <h1 className="mt-5 text-balance font-nq-serif text-[clamp(2.6rem,5.4vw,4.4rem)] font-normal leading-[1.02] tracking-[-0.03em] text-mk-ink">
+            Write to us. <em className="text-mk-ink-2">A person reads every message.</em>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Have a question, feedback, or want to discuss enterprise plans? Drop us a message and
-            we&apos;ll get back to you quickly.
+          <p className="mt-6 max-w-[30rem] text-lg leading-relaxed text-mk-ink-2">
+            A question, feedback, or a plan for your whole company: send a message and we will get
+            back to you.
           </p>
+          <dl className="mt-12 divide-y divide-mk-rule border-y border-mk-rule">
+            <div className="grid gap-1 py-5 sm:grid-cols-[9rem_1fr] sm:gap-6">
+              <dt className="mk-label sm:pt-1">Email</dt>
+              <dd>
+                <a href="mailto:hello@naturequery.app" className="mk-link text-[1.0625rem]">
+                  hello@naturequery.app
+                </a>
+              </dd>
+            </div>
+            <div className="grid gap-1 py-5 sm:grid-cols-[9rem_1fr] sm:gap-6">
+              <dt className="mk-label sm:pt-1">Companies</dt>
+              <dd className="leading-relaxed text-mk-ink-2">
+                Team plans, SLAs and setting up NatureQuery Desktop for your office.
+              </dd>
+            </div>
+            <div className="grid gap-1 py-5 sm:grid-cols-[9rem_1fr] sm:gap-6">
+              <dt className="mk-label sm:pt-1">Replies</dt>
+              <dd className="leading-relaxed text-mk-ink-2">Usually within a day.</dd>
+            </div>
+          </dl>
         </div>
-      </section>
 
-      {/* Contact Cards */}
-      <section className="py-10">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-5">
-            {CARDS.map((card) => {
-              const Icon = card.icon
-              return (
-                <div
-                  key={card.title}
-                  className="bg-card border border-border/60 rounded-2xl p-6 text-center hover:border-primary/30 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold mb-1">{card.title}</h3>
-                  <p className="text-xs text-muted-foreground mb-3">{card.description}</p>
-                  {card.href ? (
-                    <a
-                      href={card.href}
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      {card.action}
-                    </a>
-                  ) : (
-                    <p className="text-sm font-semibold gradient-text">{card.action}</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Form */}
-      <section className="py-16">
-        <div className="max-w-2xl mx-auto px-6">
+        <div className="rounded-xl border border-mk-rule bg-mk-surface p-6 shadow-[0_30px_60px_-40px_hsl(var(--mk-ink)/0.35)] sm:p-8">
           {sent ? (
-            <div className="bg-card border border-border rounded-2xl p-12 text-center shadow-lg animate-fadeIn">
-              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-8 h-8 text-success" />
-              </div>
-              <h2 className="text-2xl font-bold mb-3">Message accepted</h2>
-              <p className="text-muted-foreground mb-8">
-                Our email provider accepted your message for delivery. We&apos;ll reply as soon as
-                possible.
+            <div className="py-10" role="status">
+              <p className="font-nq-mono text-[0.72rem] font-medium uppercase tracking-[0.08em] text-mk-violet">
+                Message sent
               </p>
-              <div className="flex items-center justify-center gap-4">
+              <h2 className="mt-4 font-nq-serif text-[2.2rem] leading-tight tracking-[-0.02em] text-mk-ink">
+                Thank you. It&apos;s on its way.
+              </h2>
+              <p className="mt-4 max-w-md leading-relaxed text-mk-ink-2">
+                We&apos;ll reply to <span className="text-mk-ink">{form.email}</span> as soon as we
+                can.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
                 <button
+                  type="button"
                   onClick={() => {
                     setSent(false)
-                    setForm({
-                      name: '',
-                      email: '',
-                      reason: 'general',
-                      company: '',
-                      message: '',
-                      website: '',
-                    })
+                    setForm(EMPTY_FORM)
                   }}
-                  className="btn-secondary text-sm"
+                  className="mk-btn mk-btn-quiet"
                 >
-                  Send Another
+                  Send another
                 </button>
-                <Link href="/" className="btn-primary text-sm">
-                  Back to Home
+                <Link href="/" className="mk-btn mk-btn-primary">
+                  Back to home
+                  <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
-              <h2 className="text-xl font-bold mb-1">Send us a message</h2>
-              <p className="text-sm text-muted-foreground mb-8">
-                Fill out the form below and we&apos;ll respond as soon as possible.
-              </p>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="hidden" aria-hidden="true">
-                  <label htmlFor="contact-website">Website</label>
-                  <input
-                    id="contact-website"
-                    name="website"
-                    type="text"
-                    tabIndex={-1}
-                    autoComplete="off"
-                    value={form.website}
-                    onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-                  />
-                </div>
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <div>
-                    <label htmlFor="contact-name" className="block text-sm font-medium mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      id="contact-name"
-                      name="name"
-                      type="text"
-                      required
-                      maxLength={100}
-                      autoComplete="name"
-                      value={form.name}
-                      onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      placeholder="Your full name"
-                      className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="contact-email" className="block text-sm font-medium mb-2">
-                      Email *
-                    </label>
-                    <input
-                      id="contact-email"
-                      name="email"
-                      type="email"
-                      required
-                      maxLength={254}
-                      autoComplete="email"
-                      value={form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                      placeholder="you@example.com"
-                      className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <div>
-                    <label htmlFor="contact-reason" className="block text-sm font-medium mb-2">
-                      Reason
-                    </label>
-                    <select
-                      id="contact-reason"
-                      name="reason"
-                      value={form.reason}
-                      onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
-                      className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
-                    >
-                      {CONTACT_REASONS.map((r) => (
-                        <option key={r.value} value={r.value}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="contact-company" className="block text-sm font-medium mb-2">
-                      Company <span className="text-muted-foreground font-normal">(optional)</span>
-                    </label>
-                    <input
-                      id="contact-company"
-                      name="company"
-                      type="text"
-                      maxLength={120}
-                      autoComplete="organization"
-                      value={form.company}
-                      onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
-                      placeholder="Your company"
-                      className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
-                    />
-                  </div>
-                </div>
-
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <h2 className="text-xl font-semibold tracking-[-0.01em] text-mk-ink">
+                Send a message
+              </h2>
+              <div className="hidden" aria-hidden="true">
+                <label htmlFor="contact-website">Website</label>
+                <input
+                  id="contact-website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={form.website}
+                  onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="contact-message" className="block text-sm font-medium mb-2">
-                    Message *
+                  <label
+                    htmlFor="contact-name"
+                    className="mb-2 block text-sm font-medium text-mk-ink"
+                  >
+                    Name
                   </label>
-                  <textarea
-                    id="contact-message"
-                    name="message"
+                  <input
+                    id="contact-name"
+                    name="name"
+                    type="text"
                     required
-                    minLength={10}
-                    maxLength={5000}
-                    rows={5}
-                    value={form.message}
-                    onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-                    placeholder="Tell us how we can help..."
-                    className="w-full px-4 py-3 bg-secondary/50 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all resize-none"
+                    maxLength={100}
+                    autoComplete="name"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    className={field}
                   />
                 </div>
-
-                {error && (
-                  <div
-                    role="alert"
-                    className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600"
+                <div>
+                  <label
+                    htmlFor="contact-email"
+                    className="mb-2 block text-sm font-medium text-mk-ink"
                   >
-                    {error}{' '}
-                    <a href="mailto:hello@naturequery.app" className="font-medium underline">
-                      Email us directly
-                    </a>
-                    .
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={sending}
-                  className="btn-primary w-full py-3 text-sm"
+                    Email
+                  </label>
+                  <input
+                    id="contact-email"
+                    name="email"
+                    type="email"
+                    required
+                    maxLength={254}
+                    autoComplete="email"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="you@company.com"
+                    className={field}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="contact-reason"
+                    className="mb-2 block text-sm font-medium text-mk-ink"
+                  >
+                    Topic
+                  </label>
+                  <select
+                    id="contact-reason"
+                    name="reason"
+                    value={form.reason}
+                    onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+                    className={field}
+                  >
+                    {CONTACT_REASONS.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="contact-company"
+                    className="mb-2 block text-sm font-medium text-mk-ink"
+                  >
+                    Company <span className="font-normal text-mk-ink-3">(optional)</span>
+                  </label>
+                  <input
+                    id="contact-company"
+                    name="company"
+                    type="text"
+                    maxLength={120}
+                    autoComplete="organization"
+                    value={form.company}
+                    onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
+                    className={field}
+                  />
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="contact-message"
+                  className="mb-2 block text-sm font-medium text-mk-ink"
                 >
-                  {sending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" /> Send Message
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
+                  Message
+                </label>
+                <textarea
+                  id="contact-message"
+                  name="message"
+                  required
+                  minLength={10}
+                  maxLength={5000}
+                  rows={6}
+                  value={form.message}
+                  onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                  placeholder="How can we help?"
+                  className={`${field} h-auto resize-y py-3`}
+                />
+              </div>
+
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300"
+                >
+                  {error}{' '}
+                  <a href="mailto:hello@naturequery.app" className="font-medium underline">
+                    Email us directly
+                  </a>
+                  .
+                </div>
+              )}
+
+              <button type="submit" disabled={sending} className="mk-btn mk-btn-primary w-full">
+                {sending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Sending
+                  </>
+                ) : (
+                  'Send message'
+                )}
+              </button>
+            </form>
           )}
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <AppLogo size="xs" showText={false} />
-            <span className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
-            </span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-            <Link href="/features" className="hover:text-foreground transition-colors">
-              Features
-            </Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </MarketingShell>
   )
 }

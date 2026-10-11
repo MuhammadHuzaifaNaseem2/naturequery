@@ -1,5 +1,6 @@
 'use client'
 
+import { brandFonts } from '@/app/fonts'
 import { useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { Check, Copy, Laptop, Loader2, ShieldCheck, XCircle } from 'lucide-react'
@@ -86,7 +87,7 @@ export function AuthorizeDesktop({ valid, challenge, state, deviceName, account 
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-12">
+    <main className={`mk ${brandFonts} min-h-screen flex items-center justify-center px-4 py-12`}>
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <AppLogo size="lg" />

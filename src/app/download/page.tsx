@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight, Lock, MonitorDown, Network, ShieldCheck, Users } from 'lucide-react'
-import { AppLogo } from '@/components/AppLogo'
+import { ArrowRight } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
+import { Shot } from '@/components/marketing/Shot'
 import { StoreBadge } from '@/components/StoreBadge'
 
 export const metadata: Metadata = {
@@ -12,18 +13,15 @@ export const metadata: Metadata = {
 
 const REASONS = [
   {
-    icon: Network,
-    title: 'Reaches your office databases',
+    term: 'Reaches your office databases',
     text: 'Connects from your PC to databases on your computer, your office network or a VPN. Nothing has to be opened to the internet.',
   },
   {
-    icon: Lock,
-    title: 'Passwords stay on your PC',
+    term: 'Passwords stay on your PC',
     text: 'Connection passwords are encrypted with your Windows account and never sent to NatureQuery.',
   },
   {
-    icon: ShieldCheck,
-    title: 'Read-only by design',
+    term: 'Read-only by design',
     text: 'NatureQuery only reads data. Requests that would change or delete data are declined.',
   },
 ]
@@ -78,117 +76,83 @@ const QUESTIONS = [
   {
     question: 'What leaves my computer?',
     answer:
-      'Only what each AI feature needs, such as your question and the names and types of your tables and columns. Your connections, results and history stay on your PC.',
+      'Only what each AI feature needs, such as your question and the names and types of your tables and columns. Your connections and history stay on your PC, and result rows are sent only if you let AI summaries use them.',
+  },
+  {
+    question: 'Our work PCs block the Microsoft Store. What now?',
+    answer:
+      'Your IT team can still install NatureQuery with Microsoft Intune, or with this command: winget install 9N6PJDWJRLFM -s msstore',
   },
 ]
 
 export default function DownloadPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <AppLogo size="md" />
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
-            <Link href="/download" className="text-sm text-foreground font-medium">
-              Download
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Get Started Free
-            </Link>
-          </div>
-          <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
+    <MarketingShell current="/download">
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 relative text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <MonitorDown className="w-3.5 h-3.5" />
-            NatureQuery Desktop for Windows
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-24">
+        <p className="mk-label">NatureQuery Desktop for Windows</p>
+        <h1 className="mt-5 max-w-5xl text-balance font-nq-serif text-[clamp(2.6rem,5.8vw,4.9rem)] font-normal leading-[1.02] tracking-[-0.03em] text-mk-ink">
+          The databases a website can&apos;t reach.{' '}
+          <em className="text-mk-ink-2">Asked from your own PC.</em>
+        </h1>
+        <div className="mt-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <p className="max-w-[36rem] text-lg leading-relaxed text-mk-ink-2">
+            On your computer, on your office network or behind a VPN. The Windows app connects to
+            them directly and asks them questions in plain English. Same account, same plan.
+          </p>
+          <div className="lg:text-right">
+            <StoreBadge className="h-14" />
+            <p className="mt-3 text-sm text-mk-ink-3">
+              Windows 10 version 1809 or later, 64-bit. Free. Updates install automatically.
+            </p>
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-balance">
-            Ask the databases on your network
-            <span className="gradient-text block">in plain English</span>
-          </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            The desktop app reaches the databases a website can&apos;t: on your computer, on your
-            office network or behind a VPN. Free from the Microsoft Store.
-          </p>
-          <StoreBadge />
-          <p className="mt-5 text-sm text-muted-foreground">
-            Windows 10 version 1809 or later, 64-bit &middot; Free download &middot; Updates install
-            automatically
-          </p>
         </div>
+        <figure className="mt-14 sm:mt-20">
+          <div className="overflow-hidden rounded-lg border border-mk-rule shadow-[0_30px_60px_-38px_hsl(var(--mk-ink)/0.45)]">
+            <Shot
+              src="/marketing/home.png"
+              alt="NatureQuery Desktop showing its connections, recent questions and the sample store"
+              region={{ x: 0, y: 0, w: 1920 }}
+              aspect={1920 / 1080}
+            />
+          </div>
+          <figcaption className="mt-3 font-nq-mono text-[0.72rem] text-mk-ink-3">
+            NatureQuery Desktop, with three office databases and the built-in sample store
+          </figcaption>
+        </figure>
       </section>
 
       {/* Why the desktop app */}
-      <section className="max-w-6xl mx-auto px-6 pb-20">
-        <div className="grid gap-4 md:grid-cols-3">
-          {REASONS.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="card p-6">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <Icon className="w-5 h-5 text-primary" />
-              </div>
-              <h2 className="font-semibold mb-2">{title}</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">{text}</p>
+      <section className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+        <dl className="grid gap-10 border-t border-mk-rule pt-10 md:grid-cols-3 md:gap-10">
+          {REASONS.map((reason) => (
+            <div key={reason.term}>
+              <dt className="text-lg font-semibold tracking-[-0.01em] text-mk-ink">
+                {reason.term}
+              </dt>
+              <dd className="mt-2 leading-relaxed text-mk-ink-2">{reason.text}</dd>
             </div>
           ))}
-        </div>
+        </dl>
       </section>
 
       {/* Get started */}
-      <section className="border-y border-border/50 bg-secondary/20">
-        <div className="max-w-6xl mx-auto px-6 py-20">
-          <h2 className="text-3xl font-bold tracking-tight text-center mb-12">
-            Get started in three steps
+      <section className="border-y border-mk-rule bg-mk-surface">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+          <p className="mk-label">Get started</p>
+          <h2 className="mt-4 font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+            Three steps to your first answer.
           </h2>
-          <ol className="grid gap-6 md:grid-cols-3">
+          <ol className="mt-12 grid gap-10 md:grid-cols-3">
             {STEPS.map((step, index) => (
-              <li key={step.title} className="flex gap-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold tabular-nums">
-                  {index + 1}
-                </span>
-                <div>
-                  <h3 className="font-semibold mb-1.5">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{step.text}</p>
-                </div>
+              <li key={step.title} className="border-t border-mk-rule pt-6">
+                <p className="font-nq-mono text-[0.72rem] font-medium uppercase tracking-[0.08em] text-mk-violet">
+                  Step {index + 1}
+                </p>
+                <h3 className="mt-2 text-lg font-semibold tracking-[-0.01em] text-mk-ink">
+                  {step.title}
+                </h3>
+                <p className="mt-2 leading-relaxed text-mk-ink-2">{step.text}</p>
               </li>
             ))}
           </ol>
@@ -196,97 +160,76 @@ export default function DownloadPage() {
       </section>
 
       {/* Databases */}
-      <section className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold tracking-tight mb-3">Works with the databases you use</h2>
-        <p className="text-muted-foreground mb-8">
-          Connect as many as you need. Each query runs directly from your computer.
-        </p>
-        <ul className="flex flex-wrap justify-center gap-2.5 max-w-4xl mx-auto">
-          {DATABASES.map((name) => (
-            <li
-              key={name}
-              className="rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium"
-            >
-              {name}
-            </li>
-          ))}
-        </ul>
+      <section className="mx-auto max-w-[1200px] px-5 sm:px-8">
+        <div className="grid gap-5 border-b border-mk-rule py-10 md:grid-cols-[11rem_1fr] md:gap-8">
+          <p className="mk-label md:pt-1">Connects to</p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2.5 text-[0.9375rem] text-mk-ink-2">
+            {DATABASES.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* For companies */}
-      <section className="max-w-6xl mx-auto px-6 pb-20">
-        <div className="card p-8 md:p-10 grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+      <section className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+        <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <div className="flex items-center gap-2 text-primary font-medium text-sm mb-3">
-              <Users className="w-4 h-4" />
-              For companies
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight mb-3">One plan for your whole team</h2>
-            <p className="text-muted-foreground leading-relaxed max-w-2xl">
+            <p className="mk-label">For companies</p>
+            <h2 className="mt-4 max-w-3xl text-balance font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+              One plan for your whole team.
+            </h2>
+            <p className="mt-5 max-w-[40rem] leading-relaxed text-mk-ink-2">
               Buy Pro or Enterprise, create a team under Settings, Team, and invite your colleagues.
               Everyone who accepts uses your plan in the desktop app and on the website: up to 5
               colleagues on Pro, and unlimited on Enterprise.
             </p>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mt-4">
-              Microsoft Store blocked on your work PCs? Your IT team can install NatureQuery with
-              Microsoft Intune, or with this command:
-            </p>
-            <code className="mt-3 block w-fit max-w-full overflow-x-auto whitespace-nowrap rounded-md border border-border bg-secondary/60 px-3 py-2 font-mono text-sm">
-              winget install 9N6PJDWJRLFM -s msstore
-            </code>
           </div>
-          <Link href="/pricing" className="btn-primary text-sm px-6 py-2.5 justify-self-start">
+          <Link href="/pricing" className="mk-btn mk-btn-quiet self-start lg:self-end">
             See plans
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
       </section>
 
       {/* Questions */}
-      <section className="max-w-3xl mx-auto px-6 pb-24">
-        <h2 className="text-2xl font-bold tracking-tight mb-6 text-center">Questions</h2>
-        <dl className="space-y-6">
-          {QUESTIONS.map(({ question, answer }) => (
-            <div key={question}>
-              <dt className="font-semibold mb-1.5">{question}</dt>
-              <dd className="text-muted-foreground leading-relaxed">{answer}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="mt-8 text-sm text-muted-foreground text-center">
-          Read more in the{' '}
-          <Link href="/privacy" className="text-primary hover:underline">
-            privacy policy
-          </Link>
-          .
-        </p>
-        <div className="mt-10 flex justify-center">
-          <StoreBadge />
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-24 sm:px-8 sm:py-28 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20">
+          <div>
+            <p className="mk-label">Questions</p>
+            <h2 className="mt-4 font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+              Before you install.
+            </h2>
+            <p className="mt-5 text-mk-ink-2">
+              More in the{' '}
+              <Link href="/privacy" className="mk-link">
+                privacy policy
+              </Link>
+              .
+            </p>
+          </div>
+          <dl className="divide-y divide-mk-rule border-y border-mk-rule">
+            {QUESTIONS.map((item) => (
+              <div key={item.question} className="py-6">
+                <dt className="font-nq-serif text-[1.35rem] leading-snug text-mk-ink">
+                  {item.question}
+                </dt>
+                <dd className="mt-2.5 leading-relaxed text-mk-ink-2">{item.answer}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <AppLogo size="xs" showText={false} />
-            <span className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
-            </span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-            <Link href="/pricing" className="hover:text-foreground transition-colors">
-              Pricing
-            </Link>
-          </div>
+      {/* Closing */}
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-5 py-20 sm:px-8 md:flex-row md:items-center md:justify-between">
+          <h2 className="font-nq-serif text-[clamp(2rem,4vw,3.2rem)] font-normal italic leading-[1.05] tracking-[-0.02em] text-mk-ink">
+            Ready when your database is.
+          </h2>
+          <StoreBadge className="h-14" />
         </div>
-      </footer>
-    </div>
+      </section>
+    </MarketingShell>
   )
 }

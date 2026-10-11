@@ -1,18 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import {
-  ArrowLeft,
-  Key,
-  Zap,
-  Shield,
-  Code2,
-  Database,
-  Search,
-  Play,
-  History,
-  BookmarkPlus,
-  FileText,
-} from 'lucide-react'
+import { ArrowRight, BookmarkPlus, Code2, Database, History, Play, Search } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
 
 export const metadata: Metadata = {
   title: 'API Documentation',
@@ -29,14 +18,14 @@ const BASE_URL = 'https://naturequery.app'
 
 function CodeBlock({ children, title }: { children: string; title?: string }) {
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-mk-rule">
       {title && (
-        <div className="px-4 py-2 bg-muted/50 border-b border-border text-xs text-muted-foreground font-mono">
+        <div className="border-b border-mk-band-rule bg-mk-band px-4 py-2 font-nq-mono text-[0.7rem] uppercase tracking-[0.08em] text-mk-band-ink-2">
           {title}
         </div>
       )}
-      <pre className="p-4 overflow-x-auto text-sm bg-card">
-        <code className="text-foreground/90 font-mono whitespace-pre">{children}</code>
+      <pre className="overflow-x-auto bg-mk-band p-4 text-[0.8rem] leading-relaxed [font-variant-ligatures:none]">
+        <code className="whitespace-pre font-nq-mono text-mk-band-ink">{children}</code>
       </pre>
     </div>
   )
@@ -45,10 +34,10 @@ function CodeBlock({ children, title }: { children: string; title?: string }) {
 function MethodBadge({ method }: { method: 'GET' | 'POST' }) {
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold tracking-wide ${
+      className={`inline-flex items-center rounded px-2 py-0.5 font-nq-mono text-[0.72rem] font-medium tracking-[0.06em] ${
         method === 'GET'
-          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+          ? 'bg-mk-violet-soft text-mk-violet'
+          : 'bg-mk-signal-soft text-mk-signal-ink'
       }`}
     >
       {method}
@@ -68,15 +57,17 @@ function Param({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex gap-3 py-2 border-b border-border/50 last:border-0">
-      <div className="shrink-0 w-40">
-        <code className="text-sm font-mono text-primary">{name}</code>
+    <div className="grid gap-1 border-b border-mk-rule py-3 last:border-0 sm:grid-cols-[11rem_1fr] sm:gap-4">
+      <div>
+        <code className="font-nq-mono text-[0.85rem] text-mk-violet">{name}</code>
         {required && (
-          <span className="ml-1 text-[10px] text-destructive font-medium">required</span>
+          <span className="ml-2 font-nq-mono text-[0.68rem] uppercase tracking-[0.06em] text-mk-signal-ink">
+            required
+          </span>
         )}
-        <div className="text-[11px] text-muted-foreground mt-0.5">{type}</div>
+        <div className="mt-0.5 font-nq-mono text-[0.72rem] text-mk-ink-3">{type}</div>
       </div>
-      <div className="text-sm text-muted-foreground">{children}</div>
+      <div className="text-[0.9375rem] leading-relaxed text-mk-ink-2">{children}</div>
     </div>
   )
 }
@@ -87,7 +78,6 @@ function EndpointSection({
   path,
   title,
   description,
-  icon: Icon,
   params,
   bodyParams,
   queryParams,
@@ -99,164 +89,130 @@ function EndpointSection({
   path: string
   title: string
   description: string
-  icon: React.ElementType
+  icon?: React.ElementType
   params?: React.ReactNode
   bodyParams?: React.ReactNode
   queryParams?: React.ReactNode
   curl: string
   response: string
 }) {
+  const groups = [
+    ['Query parameters', queryParams],
+    ['Request body', bodyParams],
+    ['Parameters', params],
+  ] as const
   return (
-    <section id={id} className="scroll-mt-20">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Icon className="w-4.5 h-4.5 text-primary" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-muted/50 border border-border">
+    <section id={id} className="scroll-mt-24 border-t border-mk-rule pt-10">
+      <h2 className="font-nq-serif text-[2rem] leading-tight tracking-[-0.015em] text-mk-ink">
+        {title}
+      </h2>
+      <p className="mt-2 max-w-[40rem] leading-relaxed text-mk-ink-2">{description}</p>
+      <div className="mt-5 flex items-center gap-3 rounded-md border border-mk-rule bg-mk-surface px-3 py-2.5">
         <MethodBadge method={method} />
-        <code className="text-sm font-mono">{path}</code>
+        <code className="font-nq-mono text-[0.85rem] text-mk-ink">{path}</code>
       </div>
-
-      {queryParams && (
-        <div className="mb-4">
-          <h4 className="text-sm font-medium mb-2">Query Parameters</h4>
-          <div className="rounded-lg border border-border p-3">{queryParams}</div>
-        </div>
+      {groups.map(([label, content]) =>
+        content ? (
+          <div key={label} className="mt-6">
+            <h3 className="mk-label">{label}</h3>
+            <div className="mt-2 border-t border-mk-ink/80">{content}</div>
+          </div>
+        ) : null
       )}
-
-      {bodyParams && (
-        <div className="mb-4">
-          <h4 className="text-sm font-medium mb-2">Request Body</h4>
-          <div className="rounded-lg border border-border p-3">{bodyParams}</div>
-        </div>
-      )}
-
-      {params && (
-        <div className="mb-4">
-          <h4 className="text-sm font-medium mb-2">Parameters</h4>
-          <div className="rounded-lg border border-border p-3">{params}</div>
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-2 mb-4">
-        <CodeBlock title="Example Request">{curl}</CodeBlock>
-        <CodeBlock title="Example Response">{response}</CodeBlock>
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <CodeBlock title="Example request">{curl}</CodeBlock>
+        <CodeBlock title="Example response">{response}</CodeBlock>
       </div>
     </section>
   )
 }
 
+const INDEX = [
+  { href: '#auth', label: 'Authentication' },
+  { href: '#rate-limits', label: 'Rate limits' },
+  { href: '#response-format', label: 'Response format' },
+  { href: '#connections', label: 'Connections' },
+  { href: '#queries', label: 'Saved queries' },
+  { href: '#query-by-id', label: 'Query by ID' },
+  { href: '#execute', label: 'Execute SQL' },
+  { href: '#generate', label: 'Generate SQL' },
+  { href: '#history', label: 'Query history' },
+  { href: '#errors', label: 'Error codes' },
+]
+
 export default function ApiDocsPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Home
-            </Link>
-            <span className="text-border">/</span>
-            <h1 className="text-lg font-semibold">API Documentation</h1>
-            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-              v1
-            </span>
-          </div>
-          <Link
-            href="/settings"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            <Key className="w-3.5 h-3.5" />
-            Get API Key
-          </Link>
-        </div>
-      </header>
-
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        {/* Intro */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold mb-3">NatureQuery REST API</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl">
+    <MarketingShell current="/docs/api">
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-24">
+        <p className="mk-label">
+          API <span className="text-mk-violet">v1</span>
+        </p>
+        <h1 className="mt-5 max-w-4xl text-balance font-nq-serif text-[clamp(2.6rem,5.8vw,4.6rem)] font-normal leading-[1.02] tracking-[-0.03em] text-mk-ink">
+          The NatureQuery REST API.
+        </h1>
+        <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <p className="max-w-[40rem] text-lg leading-relaxed text-mk-ink-2">
             Programmatic access to NatureQuery. Execute SQL queries, generate SQL from natural
             language, and manage your saved queries and connections.
           </p>
+          <Link href="/settings" className="mk-btn mk-btn-primary self-start md:self-end">
+            Get an API key
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
         </div>
+      </section>
 
-        {/* Quick nav */}
-        <nav className="mb-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          {[
-            { href: '#auth', label: 'Authentication', icon: Shield },
-            { href: '#rate-limits', label: 'Rate Limits', icon: Zap },
-            { href: '#connections', label: 'Connections', icon: Database },
-            { href: '#queries', label: 'Saved Queries', icon: BookmarkPlus },
-            { href: '#query-by-id', label: 'Query by ID', icon: Search },
-            { href: '#execute', label: 'Execute SQL', icon: Play },
-            { href: '#generate', label: 'Generate SQL', icon: Code2 },
-            { href: '#history', label: 'Query History', icon: History },
-          ].map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:border-primary/30 hover:bg-secondary/30 transition-all text-sm"
-            >
-              <item.icon className="w-4 h-4 text-primary shrink-0" />
-              {item.label}
-            </a>
-          ))}
+      <div className="mx-auto mt-14 grid max-w-[1200px] gap-12 px-5 pb-24 sm:mt-20 sm:px-8 sm:pb-32 lg:grid-cols-[13rem_1fr] lg:gap-16">
+        <nav aria-label="On this page" className="hidden lg:block">
+          <ol className="sticky top-28 space-y-2.5 border-l border-mk-rule pl-5">
+            {INDEX.map((item) => (
+              <li key={item.href}>
+                <a href={item.href} className="text-sm text-mk-ink-2 hover:text-mk-ink">
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ol>
         </nav>
 
-        <div className="space-y-16">
+        <div className="min-w-0 space-y-16">
           {/* Authentication */}
           <section id="auth" className="scroll-mt-20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Shield className="w-4.5 h-4.5 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold">Authentication</h3>
-            </div>
-            <p className="text-muted-foreground mb-4">
+            <h2 className="mb-4 font-nq-serif text-[2rem] leading-tight tracking-[-0.015em] text-mk-ink">
+              Authentication
+            </h2>
+            <p className="text-mk-ink-2 mb-4">
               All API requests require a Bearer token in the{' '}
-              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">Authorization</code> header.
-              Generate an API key from the{' '}
-              <Link href="/settings" className="text-primary hover:underline">
+              <code className="text-sm bg-mk-sunken px-1.5 py-0.5 rounded">Authorization</code>{' '}
+              header. Generate an API key from the{' '}
+              <Link href="/settings" className="mk-link">
                 Settings &rarr; API Keys
               </Link>{' '}
               tab.
             </p>
             <CodeBlock title="Authorization Header">{`Authorization: Bearer rp_your_api_key_here`}</CodeBlock>
-            <div className="mt-4 p-4 rounded-lg border border-border bg-muted/30">
-              <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Security:</strong> API keys are hashed with
-                SHA-256 before storage. The plaintext key is only shown once at creation. Treat it
-                like a password.
+            <div className="mt-4 p-4 rounded-lg border border-mk-rule bg-mk-sunken">
+              <p className="text-sm text-mk-ink-2">
+                <strong className="text-mk-ink">Security:</strong> API keys are hashed with SHA-256
+                before storage. The plaintext key is only shown once at creation. Treat it like a
+                password.
               </p>
             </div>
           </section>
 
           {/* Rate Limits */}
           <section id="rate-limits" className="scroll-mt-20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Zap className="w-4.5 h-4.5 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold">Rate Limits</h3>
-            </div>
-            <p className="text-muted-foreground mb-4">
+            <h2 className="mb-4 font-nq-serif text-[2rem] leading-tight tracking-[-0.015em] text-mk-ink">
+              Rate Limits
+            </h2>
+            <p className="text-mk-ink-2 mb-4">
               API requests are limited to{' '}
-              <strong className="text-foreground">60 requests per minute</strong> per API key. When
+              <strong className="text-mk-ink">60 requests per minute</strong> per API key. When
               exceeded, the API returns{' '}
-              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">429 Too Many Requests</code>{' '}
-              with a <code className="text-sm bg-muted px-1.5 py-0.5 rounded">Retry-After</code>{' '}
+              <code className="text-sm bg-mk-sunken px-1.5 py-0.5 rounded">
+                429 Too Many Requests
+              </code>{' '}
+              with a <code className="text-sm bg-mk-sunken px-1.5 py-0.5 rounded">Retry-After</code>{' '}
               header.
             </p>
             <CodeBlock title="429 Response">{`{
@@ -267,15 +223,10 @@ export default function ApiDocsPage() {
 
           {/* Response Format */}
           <section id="response-format" className="scroll-mt-20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileText className="w-4.5 h-4.5 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold">Response Format</h3>
-            </div>
-            <p className="text-muted-foreground mb-4">
-              All responses use a consistent JSON envelope:
-            </p>
+            <h2 className="mb-4 font-nq-serif text-[2rem] leading-tight tracking-[-0.015em] text-mk-ink">
+              Response Format
+            </h2>
+            <p className="text-mk-ink-2 mb-4">All responses use a consistent JSON envelope:</p>
             <div className="grid gap-4 lg:grid-cols-2">
               <CodeBlock title="Success">{`{
   "success": true,
@@ -300,7 +251,7 @@ export default function ApiDocsPage() {
             </div>
           </section>
 
-          <hr className="border-border" />
+          <hr className="border-mk-rule" />
 
           {/* ─── Endpoints ─── */}
 
@@ -616,91 +567,90 @@ export default function ApiDocsPage() {
 }`}
           />
 
-          <hr className="border-border" />
+          <hr className="border-mk-rule" />
 
           {/* Error Codes */}
           <section id="errors" className="scroll-mt-20">
-            <h3 className="text-xl font-semibold mb-4">Error Codes</h3>
-            <div className="rounded-lg border border-border overflow-hidden">
+            <h2 className="mb-4 font-nq-serif text-[2rem] leading-tight tracking-[-0.015em] text-mk-ink">
+              Error codes
+            </h2>
+            <div className="rounded-lg border border-mk-rule overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-muted/50 border-b border-border">
+                  <tr className="bg-mk-sunken border-b border-mk-rule">
                     <th className="text-left px-4 py-2.5 font-medium">Status</th>
                     <th className="text-left px-4 py-2.5 font-medium">Meaning</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/50">
+                <tbody className="divide-y divide-mk-rule">
                   <tr>
                     <td className="px-4 py-2">
                       <code>400</code>
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      Bad request — invalid JSON or failed validation
+                    <td className="px-4 py-2 text-mk-ink-2">
+                      Bad request: invalid JSON or failed validation
                     </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2">
                       <code>401</code>
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      Unauthorized — missing, invalid, or expired API key
+                    <td className="px-4 py-2 text-mk-ink-2">
+                      Unauthorized: missing, invalid, or expired API key
                     </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2">
                       <code>403</code>
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      Forbidden — plan limit reached (upgrade to continue)
+                    <td className="px-4 py-2 text-mk-ink-2">
+                      Forbidden: plan limit reached (upgrade to continue)
                     </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2">
                       <code>404</code>
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      Not found — resource doesn&apos;t exist or you don&apos;t have access
+                    <td className="px-4 py-2 text-mk-ink-2">
+                      Not found: resource doesn&apos;t exist or you don&apos;t have access
                     </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2">
                       <code>429</code>
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      Too many requests — rate limit exceeded, check Retry-After header
+                    <td className="px-4 py-2 text-mk-ink-2">
+                      Too many requests: rate limit exceeded, check Retry-After header
                     </td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2">
                       <code>500</code>
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">Internal server error</td>
+                    <td className="px-4 py-2 text-mk-ink-2">Internal server error</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
         </div>
+      </div>
 
-        {/* Footer CTA */}
-        <div className="mt-16 mb-8 text-center">
-          <p className="text-muted-foreground mb-3">Need help or have questions?</p>
-          <div className="flex items-center justify-center gap-3">
-            <Link
-              href="/settings"
-              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Manage API Keys
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-5 py-20 sm:px-8 md:flex-row md:items-center md:justify-between">
+          <h2 className="font-nq-serif text-[clamp(2rem,4vw,3rem)] font-normal italic leading-[1.05] tracking-[-0.02em] text-mk-ink">
+            Questions about the API?
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/settings" className="mk-btn mk-btn-primary">
+              Manage API keys
             </Link>
-            <Link
-              href="/dashboard"
-              className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-secondary transition-colors"
-            >
-              Open Dashboard
+            <Link href="/contact" className="mk-btn mk-btn-quiet">
+              Contact us
             </Link>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </MarketingShell>
   )
 }

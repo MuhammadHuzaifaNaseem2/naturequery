@@ -1,351 +1,227 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { AppLogo } from '@/components/AppLogo'
-import {
-  ArrowRight,
-  Target,
-  Heart,
-  Lightbulb,
-  Shield,
-  Users,
-  Zap,
-  Globe,
-  TrendingUp,
-} from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
 
 export const metadata: Metadata = {
   title: 'About - Our Mission',
   description:
-    'NatureQuery makes database querying accessible to everyone. Learn about our mission, values, and the team behind the product.',
+    'NatureQuery makes database querying accessible to everyone. Learn about our mission, values, and the story behind the product.',
 }
 
 const VALUES = [
   {
-    icon: Lightbulb,
-    title: 'Simplicity First',
+    title: 'Simplicity first',
     description:
-      "We believe powerful tools should be easy to use. If it takes a manual to understand, we've failed.",
+      "Powerful tools should be easy to use. If it takes a manual to understand, we've failed.",
   },
   {
-    icon: Shield,
-    title: 'Security by Default',
+    title: 'Security by default',
     description:
-      "Your data is sacred. AES-256 encryption, 2FA, and audit logs aren't add-ons; they're built into every layer.",
+      "AES-256 encryption, two-factor sign-in and audit logs aren't add-ons. They're built into every layer.",
   },
   {
-    icon: Heart,
-    title: 'User Obsessed',
+    title: 'Close to the people who use it',
     description:
-      'Every feature starts with a real user problem. We ship fast, listen closely, and iterate relentlessly.',
+      'Every feature starts with a real person and a real question. We ship, listen and improve.',
   },
   {
-    icon: Globe,
-    title: 'Open & Transparent',
+    title: 'Open and transparent',
     description:
-      'Transparent pricing, no hidden fees, no vendor lock-in. Your data stays yours, always.',
+      'Clear pricing, no hidden fees and no lock-in. You can export everything, any time. Your data stays yours.',
   },
 ]
 
 const MILESTONES = [
   {
     date: 'Jan 2026',
-    title: 'Idea Born',
+    title: 'The idea',
     description:
-      'Frustrated by writing SQL for non-technical teammates, the idea for NatureQuery was born.',
+      'Tired of writing SQL for non-technical teammates, we started building a way for them to ask on their own.',
   },
   {
     date: 'Feb 2026',
-    title: 'First Prototype',
+    title: 'First prototype',
     description:
-      'Built the core natural-language-to-SQL engine. First successful query generated from plain English.',
+      'The first plain-English question turned into working SQL and came back with the right answer.',
   },
   {
     date: 'Mar 2026',
-    title: 'Enterprise Features',
-    description:
-      'Added 2FA, audit logging, team collaboration, RBAC, and Stripe billing integration.',
+    title: 'Ready for teams',
+    description: 'Two-factor sign-in, audit logs, teams with roles, and billing.',
   },
   {
     date: 'May 2026',
-    title: 'Public Launch',
-    description: 'Launching with 30+ features and 14+ database types supported.',
+    title: 'Public launch',
+    description: 'NatureQuery opened to everyone, with support for 14 database types.',
+  },
+  {
+    date: 'Oct 2026',
+    title: 'NatureQuery Desktop',
+    description:
+      'A Windows app in the Microsoft Store for databases on office networks, and team plans that cover a whole company.',
   },
 ]
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <AppLogo size="md" />
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/download"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Download
-            </Link>
-            <Link href="/about" className="text-sm text-foreground font-medium">
-              About
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Get Started Free
-            </Link>
-          </div>
-          <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
+    <MarketingShell current="/about">
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 relative">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Target className="w-3.5 h-3.5" />
-              Our Mission
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Making data accessible
-              <span className="gradient-text block">to everyone</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-              We believe every team member, not just the SQL experts, should be able to ask
-              questions and get answers from their company&apos;s data. NatureQuery bridges the gap
-              between natural language and databases.
-            </p>
-          </div>
-        </div>
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-24">
+        <p className="mk-label">About</p>
+        <h1 className="mt-5 max-w-5xl text-balance font-nq-serif text-[clamp(2.6rem,5.8vw,4.9rem)] font-normal leading-[1.02] tracking-[-0.03em] text-mk-ink">
+          Data should answer anyone <em className="text-mk-ink-2">who knows the question.</em>
+        </h1>
+        <p className="mt-7 max-w-[38rem] text-lg leading-relaxed text-mk-ink-2">
+          Every person on a team, not just the SQL experts, should be able to ask their
+          company&apos;s data a question and get an answer. NatureQuery bridges plain language and
+          databases.
+        </p>
       </section>
 
-      {/* The Problem */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight mb-6">
-                The problem we&apos;re solving
-              </h2>
-              <div className="space-y-4 text-muted-foreground leading-relaxed">
-                <p>
-                  In most organizations, data lives in databases that only engineers can access.
-                  Product managers, analysts, and executives depend on engineering tickets to get
-                  simple answers. A question like &quot;How many users signed up last week?&quot;
-                  becomes a 3-day turnaround.
-                </p>
-                <p>
-                  Existing BI tools like Metabase or Retool require setup time, SQL knowledge, and
-                  ongoing maintenance. They&apos;re built for technical users who already know what
-                  they&apos;re looking for.
-                </p>
-                <p className="text-foreground font-medium">
-                  NatureQuery is different. You type a question in plain English, and get the answer
-                  in seconds. No SQL. No dashboards to configure. No waiting on engineering.
-                </p>
-              </div>
+      {/* The problem */}
+      <section className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-32">
+        <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
+          <div>
+            <p className="mk-label">The problem</p>
+            <h2 className="mt-4 font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+              A simple question shouldn&apos;t take three days.
+            </h2>
+            <div className="mt-6 space-y-4 text-[1.0625rem] leading-relaxed text-mk-ink-2">
+              <p>
+                In most organizations, data lives in databases that only engineers can reach.
+                Product managers, analysts and executives file tickets to get simple answers, and
+                &ldquo;How many people signed up last week?&rdquo; turns into a three-day wait.
+              </p>
+              <p>
+                BI tools like Metabase or Retool need setup, SQL knowledge and upkeep. They are
+                built for technical people who already know where to look.
+              </p>
+              <p className="text-mk-ink">
+                With NatureQuery you type the question in plain English and get the answer. No SQL,
+                no dashboards to configure, no waiting on engineering.
+              </p>
             </div>
-            <div className="relative">
-              <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-1">
-                      <span className="text-destructive font-bold text-sm">1</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm mb-1 line-through text-muted-foreground">
-                        Write a Jira ticket for data team
-                      </p>
-                      <p className="text-xs text-muted-foreground">Wait 3-5 business days</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-1">
-                      <span className="text-destructive font-bold text-sm">2</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm mb-1 line-through text-muted-foreground">
-                        Learn SQL syntax and table structure
-                      </p>
-                      <p className="text-xs text-muted-foreground">Ask someone what a JOIN is</p>
-                    </div>
-                  </div>
-                  <div className="border-t border-border pt-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-                        <Zap className="w-4 h-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm mb-1 text-primary">
-                          Just ask NatureQuery
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Get your answer in 2 seconds
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          </div>
+
+          <div className="self-center">
+            <table className="w-full border-collapse text-left">
+              <caption className="sr-only">Getting an answer, before and with NatureQuery</caption>
+              <thead>
+                <tr className="border-b border-mk-ink/80">
+                  <th scope="col" className="mk-label pb-3 font-medium">
+                    Before
+                  </th>
+                  <th scope="col" className="mk-label pb-3 pl-6 font-medium">
+                    How long
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-[0.9375rem]">
+                {[
+                  ['Write a ticket for the data team', 'Days'],
+                  ['Wait for someone to write the SQL', 'Days'],
+                  ['Ask a follow-up, start again', 'Days more'],
+                ].map(([step, time]) => (
+                  <tr key={step} className="border-b border-mk-rule">
+                    <td className="py-4 text-mk-ink-3 line-through decoration-mk-ink-3/50">
+                      {step}
+                    </td>
+                    <td className="py-4 pl-6 font-nq-mono text-[0.8rem] text-mk-ink-3">{time}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="pt-6 font-nq-serif text-[1.6rem] italic leading-tight text-mk-ink">
+                    Ask NatureQuery.
+                  </td>
+                  <td className="pl-6 pt-6 font-nq-mono text-[0.8rem] text-mk-violet">
+                    <span className="mk-highlight">One question</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
       {/* Values */}
-      <section className="py-20 bg-secondary/30">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">What we stand for</h2>
-            <p className="text-muted-foreground text-lg">
-              The principles that guide every decision we make.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {VALUES.map((value) => {
-              const Icon = value.icon
-              return (
-                <div
-                  key={value.title}
-                  className="bg-card border border-border/60 rounded-2xl p-6 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-semibold mb-2">{value.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {value.description}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+          <p className="mk-label">What we stand for</p>
+          <h2 className="mt-4 font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+            The principles behind each decision.
+          </h2>
+          <dl className="mt-12 grid gap-x-12 sm:grid-cols-2">
+            {VALUES.map((value) => (
+              <div key={value.title} className="border-t border-mk-rule py-6">
+                <dt className="text-lg font-semibold tracking-[-0.01em] text-mk-ink">
+                  {value.title}
+                </dt>
+                <dd className="mt-2 leading-relaxed text-mk-ink-2">{value.description}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
       {/* Timeline */}
-      <section className="py-20">
-        <div className="max-w-3xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider mb-4">
-              <TrendingUp className="w-3.5 h-3.5" />
-              Our Journey
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight mb-4">From idea to launch</h2>
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-24 sm:px-8 sm:py-28 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
+          <div>
+            <p className="mk-label">Our story</p>
+            <h2 className="mt-4 font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+              From an idea to two apps.
+            </h2>
           </div>
-
-          <div className="relative">
-            <div className="absolute left-[19px] top-0 bottom-0 w-px bg-border" />
-            <div className="space-y-10">
-              {MILESTONES.map((milestone, i) => (
-                <div key={milestone.date} className="relative flex gap-6">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                      i === MILESTONES.length - 1
-                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                        : 'bg-card border-2 border-border'
+          <ol className="relative space-y-10 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-mk-rule">
+            {MILESTONES.map((milestone, index) => {
+              const latest = index === MILESTONES.length - 1
+              return (
+                <li
+                  key={milestone.date}
+                  className="relative grid gap-1 pl-10 sm:grid-cols-[7rem_1fr] sm:gap-6"
+                >
+                  <span
+                    aria-hidden
+                    className={`absolute left-0 top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 ${
+                      latest ? 'border-mk-signal bg-mk-signal' : 'border-mk-violet bg-mk-paper'
                     }`}
                   >
-                    <span className="text-xs font-bold">{i + 1}</span>
+                    {!latest && <span className="h-1.5 w-1.5 rounded-full bg-mk-violet" />}
+                  </span>
+                  <p className="font-nq-mono text-[0.78rem] leading-6 text-mk-violet">
+                    {milestone.date}
+                  </p>
+                  <div>
+                    <h3 className="text-lg font-semibold tracking-[-0.01em] text-mk-ink">
+                      {milestone.title}
+                    </h3>
+                    <p className="mt-1.5 leading-relaxed text-mk-ink-2">{milestone.description}</p>
                   </div>
-                  <div className="pb-2">
-                    <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
-                      {milestone.date}
-                    </p>
-                    <h3 className="font-semibold mb-1">{milestone.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {milestone.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                </li>
+              )
+            })}
+          </ol>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="relative rounded-3xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
-            <div className="relative px-8 py-16 sm:px-16 sm:py-20 text-center">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Join us on this journey
-              </h2>
-              <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                Try NatureQuery free. The new way to talk to your database.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center gap-2 px-8 py-3 bg-white text-primary font-semibold rounded-xl hover:bg-white/90 transition-colors shadow-lg"
-                >
-                  Start Free <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-2 px-8 py-3 text-white/90 font-medium rounded-xl border border-white/20 hover:bg-white/10 transition-colors"
-                >
-                  Get in Touch
-                </Link>
-              </div>
-            </div>
+      {/* Closing */}
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+          <h2 className="max-w-4xl text-balance font-nq-serif text-[clamp(2.2rem,4.6vw,3.9rem)] font-normal italic leading-[1.04] tracking-[-0.025em] text-mk-ink">
+            Ask your data something today.
+          </h2>
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <Link href="/register" className="mk-btn mk-btn-primary">
+              Start free
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href="/contact" className="mk-btn mk-btn-quiet">
+              Contact us
+            </Link>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <AppLogo size="xs" showText={false} />
-            <span className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
-            </span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-            <Link href="/features" className="hover:text-foreground transition-colors">
-              Features
-            </Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </MarketingShell>
   )
 }

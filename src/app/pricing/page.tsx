@@ -1,28 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { AppLogo } from '@/components/AppLogo'
+import { ArrowRight, Check, Minus } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
 import { PricingCTAButton } from './PricingCTAButton'
-import {
-  Check,
-  X,
-  Zap,
-  ArrowRight,
-  HelpCircle,
-  Sparkles,
-  Shield,
-  Users,
-  Database,
-  BarChart3,
-  Clock,
-  KeyRound,
-  ScrollText,
-  Globe,
-} from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Pricing - Plans for Every Team',
   description:
-    'Simple, transparent pricing. Start free, upgrade when you need more power. No credit card required.',
+    'Start free with 50 AI questions a month. Pro is $20 a month and covers a team of five. Enterprise is $79 a month with no limits on connections or team members.',
 }
 
 const PLANS = [
@@ -30,132 +15,124 @@ const PLANS = [
     name: 'Free',
     price: '$0',
     period: 'forever',
-    description: 'For individuals exploring their data',
-    features: [
-      { text: '50 queries per month', included: true },
-      { text: '1 database connection', included: true },
-      { text: 'Excel & CSV export', included: true },
-      { text: 'Query history (30 days)', included: true },
-      { text: 'Team collaboration (5 members)', included: false },
-      { text: 'Data visualization', included: false },
-      { text: 'Saved queries & bookmarks', included: false },
-      { text: 'API access', included: false },
-      { text: 'Priority support', included: false },
-      { text: 'Custom AI models', included: false },
+    description: 'For one person exploring their data.',
+    points: [
+      '50 AI questions a month',
+      '1 database connection',
+      'Excel and CSV export',
+      '30 days of query history',
     ],
-    cta: 'Get Started Free',
+    cta: 'Start free',
     href: '/register',
-    planKey: null as 'PRO' | 'ENTERPRISE' | null,
-    highlighted: false,
-    badge: null,
+    planKey: null,
   },
   {
     name: 'Pro',
     price: '$20',
-    period: '/month',
-    description: 'For professionals and growing teams',
-    features: [
-      { text: 'Unlimited queries', included: true },
-      { text: '10 database connections', included: true },
-      { text: 'Excel & CSV export', included: true },
-      { text: 'Team collaboration (5 members)', included: true },
-      { text: 'Data visualization', included: true },
-      { text: 'Saved queries & bookmarks', included: true },
-      { text: 'API access', included: true },
-      { text: 'Priority support', included: true },
-      { text: 'SSO / SAML', included: false },
-      { text: 'Custom AI models', included: false },
+    period: 'a month',
+    description: 'For professionals and small teams.',
+    note: 'Covers you and up to 5 team members',
+    points: [
+      'Unlimited AI questions',
+      '10 database connections',
+      'Unlimited saved queries',
+      'Dashboards and scheduled queries',
+      'Shared query links and API access',
+      'Priority support',
     ],
-    cta: 'Get Started',
+    cta: 'Choose Pro',
     href: '/register?plan=pro',
-    planKey: 'PRO' as 'PRO' | 'ENTERPRISE' | null,
-    highlighted: true,
-    badge: 'Most Popular',
+    planKey: 'PRO',
+    featured: true,
   },
   {
     name: 'Enterprise',
     price: '$79',
-    period: '/month',
-    description: 'For organizations with advanced needs',
-    features: [
-      { text: 'Everything in Pro', included: true },
-      { text: 'Unlimited queries', included: true },
-      { text: 'Unlimited connections & members', included: true },
-      { text: 'SSO / SAML', included: true },
-      { text: 'Audit log & compliance', included: true },
-      { text: 'Custom AI models', included: true },
-      { text: 'Dedicated support & SLA', included: true },
+    period: 'a month',
+    description: 'For organizations with many databases.',
+    note: 'Covers your whole team',
+    points: [
+      'Everything in Pro',
+      'Unlimited database connections',
+      'Unlimited team members',
+      'Audit logs',
+      'Dedicated support and SLA',
     ],
-    cta: 'Contact Sales',
+    cta: 'Choose Enterprise',
     href: '/register?plan=enterprise',
-    planKey: 'ENTERPRISE' as 'PRO' | 'ENTERPRISE' | null,
-    highlighted: false,
-    badge: null,
+    planKey: 'ENTERPRISE',
   },
-]
+] as const
 
-const COMPARISON = [
-  {
-    category: 'AI Features',
-    features: [
-      { name: 'Natural Language to SQL', free: true, pro: true, enterprise: true },
-      { name: 'Conversational Follow-ups', free: true, pro: true, enterprise: true },
-      { name: 'Chain-of-Thought Reasoning', free: true, pro: true, enterprise: true },
-      { name: 'AI Fix It', free: true, pro: true, enterprise: true },
-      { name: 'AI Schema Discovery', free: true, pro: true, enterprise: true },
-      { name: 'SQL Explanation', free: true, pro: true, enterprise: true },
-    ],
-  },
-  {
-    category: 'Data & Export',
-    features: [
-      { name: 'Queries per month', free: '50', pro: 'Unlimited', enterprise: 'Unlimited' },
-      { name: 'Database connections', free: '1', pro: '10', enterprise: 'Unlimited' },
-      { name: 'Excel & CSV export', free: true, pro: true, enterprise: true },
-      { name: 'Column filters & search', free: true, pro: true, enterprise: true },
-      { name: 'Query history', free: '30 days', pro: 'Unlimited', enterprise: 'Unlimited' },
-      { name: 'Magic CSV Upload', free: true, pro: true, enterprise: true },
-    ],
-  },
-  {
-    category: 'Dashboards',
-    features: [
-      { name: 'Pin to dashboard', free: false, pro: true, enterprise: true },
-      { name: 'Scheduled queries', free: false, pro: true, enterprise: true },
-      { name: 'Shared query links', free: false, pro: true, enterprise: true },
-      { name: 'Auto visualizations', free: true, pro: true, enterprise: true },
-    ],
-  },
-  {
-    category: 'Team & Admin',
-    features: [
-      { name: 'Team members who share your plan', free: false, pro: '5', enterprise: 'Unlimited' },
-      { name: 'Role-based access', free: false, pro: true, enterprise: true },
-      { name: 'API access', free: false, pro: true, enterprise: true },
-      { name: 'Audit logs', free: false, pro: false, enterprise: true },
-      { name: 'GDPR data export', free: false, pro: false, enterprise: true },
-      { name: 'Dedicated support & SLA', free: false, pro: false, enterprise: true },
-    ],
-  },
-  {
-    category: 'Security',
-    features: [
-      { name: 'AES-256 encryption', free: true, pro: true, enterprise: true },
-      { name: 'Two-factor auth (2FA)', free: true, pro: true, enterprise: true },
-      { name: 'SQL injection prevention', free: true, pro: true, enterprise: true },
-      { name: 'Rate limiting', free: true, pro: true, enterprise: true },
-    ],
-  },
-]
+type Cell = boolean | string
+
+const COMPARISON: { category: string; features: { name: string; cells: [Cell, Cell, Cell] }[] }[] =
+  [
+    {
+      category: 'Asking questions',
+      features: [
+        { name: 'Plain English to SQL', cells: [true, true, true] },
+        { name: 'Follow-up questions', cells: [true, true, true] },
+        { name: 'Step-by-step reasoning before it writes SQL', cells: [true, true, true] },
+        { name: 'Fix with AI', cells: [true, true, true] },
+        { name: 'Schema insights', cells: [true, true, true] },
+        { name: 'Explain any query', cells: [true, true, true] },
+        { name: 'AI questions a month', cells: ['50', 'Unlimited', 'Unlimited'] },
+      ],
+    },
+    {
+      category: 'Data and export',
+      features: [
+        { name: 'Database connections', cells: ['1', '10', 'Unlimited'] },
+        { name: 'CSV and Excel uploads', cells: [true, true, true] },
+        { name: 'Excel and CSV export', cells: [true, true, true] },
+        { name: 'Column filters and search', cells: [true, true, true] },
+        { name: 'Query history', cells: ['30 days', 'Unlimited', 'Unlimited'] },
+      ],
+    },
+    {
+      category: 'Dashboards and sharing',
+      features: [
+        { name: 'Automatic charts', cells: [true, true, true] },
+        { name: 'Pin results to a dashboard', cells: [false, true, true] },
+        { name: 'Scheduled queries', cells: [false, true, true] },
+        { name: 'Shared query links', cells: [false, true, true] },
+      ],
+    },
+    {
+      category: 'Team and admin',
+      features: [
+        { name: 'Team members who share your plan', cells: [false, '5', 'Unlimited'] },
+        { name: 'Role-based access', cells: [false, true, true] },
+        { name: 'API access', cells: [false, true, true] },
+        { name: 'Audit logs', cells: [false, false, true] },
+        { name: 'Dedicated support and SLA', cells: [false, false, true] },
+      ],
+    },
+    {
+      category: 'Security and apps',
+      features: [
+        { name: 'Read-only query checks', cells: [true, true, true] },
+        { name: 'AES-256-GCM encrypted credentials', cells: [true, true, true] },
+        { name: 'Two-factor sign-in', cells: [true, true, true] },
+        { name: 'Export all your data', cells: [true, true, true] },
+        { name: 'NatureQuery Desktop for Windows', cells: [true, true, true] },
+      ],
+    },
+  ]
 
 const FAQS = [
+  {
+    q: 'Does one plan cover my team?',
+    a: 'Yes. Create a team under Settings, Team and invite colleagues. Everyone who accepts uses your plan on the website and in NatureQuery Desktop: up to 5 people on Pro, and as many as you like on Enterprise.',
+  },
   {
     q: 'Can I cancel anytime?',
     a: 'Yes. You can cancel your subscription anytime from your billing settings. Access continues until the end of your billing period.',
   },
   {
     q: 'What databases do you support?',
-    a: "PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift. We're constantly adding more.",
+    a: 'PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, IBM Db2, Amazon Redshift, BigQuery, Snowflake, CockroachDB, ClickHouse, DuckDB, Neon, PlanetScale, Turso, MongoDB, Cassandra, DynamoDB and Firestore, plus CSV and Excel uploads.',
   },
   {
     q: 'Can I change plans anytime?',
@@ -163,7 +140,7 @@ const FAQS = [
   },
   {
     q: 'Is my data secure?',
-    a: 'Yes. We use AES-256-GCM encryption for credentials, bcrypt for passwords, and never store your query results. All connections are encrypted in transit.',
+    a: 'Connection passwords are encrypted with AES-256-GCM, account passwords are hashed with bcrypt, and every query is checked to be read-only. Results are cached for a few minutes to speed up repeated queries, then expire. Query history keeps your questions and SQL, not the rows.',
   },
   {
     q: 'Do you offer annual billing?',
@@ -171,296 +148,196 @@ const FAQS = [
   },
   {
     q: 'What happens if I downgrade?',
-    a: "You'll be moved to the Free plan at the end of your billing period. No data loss; your saved queries and connections stay.",
+    a: "You'll be moved to the Free plan at the end of your billing period. No data loss: your saved queries and connections stay.",
   },
 ]
 
-function CellValue({ value }: { value: boolean | string }) {
-  if (typeof value === 'string') {
-    return <span className="text-sm font-medium">{value}</span>
-  }
+function CellValue({ value }: { value: Cell }) {
+  if (typeof value === 'string')
+    return <span className="font-nq-mono text-[0.8rem] text-mk-ink">{value}</span>
   return value ? (
-    <Check className="w-4.5 h-4.5 text-primary mx-auto" />
+    <Check className="mx-auto h-4 w-4 text-mk-violet" aria-label="Included" />
   ) : (
-    <X className="w-4 h-4 text-muted-foreground/40 mx-auto" />
+    <Minus className="mx-auto h-4 w-4 text-mk-ink-3/60" aria-label="Not included" />
   )
 }
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <AppLogo size="md" />
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Features
-            </Link>
-            <Link href="/pricing" className="text-sm text-foreground font-medium">
-              Pricing
-            </Link>
-            <Link
-              href="/download"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Download
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Get Started Free
-            </Link>
-          </div>
-          <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
+    <MarketingShell current="/pricing">
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-8 relative text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <Zap className="w-3.5 h-3.5" />
-            Simple Pricing
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-            One tool, three plans,
-            <span className="gradient-text block">zero surprises</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start free with 50 queries/month. Upgrade to Pro for unlimited power. No credit card
-            required.
-          </p>
-        </div>
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-24">
+        <p className="mk-label">Pricing</p>
+        <h1 className="mt-5 max-w-4xl text-balance font-nq-serif text-[clamp(2.6rem,5.8vw,4.9rem)] font-normal leading-[1.02] tracking-[-0.03em] text-mk-ink">
+          Start free. <em className="text-mk-ink-2">Upgrade when the questions add up.</em>
+        </h1>
+        <p className="mt-7 max-w-[38rem] text-lg leading-relaxed text-mk-ink-2">
+          Every plan includes the whole workflow: ask, follow up, explain, fix and summarize. Plans
+          differ in how many questions, connections and teammates you need.
+        </p>
       </section>
 
-      {/* Plan Cards */}
-      <section className="py-12">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-6">
-            {PLANS.map((plan) => (
+      {/* Plans */}
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-20">
+        <div className="grid border-y border-mk-rule md:grid-cols-3 md:divide-x md:divide-mk-rule">
+          {PLANS.map((plan) => {
+            const featured = 'featured' in plan && plan.featured
+            return (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl p-8 border flex flex-col transition-all duration-300 ${
-                  plan.highlighted
-                    ? 'border-primary bg-card shadow-xl shadow-primary/10 scale-[1.03]'
-                    : 'border-border/60 bg-card hover:border-border hover:shadow-lg'
+                className={`relative flex flex-col border-b border-mk-rule py-10 last:border-b-0 md:border-b-0 md:px-8 md:first:pl-0 md:last:pr-0 ${
+                  featured
+                    ? 'md:!px-8 md:bg-mk-surface before:absolute before:inset-x-0 before:top-[-1px] before:h-[2px] before:bg-mk-violet md:before:block before:hidden'
+                    : ''
                 }`}
               >
-                {plan.badge && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                    {plan.badge}
-                  </div>
-                )}
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold mb-2">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-bold tracking-tight">{plan.price}</span>
-                    <span className="text-muted-foreground text-sm">{plan.period}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
+                <div className="flex items-baseline justify-between gap-4">
+                  <h2 className="text-xl font-semibold text-mk-ink">{plan.name}</h2>
+                  {'note' in plan && (
+                    <span className="text-right font-nq-mono text-[0.68rem] uppercase tracking-[0.06em] text-mk-violet">
+                      {plan.note}
+                    </span>
+                  )}
                 </div>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {plan.features.map((feature) => (
-                    <li key={feature.text} className="flex items-start gap-2.5 text-sm">
-                      {feature.included ? (
-                        <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <X className="w-4 h-4 text-muted-foreground/30 flex-shrink-0 mt-0.5" />
-                      )}
-                      <span className={feature.included ? '' : 'text-muted-foreground/50'}>
-                        {feature.text}
-                      </span>
+                <p className="mt-1 text-[0.9375rem] text-mk-ink-3">{plan.description}</p>
+                <p className="mt-6 flex items-baseline gap-2">
+                  <span className="font-nq-serif text-6xl tracking-[-0.03em] text-mk-ink">
+                    {plan.price}
+                  </span>
+                  <span className="text-sm text-mk-ink-3">{plan.period}</span>
+                </p>
+                <ul className="mt-8 flex-1 space-y-3 text-[0.9375rem] text-mk-ink-2">
+                  {plan.points.map((point) => (
+                    <li key={point} className="flex gap-3">
+                      <span
+                        aria-hidden
+                        className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-mk-violet"
+                      />
+                      {point}
                     </li>
                   ))}
                 </ul>
-                <PricingCTAButton
-                  planKey={plan.planKey}
-                  fallbackHref={plan.href}
-                  label={plan.cta}
-                  highlighted={plan.highlighted}
-                />
+                <div className="mt-10">
+                  <PricingCTAButton
+                    planKey={plan.planKey}
+                    fallbackHref={plan.href}
+                    label={plan.cta}
+                    highlighted={Boolean(featured)}
+                  />
+                </div>
               </div>
+            )
+          })}
+        </div>
+        <p className="mt-5 text-sm text-mk-ink-3">
+          Prices in US dollars. NatureQuery Desktop for Windows is included with every plan.
+        </p>
+      </section>
+
+      {/* Comparison */}
+      <section className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-32">
+        <p className="mk-label">Compare plans</p>
+        <h2 className="mt-4 font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+          Every feature, side by side.
+        </h2>
+        <div className="mt-12 overflow-x-auto">
+          <table className="w-full min-w-[640px] border-collapse text-left">
+            <caption className="sr-only">Features included in each plan</caption>
+            <thead>
+              <tr className="border-b border-mk-ink/80">
+                <th scope="col" className="w-[46%] pb-4 text-sm font-medium text-mk-ink-3">
+                  Feature
+                </th>
+                {PLANS.map((plan) => (
+                  <th
+                    key={plan.name}
+                    scope="col"
+                    className="pb-4 text-center text-base font-semibold text-mk-ink"
+                  >
+                    {plan.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            {COMPARISON.map((group) => (
+              <tbody key={group.category}>
+                <tr>
+                  <th
+                    scope="colgroup"
+                    colSpan={4}
+                    className="mk-label border-b border-mk-rule pb-3 pt-10 text-left"
+                  >
+                    {group.category}
+                  </th>
+                </tr>
+                {group.features.map((feature) => (
+                  <tr key={feature.name} className="border-b border-mk-rule">
+                    <th
+                      scope="row"
+                      className="py-3.5 pr-4 text-[0.9375rem] font-normal text-mk-ink-2"
+                    >
+                      {feature.name}
+                    </th>
+                    {feature.cells.map((cell, index) => (
+                      <td
+                        key={index}
+                        className={`py-3.5 text-center ${index === 1 ? 'bg-mk-surface' : ''}`}
+                      >
+                        <CellValue value={cell} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
             ))}
-          </div>
+          </table>
         </div>
       </section>
 
-      {/* Feature Comparison Table */}
-      <section className="py-20 bg-secondary/30">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Compare plans in detail</h2>
-            <p className="text-muted-foreground text-lg">
-              Every feature, every plan, side by side.
+      {/* Questions */}
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-24 sm:px-8 sm:py-28 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20">
+          <div>
+            <p className="mk-label">Questions</p>
+            <h2 className="mt-4 font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+              About plans and billing.
+            </h2>
+            <p className="mt-5 text-mk-ink-2">
+              Something else?{' '}
+              <Link href="/contact" className="mk-link">
+                Write to us
+              </Link>
+              .
             </p>
           </div>
-
-          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-            {/* Header */}
-            <div className="grid grid-cols-4 border-b border-border bg-secondary/50">
-              <div className="p-4" />
-              <div className="p-4 text-center">
-                <p className="font-semibold text-sm">Free</p>
-                <p className="text-xs text-muted-foreground">$0/forever</p>
-              </div>
-              <div className="p-4 text-center bg-primary/5 border-x border-primary/10">
-                <p className="font-semibold text-sm text-primary">Pro</p>
-                <p className="text-xs text-muted-foreground">$20/month</p>
-              </div>
-              <div className="p-4 text-center">
-                <p className="font-semibold text-sm">Enterprise</p>
-                <p className="text-xs text-muted-foreground">$79/month</p>
-              </div>
-            </div>
-
-            {/* Categories */}
-            {COMPARISON.map((category) => (
-              <div key={category.category}>
-                <div className="px-4 py-3 bg-secondary/30 border-b border-border">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {category.category}
-                  </p>
-                </div>
-                {category.features.map((feature, i) => (
-                  <div
-                    key={feature.name}
-                    className={`grid grid-cols-4 ${i < category.features.length - 1 ? 'border-b border-border/50' : 'border-b border-border'}`}
-                  >
-                    <div className="p-3.5 text-sm">{feature.name}</div>
-                    <div className="p-3.5 text-center">
-                      <CellValue value={feature.free} />
-                    </div>
-                    <div className="p-3.5 text-center bg-primary/[0.02] border-x border-primary/5">
-                      <CellValue value={feature.pro} />
-                    </div>
-                    <div className="p-3.5 text-center">
-                      <CellValue value={feature.enterprise} />
-                    </div>
-                  </div>
-                ))}
+          <dl className="divide-y divide-mk-rule border-y border-mk-rule">
+            {FAQS.map((item) => (
+              <div key={item.q} className="py-6">
+                <dt className="font-nq-serif text-[1.35rem] leading-snug text-mk-ink">{item.q}</dt>
+                <dd className="mt-2.5 leading-relaxed text-mk-ink-2">{item.a}</dd>
               </div>
             ))}
-
-            {/* Bottom CTA row */}
-            <div className="grid grid-cols-4 bg-secondary/30">
-              <div className="p-4" />
-              <div className="p-4 text-center">
-                <Link href="/register" className="btn-secondary text-xs py-2 px-4">
-                  Get Started
-                </Link>
-              </div>
-              <div className="p-4 text-center bg-primary/5 border-x border-primary/10">
-                <Link href="/register?plan=pro" className="btn-primary text-xs py-2 px-4">
-                  Get Started
-                </Link>
-              </div>
-              <div className="p-4 text-center">
-                <Link href="/register?plan=enterprise" className="btn-secondary text-xs py-2 px-4">
-                  Contact Sales
-                </Link>
-              </div>
-            </div>
-          </div>
+          </dl>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-20">
-        <div className="max-w-3xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider mb-4">
-              <HelpCircle className="w-3.5 h-3.5" />
-              FAQ
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Common questions</h2>
-          </div>
-
-          <div className="space-y-4">
-            {FAQS.map((faq) => (
-              <div
-                key={faq.q}
-                className="border border-border/60 rounded-xl p-5 bg-card hover:border-border transition-colors"
-              >
-                <h3 className="font-semibold text-sm mb-2">{faq.q}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
-              </div>
-            ))}
+      {/* Closing */}
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+          <h2 className="max-w-4xl text-balance font-nq-serif text-[clamp(2.2rem,4.6vw,3.9rem)] font-normal italic leading-[1.04] tracking-[-0.025em] text-mk-ink">
+            Fifty questions a month, free, for as long as you like.
+          </h2>
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <Link href="/register" className="mk-btn mk-btn-primary">
+              Start free
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href="/download" className="mk-btn mk-btn-quiet">
+              Download for Windows
+            </Link>
           </div>
         </div>
       </section>
-
-      {/* CTA */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="relative rounded-3xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
-            <div className="relative px-8 py-16 sm:px-16 sm:py-20 text-center">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Start querying in under 2 minutes
-              </h2>
-              <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                No credit card. No setup headaches. Just connect your database and start asking
-                questions.
-              </p>
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-white text-primary font-semibold rounded-xl hover:bg-white/90 transition-colors shadow-lg"
-              >
-                Get Started Free
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <AppLogo size="xs" showText={false} />
-            <span className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
-            </span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-            <Link href="/features" className="hover:text-foreground transition-colors">
-              Features
-            </Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </MarketingShell>
   )
 }

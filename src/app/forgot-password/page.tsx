@@ -1,5 +1,6 @@
 'use client'
 
+import { brandFonts } from '@/app/fonts'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { AppLogo } from '@/components/AppLogo'
@@ -34,7 +35,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className={`mk ${brandFonts} min-h-screen flex items-center justify-center p-4`}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
@@ -116,7 +117,10 @@ export default function ForgotPasswordPage() {
             </button>
 
             <div className="text-center">
-              <Link href="/login" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+              <Link
+                href="/login"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+              >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 {t('auth.forgotPassword.backToSignIn')}
               </Link>
@@ -127,8 +131,3 @@ export default function ForgotPasswordPage() {
     </div>
   )
 }
-
-
-
-
-

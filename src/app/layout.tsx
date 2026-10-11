@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: '%s | NatureQuery',
   },
   description:
-    'Ask questions in plain English and get instant SQL queries with AI-powered insights. Connect to PostgreSQL, MySQL, or SQLite.',
+    'Ask questions in plain English. NatureQuery writes read-only SQL for PostgreSQL, SQL Server, Snowflake, BigQuery and 16 more databases, runs it, and returns tables, charts and summaries.',
   keywords: [
     'natural language to SQL',
     'AI SQL generator',
@@ -93,7 +93,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               operatingSystem: 'Web',
               url: 'https://naturequery.app',
               description:
-                'AI-powered platform that converts natural language questions into SQL queries instantly. Connect PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift.',
+                'Converts plain-English questions into read-only SQL and runs it on your database. Works with PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, BigQuery, MongoDB and 13 more databases.',
               offers: [
                 {
                   '@type': 'Offer',
@@ -105,14 +105,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 {
                   '@type': 'Offer',
                   name: 'Pro Plan',
-                  price: '19',
+                  price: '20',
                   priceCurrency: 'USD',
                   description: 'Unlimited queries, 10 connections, CSV/Excel export',
                 },
               ],
               featureList: [
                 'Natural language to SQL conversion',
-                'PostgreSQL, MySQL, SQLite, SQL Server support',
+                'PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, BigQuery and 14 more databases',
                 'CSV and Excel export',
                 'Conversational follow-up queries',
                 'Magic CSV Upload',

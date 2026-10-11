@@ -1,5 +1,6 @@
 'use client'
 
+import { brandFonts } from '@/app/fonts'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -74,7 +75,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className={`mk ${brandFonts} min-h-screen flex items-center justify-center p-4`}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5 mb-6">

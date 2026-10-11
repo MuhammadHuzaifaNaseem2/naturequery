@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { AppLogo } from '@/components/AppLogo'
-import { HelpCircle, ChevronDown, ArrowRight, MessageSquare, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
 
 interface FAQItem {
   question: string
@@ -11,346 +11,224 @@ interface FAQItem {
   category: string
 }
 
-const CATEGORIES = ['All', 'Getting Started', 'Features', 'Security', 'Billing', 'Enterprise']
+const CATEGORIES = ['All', 'Getting started', 'Features', 'Security', 'Billing', 'Teams']
 
 const FAQ_ITEMS: FAQItem[] = [
-  // Getting Started
   {
-    category: 'Getting Started',
+    category: 'Getting started',
     question: 'What is NatureQuery?',
     answer:
-      'NatureQuery is an AI-powered platform that lets you query your databases using plain English. Instead of writing SQL, you simply type a question like "How many users signed up last week?" and NatureQuery generates and executes the SQL for you.',
+      'NatureQuery lets you query your databases in plain English. Instead of writing SQL, you type a question like "How many users signed up last week?" and NatureQuery writes read-only SQL, runs it and shows you the answer.',
   },
   {
-    category: 'Getting Started',
+    category: 'Getting started',
     question: 'Which databases are supported?',
     answer:
-      'NatureQuery supports PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift. We connect directly to your database using encrypted credentials. No data migration or ETL needed.',
+      'PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, IBM Db2, Amazon Redshift, BigQuery, Snowflake, CockroachDB, ClickHouse, DuckDB, Neon, PlanetScale, Turso, MongoDB, Cassandra, DynamoDB and Firestore. You can also upload CSV and Excel files. No data migration or ETL needed.',
   },
   {
-    category: 'Getting Started',
+    category: 'Getting started',
     question: 'How do I get started?',
     answer:
-      'Sign up for a free account, connect your database (or try our demo database), and start asking questions in plain English. The whole setup takes under 2 minutes. No credit card required.',
+      'Sign up for a free account, connect your database or try the demo database, and start asking questions in plain English. Setup takes a few minutes, and no credit card is needed.',
   },
   {
-    category: 'Getting Started',
+    category: 'Getting started',
     question: 'Do I need to know SQL?',
     answer:
-      "Not at all! That's the whole point. NatureQuery translates your natural language questions into SQL automatically. You can also view the generated SQL if you want to learn or verify the query.",
-  },
-  // Features
-  {
-    category: 'Features',
-    question: 'How accurate is the SQL generation?',
-    answer:
-      'NatureQuery uses state-of-the-art large language models combined with deep schema understanding to generate highly accurate SQL for most common queries. It reads your actual database schema to produce precise queries. For complex joins or edge cases, you can always review and edit the generated SQL before executing.',
+      "No, that's the point. NatureQuery turns your questions into SQL for you. You can always see the SQL it wrote, to learn from it or to check it.",
   },
   {
-    category: 'Features',
-    question: 'What is conversational follow-up?',
+    category: 'Getting started',
+    question: 'Is there a desktop app?',
     answer:
-      'NatureQuery remembers context from your previous queries (up to 5 turns). So you can ask "Show me top customers" and then follow up with "Now filter those by last month" without repeating the full context.',
+      'Yes. NatureQuery Desktop for Windows is free in the Microsoft Store. It connects to databases on your own computer or office network that a website cannot reach, and uses the same account and plan.',
   },
   {
     category: 'Features',
-    question: 'Can I export query results?',
+    question: 'How accurate is the SQL?',
     answer:
-      'Yes! You can export results as Excel or CSV. Pro and Enterprise plans also support scheduled exports and automated reporting via email.',
+      'NatureQuery reads your actual schema (tables, columns, types and keys) and writes SQL for your specific database, which makes it accurate for most everyday questions. For complex joins or edge cases, review and edit the SQL before you rely on it. Explain describes any query in plain English to help.',
   },
   {
     category: 'Features',
-    question: 'What is Magic CSV Upload?',
+    question: 'What are follow-up questions?',
     answer:
-      'Magic CSV Upload lets you upload a CSV file and instantly query it using natural language. No database setup required. NatureQuery auto-creates a database table from your CSV, infers column types, and lets you explore it with AI.',
+      'NatureQuery remembers your recent questions, so after "Show me top customers" you can ask "Now only last month" without repeating yourself. It changes the query it just wrote.',
   },
   {
     category: 'Features',
-    question: 'Does NatureQuery support Chain-of-Thought mode?',
+    question: 'Can I export results?',
     answer:
-      "Yes. Chain-of-Thought (CoT) mode shows you the AI's reasoning process as it generates SQL, including what tables it's considering, how it interprets your question, and why it chose a particular approach. Great for learning and debugging.",
+      'Yes, as Excel or CSV files. Pro and Enterprise plans can also schedule queries and email the results.',
   },
-  // Security
+  {
+    category: 'Features',
+    question: 'Can I ask questions about a spreadsheet?',
+    answer:
+      'Yes. Upload a CSV or Excel file and NatureQuery creates a table from it, works out the column types and lets you ask questions straight away. No database setup needed.',
+  },
+  {
+    category: 'Features',
+    question: 'Can I see how it reasons?',
+    answer:
+      'Yes. NatureQuery can show its reasoning step by step while it writes the SQL: which tables it considers, how it reads your question, and why it chose its approach.',
+  },
   {
     category: 'Security',
     question: 'Is my database data safe?',
     answer:
-      'Absolutely. NatureQuery never stores your query results. Database credentials are encrypted with AES-256 at rest. All connections use TLS/SSL. We also support read-only database users so NatureQuery can never modify your data.',
+      'Every query is checked to be read-only before it runs, so NatureQuery cannot change your data. Database credentials are encrypted with AES-256-GCM, and you can also connect with a read-only database user. Results are cached for a few minutes to speed up repeated queries, then expire.',
   },
   {
     category: 'Security',
-    question: 'Do you support two-factor authentication?',
+    question: 'Do you support two-factor sign-in?',
     answer:
-      'Yes. We support TOTP-based 2FA (compatible with Google Authenticator, Authy, etc.) plus backup codes. Enterprise plans can enforce 2FA for all team members.',
+      'Yes. Use any authenticator app, such as Google Authenticator or Authy, plus backup codes for recovery.',
   },
   {
     category: 'Security',
-    question: 'Where is my data processed?',
+    question: 'What does the AI see?',
     answer:
-      "Your natural language queries are processed by our AI engine to generate SQL. The generated SQL is then executed directly against your database. We don't store your data or query results, only metadata like query count for billing.",
+      'To write a query, the AI sees your question and the structure of your tables (names, columns and types), not the rows in them. AI Insights sends a few sample rows and column statistics, and desktop summaries can include result rows only if you turn that on. The privacy policy lists each case.',
   },
-  // Billing
   {
     category: 'Billing',
     question: 'Is there a free plan?',
     answer:
-      'Yes! The free plan includes 50 queries per month, 1 database connection, and core features. No credit card required. Upgrade anytime when you need more.',
+      'Yes. The Free plan includes 50 AI questions a month, 1 database connection and the core features, with no credit card. Upgrade any time.',
   },
   {
     category: 'Billing',
-    question: 'Can I cancel my subscription anytime?',
+    question: 'Can I cancel any time?',
     answer:
-      'Yes. You can cancel your Pro or Enterprise subscription at any time from your billing settings. You keep access until the end of your current billing period.',
+      'Yes. Cancel your Pro or Enterprise subscription from your billing settings whenever you like. You keep access until the end of the period you paid for.',
   },
   {
     category: 'Billing',
-    question: 'Can I change or cancel my plan anytime?',
+    question: 'Can I change plans?',
     answer:
-      'Yes. You can upgrade, downgrade, or cancel your plan at any time from your billing settings. Downgrades take effect at the end of your current billing cycle. No cancellation fees.',
+      'Yes. Upgrade, downgrade or cancel from your billing settings. Downgrades take effect at the end of your current billing period, and there are no cancellation fees.',
   },
-  // Enterprise
   {
-    category: 'Enterprise',
+    category: 'Teams',
+    question: 'Does one plan cover my whole team?',
+    answer:
+      'Yes. Create a team under Settings, Team and invite colleagues. Everyone who accepts uses your plan on the website and in NatureQuery Desktop: up to 5 people on Pro, and unlimited on Enterprise.',
+  },
+  {
+    category: 'Teams',
     question: 'What does the Enterprise plan include?',
     answer:
-      'Enterprise includes unlimited queries, unlimited connections, unlimited team members, RBAC, audit logs, SSO/SAML, priority support, custom SLA, and dedicated onboarding. Contact our sales team for pricing.',
+      'Unlimited AI questions, unlimited connections and team members, roles, audit logs, and dedicated support with an SLA.',
   },
   {
-    category: 'Enterprise',
-    question: 'Do you offer on-premise deployment?',
+    category: 'Teams',
+    question: 'Can we run NatureQuery inside our own network?',
     answer:
-      "Not yet, but it's on our roadmap for Q3 2026. In the meantime, our cloud offering uses enterprise-grade security with encrypted connections, and your data never leaves your database. Only the generated SQL is transmitted.",
+      'NatureQuery Desktop runs on your own PCs and connects directly to databases on your network, so they never need to be exposed to the internet. Connection passwords stay on each computer.',
   },
   {
-    category: 'Enterprise',
+    category: 'Teams',
     question: "Can I manage my team's access?",
     answer:
-      'Yes. Enterprise plans include role-based access control (RBAC) with Owner, Admin, Member, and Viewer roles. You can control who can create connections, execute queries, manage billing, and invite team members.',
+      'Yes. Pro and Enterprise teams have Owner, Admin, Member and Viewer roles that decide who can invite people, manage connections and run queries.',
   },
 ]
 
-function FAQAccordion({
-  item,
-  isOpen,
-  onToggle,
-}: {
-  item: FAQItem
-  isOpen: boolean
-  onToggle: () => void
-}) {
-  return (
-    <div className="border border-border/60 rounded-xl overflow-hidden hover:border-primary/20 transition-colors">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-secondary/30 transition-colors"
-      >
-        <span className="font-medium text-sm pr-4">{item.question}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-      <div
-        className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96' : 'max-h-0'}`}
-      >
-        <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{item.answer}</div>
-      </div>
-    </div>
-  )
-}
-
 export default function FAQPage() {
   const [activeCategory, setActiveCategory] = useState('All')
-  const [openIndex, setOpenIndex] = useState<number | null>(0)
   const [search, setSearch] = useState('')
 
-  const filtered = FAQ_ITEMS.filter((item) => {
-    const matchesCategory = activeCategory === 'All' || item.category === activeCategory
-    const matchesSearch =
-      !search ||
-      item.question.toLowerCase().includes(search.toLowerCase()) ||
-      item.answer.toLowerCase().includes(search.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+  const query = search.trim().toLowerCase()
+  const items = FAQ_ITEMS.filter(
+    (item) =>
+      (activeCategory === 'All' || item.category === activeCategory) &&
+      (!query ||
+        item.question.toLowerCase().includes(query) ||
+        item.answer.toLowerCase().includes(query))
+  )
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <AppLogo size="md" />
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/download"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Download
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Get Started Free
-            </Link>
-          </div>
-          <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="max-w-4xl mx-auto px-6 pt-20 pb-10 relative text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <HelpCircle className="w-3.5 h-3.5" />
-            FAQ
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
-            Frequently asked
-            <span className="gradient-text"> questions</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Everything you need to know about NatureQuery. Can&apos;t find what you&apos;re looking
-            for? Reach out to our team.
-          </p>
-
-          {/* Search */}
-          <div className="max-w-md mx-auto">
-            <label className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl text-sm cursor-text hover:border-primary/30 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-              <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search questions..."
-                className="bg-transparent outline-none w-full placeholder:text-muted-foreground"
-              />
-            </label>
-          </div>
-        </div>
+    <MarketingShell>
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-24">
+        <p className="mk-label">Questions</p>
+        <h1 className="mt-5 max-w-4xl text-balance font-nq-serif text-[clamp(2.6rem,5.8vw,4.9rem)] font-normal leading-[1.02] tracking-[-0.03em] text-mk-ink">
+          Answers about NatureQuery.
+        </h1>
+        <p className="mt-6 max-w-[38rem] text-lg leading-relaxed text-mk-ink-2">
+          Can&apos;t find yours?{' '}
+          <Link href="/contact" className="mk-link">
+            Write to us
+          </Link>{' '}
+          and we will answer.
+        </p>
       </section>
 
-      {/* Category Tabs */}
-      <section className="pb-4">
-        <div className="max-w-3xl mx-auto px-6">
-          <div className="flex flex-wrap items-center gap-2 justify-center">
-            {CATEGORIES.map((cat) => (
+      <section className="mx-auto max-w-[1200px] px-5 pb-24 pt-12 sm:px-8 sm:pb-32 sm:pt-16">
+        <div className="flex flex-col gap-6 border-b border-mk-ink/80 pb-5 md:flex-row md:items-end md:justify-between">
+          <div role="tablist" aria-label="Topics" className="flex flex-wrap gap-x-6 gap-y-2">
+            {CATEGORIES.map((category) => (
               <button
-                key={cat}
-                onClick={() => {
-                  setActiveCategory(cat)
-                  setOpenIndex(null)
-                }}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                  activeCategory === cat
-                    ? 'bg-primary text-white shadow-md'
-                    : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'
-                }`}
+                key={category}
+                type="button"
+                role="tab"
+                aria-selected={activeCategory === category}
+                onClick={() => setActiveCategory(category)}
+                className="text-[0.9375rem] text-mk-ink-3 transition-colors hover:text-mk-ink aria-selected:font-medium aria-selected:text-mk-ink aria-selected:underline aria-selected:decoration-mk-violet aria-selected:decoration-2 aria-selected:underline-offset-8"
               >
-                {cat}
+                {category}
               </button>
             ))}
           </div>
+          <label className="relative block md:w-72">
+            <span className="sr-only">Search questions</span>
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mk-ink-3"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search questions"
+              className="h-10 w-full rounded-md border border-mk-rule bg-mk-surface pl-9 pr-3 text-[0.9375rem] text-mk-ink placeholder:text-mk-ink-3 focus:border-mk-violet focus:outline-none"
+            />
+          </label>
         </div>
-      </section>
 
-      {/* FAQ List */}
-      <section className="py-10">
-        <div className="max-w-3xl mx-auto px-6">
-          {filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <HelpCircle className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                No matching questions found. Try a different search term.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filtered.map((item, i) => (
-                <FAQAccordion
-                  key={`${item.category}-${i}`}
-                  item={item}
-                  isOpen={openIndex === i}
-                  onToggle={() => setOpenIndex(openIndex === i ? null : i)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {items.length === 0 ? (
+          <p className="py-16 text-mk-ink-2">
+            No questions match &ldquo;{search}&rdquo;. Try another word, or{' '}
+            <Link href="/contact" className="mk-link">
+              ask us directly
+            </Link>
+            .
+          </p>
+        ) : (
+          <div className="divide-y divide-mk-rule">
+            {items.map((item, index) => (
+              <details key={item.question} open={index === 0 && !query} className="group py-6">
+                <summary className="grid cursor-pointer list-none gap-2 md:grid-cols-[12rem_1fr_auto] md:gap-10 [&::-webkit-details-marker]:hidden">
+                  <span className="mk-label md:pt-2">{item.category}</span>
+                  <span className="font-nq-serif text-[1.35rem] leading-snug text-mk-ink">
+                    {item.question}
+                  </span>
+                  <span
+                    aria-hidden
+                    className="hidden font-nq-mono text-lg leading-none text-mk-violet transition-transform group-open:rotate-45 md:block md:pt-1.5"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 max-w-[44rem] leading-relaxed text-mk-ink-2 md:ml-[calc(12rem+2.5rem)]">
+                  {item.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        )}
       </section>
-
-      {/* Still have questions CTA */}
-      <section className="py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <div className="bg-card border border-border rounded-2xl p-10">
-            <MessageSquare className="w-8 h-8 text-primary mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-3">Still have questions?</h2>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Can&apos;t find the answer you&apos;re looking for? Our team is happy to help.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/contact" className="btn-primary text-sm py-2.5 px-6">
-                Contact Us <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a href="mailto:hello@naturequery.app" className="btn-secondary text-sm py-2.5 px-6">
-                Email Support
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <AppLogo size="xs" showText={false} />
-            <span className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
-            </span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-            <Link href="/features" className="hover:text-foreground transition-colors">
-              Features
-            </Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </MarketingShell>
   )
 }

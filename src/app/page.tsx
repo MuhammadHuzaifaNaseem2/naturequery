@@ -1,56 +1,97 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
-import { AppLogo } from '@/components/AppLogo'
+import { ArrowRight, ArrowUpRight } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
+import { QuestionPath } from '@/components/marketing/QuestionPath'
+import { QuestionToAnswer } from '@/components/marketing/QuestionToAnswer'
+import { Shot } from '@/components/marketing/Shot'
 import { StoreBadge } from '@/components/StoreBadge'
-import {
-  Sparkles,
-  Database,
-  FileSpreadsheet,
-  Shield,
-  Users,
-  Zap,
-  ArrowRight,
-  Check,
-  BarChart3,
-  Globe,
-  MonitorDown,
-} from 'lucide-react'
 
-const FEATURES = [
+export const metadata: Metadata = {
+  title: 'NatureQuery - Natural Language to SQL',
+  description:
+    'Ask questions in plain English. NatureQuery writes read-only SQL for PostgreSQL, SQL Server, Snowflake, BigQuery and 16 more databases, runs it, and returns tables, charts and summaries.',
+}
+
+const DEMO_VIDEO = 'https://www.youtube.com/watch?v=0h5kmva3wq0'
+
+const DATABASES = [
+  'PostgreSQL',
+  'MySQL',
+  'MariaDB',
+  'SQL Server',
+  'Oracle',
+  'SQLite',
+  'IBM Db2',
+  'Amazon Redshift',
+  'BigQuery',
+  'Snowflake',
+  'CockroachDB',
+  'ClickHouse',
+  'DuckDB',
+  'Neon',
+  'PlanetScale',
+  'Turso',
+  'MongoDB',
+  'Cassandra',
+  'DynamoDB',
+  'Firestore',
+]
+
+const SHOWCASE = [
   {
-    icon: Sparkles,
-    title: 'Natural Language to SQL',
-    description:
-      'Ask questions in plain English. Our AI converts them to optimized SQL queries instantly.',
+    label: 'Follow-up questions',
+    title: 'Ask the next question the way you would ask a colleague.',
+    text: 'Say “only last month” or “split it by region”. NatureQuery refines the query it just wrote instead of starting over.',
+    image: '/marketing/ask.png',
+    alt: 'NatureQuery with a follow-up box, the SQL it wrote, and the top five customers by spending',
+    caption: 'A follow-up box under the last question, the SQL, and the result',
+    region: { x: 540, y: 118, w: 1380 },
+    aspect: 1.85,
   },
   {
-    icon: Database,
-    title: 'Multi-Database Support',
-    description: 'Connect to PostgreSQL, MySQL, or SQLite. Switch between databases seamlessly.',
+    label: 'Charts',
+    title: 'A chart without building one.',
+    text: 'Switch any result to a bar, line, area, pie or scatter chart in one click, then open it full screen for the meeting.',
+    image: '/marketing/chart.png',
+    alt: 'Monthly revenue from the sample store drawn as an area chart in NatureQuery',
+    caption: 'Twelve months of revenue from the sample store, as an area chart',
+    region: { x: 545, y: 548, w: 1375 },
+    aspect: 3.2,
   },
   {
-    icon: FileSpreadsheet,
-    title: 'Export to Excel & CSV',
-    description:
-      'Download query results as formatted Excel spreadsheets or CSV files with one click.',
+    label: 'Explain and summarize',
+    title: 'Answers the whole team can read.',
+    text: 'Explain turns any query into plain English, so you know exactly what was counted. Summarize turns a result into a few sentences you can paste into a report.',
+    image: '/marketing/summarize.png',
+    alt: 'A plain-English summary of the top five customers next to the query result in NatureQuery',
+    caption: 'A summary beside the result, ready to paste into a report',
+    region: { x: 540, y: 490, w: 1380 },
+    aspect: 2.85,
+  },
+]
+
+const SAFEGUARDS = [
+  {
+    term: 'Read-only',
+    text: 'Queries that would change your data are refused before they reach your database, on the web and in the desktop app.',
   },
   {
-    icon: BarChart3,
-    title: 'Data Visualization',
-    description:
-      'Auto-generate bar, line, and pie charts from your query results. No configuration needed.',
+    term: 'Schema, not rows',
+    text: 'Writing a query needs only table and column names. The few features that use result rows are spelled out in the privacy policy.',
   },
   {
-    icon: Users,
-    title: 'Team Collaboration',
-    description:
-      'Create teams, invite members, share connections and saved queries with role-based access.',
+    term: 'Encrypted credentials',
+    text: 'Connection passwords are encrypted with AES-256-GCM on the web, and with your Windows account in the desktop app.',
   },
   {
-    icon: Shield,
-    title: 'Enterprise Security',
-    description:
-      'AES-256 encryption, audit logging, API key management, and rate limiting built in.',
+    term: 'Your sign-in',
+    text: 'Two-factor sign-in with backup codes, and a list of every computer signed in to your account.',
+  },
+  {
+    term: 'Audit log',
+    text: 'Sign-ins and sensitive actions are recorded, so you can see who did what and when.',
   },
 ]
 
@@ -59,494 +100,288 @@ const PLANS = [
     name: 'Free',
     price: '$0',
     period: 'forever',
-    description: 'For individuals exploring their data',
-    features: [
-      '50 queries per month',
-      '1 database connection',
-      'Excel & CSV export',
-      'Query history (30 days)',
-    ],
-    cta: 'Get Started',
+    points: ['50 AI questions a month', '1 database connection', 'Excel and CSV export'],
+    cta: 'Start free',
     href: '/register',
-    highlighted: false,
   },
   {
     name: 'Pro',
     price: '$20',
-    period: 'per month',
-    description: 'For professionals and small teams',
-    features: [
-      'Unlimited queries',
+    period: 'a month',
+    points: [
+      'Unlimited AI questions',
       '10 database connections',
-      'Team collaboration (5 members)',
-      'Data visualization',
-      'Saved queries & bookmarks',
-      'API access',
-      'Priority support',
+      'Shared with up to 5 team members',
     ],
-    cta: 'Get Started',
+    cta: 'Choose Pro',
     href: '/register?plan=pro',
-    highlighted: true,
+    featured: true,
   },
   {
     name: 'Enterprise',
     price: '$79',
-    period: 'per month',
-    description: 'For organizations with advanced needs',
-    features: [
-      'Everything in Pro',
-      'Unlimited connections & members',
-      'SSO / SAML',
-      'Audit log & compliance',
-      'Custom AI models',
-      'Dedicated support & SLA',
-    ],
-    cta: 'Contact Sales',
+    period: 'a month',
+    points: ['Unlimited connections and team members', 'Audit logs', 'Dedicated support'],
+    cta: 'Choose Enterprise',
     href: '/register?plan=enterprise',
-    highlighted: false,
   },
 ]
 
-const STATS = [
-  { value: 'AI', label: 'Natural Language to SQL' },
-  { value: '14+', label: 'Database Types' },
-  { value: 'Free', label: 'to Get Started' },
-  { value: '<2s', label: 'Avg Response Time' },
-]
-
-export const metadata: Metadata = {
-  title: 'NatureQuery - Natural Language to SQL',
-  description:
-    'Ask questions in plain English and get instant SQL queries with AI-powered insights. Connects to 14+ databases including PostgreSQL, MySQL, MongoDB, Snowflake, BigQuery, and more.',
+function SectionHeading({ label, title }: { label: string; title: React.ReactNode }) {
+  return (
+    <div className="max-w-3xl">
+      <p className="mk-label">{label}</p>
+      <h2 className="mt-4 text-balance font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em] text-mk-ink">
+        {title}
+      </h2>
+    </div>
+  )
 }
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/">
-            <AppLogo size="md" />
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/download"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Download
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Get Started Free
-            </Link>
-          </div>
-          <div className="md:hidden flex items-center gap-3">
-            <Link href="/login" className="btn-ghost text-sm py-2">
-              Sign In
-            </Link>
-            <Link href="/register" className="btn-primary text-sm py-2">
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-24 relative">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Zap className="w-3.5 h-3.5" />
-              No SQL knowledge required
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Ask your database
-              <span className="gradient-text block">in plain English</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              NatureQuery converts natural language questions into SQL queries, executes them on
-              your database, and exports the results. No SQL knowledge required.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/register"
-                className="btn-primary text-base px-8 py-3 shadow-lg glow-primary"
-              >
-                Start Free
-                <ArrowRight className="w-4 h-4" />
+    <MarketingShell current="/">
+      {/* Hero: the claim, then the proof. */}
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-24">
+        <h1 className="font-nq-serif text-[clamp(2.75rem,6.6vw,5.6rem)] font-normal leading-[1] tracking-[-0.03em] text-mk-ink">
+          <span className="block">
+            Your database speaks{' '}
+            <span className="font-nq-mono text-[0.8em] font-medium tracking-[-0.05em] text-mk-violet">
+              SQL
+            </span>
+            .
+          </span>
+          <em className="block text-mk-ink-2">You don&apos;t have to.</em>
+        </h1>
+        <div className="mt-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <p className="max-w-[36rem] text-lg leading-relaxed text-mk-ink-2">
+            Ask a question in plain English. NatureQuery writes read-only SQL for your database,
+            runs it, and hands back the answer as a table, a chart or a summary.
+          </p>
+          <div className="lg:text-right">
+            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+              <Link href="/register" className="mk-btn mk-btn-primary">
+                Start free
+                <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <a href="#features" className="btn-secondary text-base px-8 py-3">
-                See How It Works
-              </a>
+              <Link href="/download" className="mk-btn mk-btn-quiet">
+                Download for Windows
+              </Link>
             </div>
-          </div>
-
-          {/* Demo Preview */}
-          <div className="mt-16 max-w-4xl mx-auto">
-            <div className="card p-1 shadow-2xl">
-              <div className="bg-secondary rounded-lg p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                  <div className="w-3 h-3 rounded-full bg-warning/60" />
-                  <div className="w-3 h-3 rounded-full bg-success/60" />
-                  <span className="ml-2 text-xs text-muted-foreground font-mono">
-                    NatureQuery Dashboard
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-background rounded-lg p-4 border border-border">
-                    <p className="text-sm text-muted-foreground mb-1">Your question:</p>
-                    <p className="font-medium">
-                      &quot;Show me the top 10 customers by total order value this year&quot;
-                    </p>
-                  </div>
-                  <div className="bg-background rounded-lg p-4 border border-border font-mono text-sm">
-                    <p className="text-muted-foreground mb-1">Generated SQL:</p>
-                    <p>
-                      <span className="text-primary font-semibold">SELECT</span> c.name,{' '}
-                      <span className="text-primary font-semibold">SUM</span>(o.amount){' '}
-                      <span className="text-primary font-semibold">AS</span> total
-                    </p>
-                    <p>
-                      <span className="text-primary font-semibold">FROM</span> customers c{' '}
-                      <span className="text-primary font-semibold">JOIN</span> orders o{' '}
-                      <span className="text-primary font-semibold">ON</span> c.id = o.customer_id
-                    </p>
-                    <p>
-                      <span className="text-primary font-semibold">WHERE</span> o.order_date &gt;={' '}
-                      <span className="text-green-500">&apos;2026-01-01&apos;</span>
-                    </p>
-                    <p>
-                      <span className="text-primary font-semibold">GROUP BY</span> c.name{' '}
-                      <span className="text-primary font-semibold">ORDER BY</span> total{' '}
-                      <span className="text-primary font-semibold">DESC LIMIT</span>{' '}
-                      <span className="text-orange-500">10</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Demo Video Section */}
-      <section className="py-20 border-y border-border bg-card/30">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              <Sparkles className="w-3.5 h-3.5" />
-              See it in action
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-              Watch NatureQuery in action
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Connect a database, ask a question, get instant SQL and results. All in 90 seconds.
+            <p className="mt-4 text-sm text-mk-ink-3">
+              Free plan: 50 AI questions a month. No card needed.
             </p>
-          </div>
-          <div className="card p-1 shadow-2xl">
-            <div
-              className="relative w-full rounded-lg overflow-hidden bg-black"
-              style={{ paddingTop: '56.25%' }}
+            <a
+              href={DEMO_VIDEO}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mk-link mt-1.5 inline-flex items-center gap-1 text-sm"
             >
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/0h5kmva3wq0?rel=0&modestbranding=1"
-                title="NatureQuery Demo: Ask Your Database in Plain English"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
+              Watch the 90-second demo
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            </a>
           </div>
+        </div>
+
+        <div className="mt-14 sm:mt-20">
+          <QuestionToAnswer />
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="border-y border-border bg-card/50">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-3xl font-bold gradient-text">{stat.value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-              </div>
+      {/* Databases */}
+      <section aria-label="Supported databases" className="mx-auto max-w-[1200px] px-5 sm:px-8">
+        <div className="mt-20 grid gap-5 border-y border-mk-rule py-8 md:grid-cols-[11rem_1fr] md:gap-8">
+          <p className="mk-label md:pt-1">Works with</p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2.5 text-[0.9375rem] text-mk-ink-2">
+            {DATABASES.map((name) => (
+              <li key={name}>{name}</li>
             ))}
-          </div>
+            <li className="text-mk-ink-3">and CSV or Excel files</li>
+          </ul>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Everything you need to query your data
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From natural language processing to enterprise security, NatureQuery has you covered.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature) => (
-              <div key={feature.title} className="card p-6 hover-lift">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="w-5 h-5 text-primary" />
+      {/* How a question becomes an answer */}
+      <section className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-32">
+        <SectionHeading
+          label="How it works"
+          title="Four steps between a question and its answer."
+        />
+        <div className="mt-14 sm:mt-16">
+          <QuestionPath />
+        </div>
+      </section>
+
+      {/* What you can do with an answer */}
+      <section className="border-t border-mk-rule" aria-label="What you can do">
+        <div className="mx-auto max-w-[1200px] divide-y divide-mk-rule px-5 sm:px-8">
+          {SHOWCASE.map((item, index) => (
+            <div key={item.label} className="py-20 sm:py-24">
+              <div className="grid gap-5 lg:grid-cols-2 lg:items-end lg:gap-16">
+                <div>
+                  <p className="mk-label">{item.label}</p>
+                  <h3 className="mt-4 text-balance font-nq-serif text-[clamp(1.75rem,2.8vw,2.4rem)] font-normal leading-[1.1] tracking-[-0.015em] text-mk-ink">
+                    {item.title}
+                  </h3>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {feature.description}
+                <p className="max-w-[32rem] text-[1.0625rem] leading-relaxed text-mk-ink-2 lg:pb-1">
+                  {item.text}
                 </p>
               </div>
-            ))}
-          </div>
+              <figure className="mt-10 sm:mt-12">
+                <div className="overflow-hidden rounded-lg border border-mk-rule bg-mk-band shadow-[0_30px_60px_-38px_hsl(var(--mk-ink)/0.45)]">
+                  <Shot src={item.image} alt={item.alt} region={item.region} aspect={item.aspect} />
+                </div>
+                <figcaption className="mt-3 font-nq-mono text-[0.72rem] text-mk-ink-3">
+                  Fig. {index + 1} &middot; {item.caption}
+                </figcaption>
+              </figure>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-24 bg-card/50 border-y border-border">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">How it works</h2>
-            <p className="text-lg text-muted-foreground">
-              Three steps to go from question to insight
+      {/* Safeguards */}
+      <section className="bg-mk-band text-mk-band-ink">
+        <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-24 sm:px-8 sm:py-28 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div>
+            <p className="font-nq-mono text-[0.72rem] font-medium uppercase tracking-[0.08em] text-mk-band-ink-2">
+              Safeguards
             </p>
+            <h2 className="mt-4 text-balance font-nq-serif text-[clamp(2.1rem,3.8vw,3.25rem)] font-normal leading-[1.04] tracking-[-0.02em]">
+              Careful with your data, by design.
+            </h2>
+            <p className="mt-5 max-w-sm leading-relaxed text-mk-band-ink-2">
+              Built for the person who answers for the production database.
+            </p>
+            <Link
+              href="/privacy"
+              className="mt-8 inline-flex items-center gap-1.5 text-[0.9375rem] font-medium underline decoration-mk-band-ink/30 underline-offset-4 hover:decoration-mk-band-ink"
+            >
+              Read the privacy policy
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </Link>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '1',
-                icon: Globe,
-                title: 'Connect Your Database',
-                description:
-                  'Securely connect to PostgreSQL, MySQL, or SQLite. Your credentials are encrypted with AES-256.',
-              },
-              {
-                step: '2',
-                icon: Sparkles,
-                title: 'Ask in Plain English',
-                description:
-                  'Type your question naturally. Our AI understands your schema and generates optimized SQL.',
-              },
-              {
-                step: '3',
-                icon: FileSpreadsheet,
-                title: 'Get Results & Export',
-                description:
-                  'View results in tables or charts. Export to Excel or CSV with one click.',
-              },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-lg font-bold text-primary">{item.step}</span>
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+          <dl className="divide-y divide-mk-band-rule border-y border-mk-band-rule">
+            {SAFEGUARDS.map((item) => (
+              <div key={item.term} className="grid gap-2 py-5 sm:grid-cols-[12rem_1fr] sm:gap-8">
+                <dt className="font-nq-mono text-[0.78rem] font-medium uppercase tracking-[0.08em] text-mk-signal">
+                  {item.term}
+                </dt>
+                <dd className="leading-relaxed text-mk-band-ink-2">{item.text}</dd>
               </div>
             ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* Desktop app */}
+      <section className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-32">
+        <div className="grid items-center gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+          <div>
+            <SectionHeading
+              label="NatureQuery Desktop"
+              title="For the databases a website can't reach."
+            />
+            <p className="mt-6 max-w-[30rem] text-[1.0625rem] leading-relaxed text-mk-ink-2">
+              Databases on your own computer, on your office network or behind a VPN. The Windows
+              app connects to them directly, and connection passwords never leave your PC. Same
+              account, same plan.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <StoreBadge className="h-12" />
+              <Link href="/download" className="mk-link text-[0.9375rem]">
+                More about the desktop app
+              </Link>
+            </div>
           </div>
+          <figure>
+            <div className="overflow-hidden rounded-lg border border-mk-rule bg-mk-band shadow-[0_30px_60px_-38px_hsl(var(--mk-ink)/0.45)]">
+              <Shot
+                src="/marketing/connect.png"
+                alt="The Add a connection window in NatureQuery Desktop, listing PostgreSQL, MySQL, SQL Server, Oracle, Snowflake and other database types"
+                region={{ x: 560, y: 150, w: 800 }}
+                aspect={1.32}
+              />
+            </div>
+            <figcaption className="mt-3 font-nq-mono text-[0.72rem] text-mk-ink-3">
+              Fig. 4 &middot; Choosing a database in NatureQuery Desktop
+            </figcaption>
+          </figure>
         </div>
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Simple, transparent pricing</h2>
-            <p className="text-lg text-muted-foreground">Start free, upgrade when you need more</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+          <SectionHeading
+            label="Pricing"
+            title={
+              <>
+                Free to start.
+                <br />
+                One plan covers the team.
+              </>
+            }
+          />
+          <div className="mt-14 grid border-y border-mk-rule md:grid-cols-3 md:divide-x md:divide-mk-rule">
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`card p-6 flex flex-col ${plan.highlighted ? 'ring-2 ring-primary shadow-lg relative' : ''}`}
+                className={`flex flex-col border-b border-mk-rule py-8 last:border-b-0 md:border-b-0 md:px-8 md:first:pl-0 md:last:pr-0 ${
+                  plan.featured ? 'md:bg-mk-surface md:!px-8' : ''
+                }`}
               >
-                {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
-                    Most Popular
-                  </div>
-                )}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-lg">{plan.name}</h3>
-                  <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-sm text-muted-foreground">/{plan.period}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
-                </div>
-                <ul className="space-y-2.5 mb-8 flex-1">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                      {feature}
+                <p className="text-lg font-semibold text-mk-ink">{plan.name}</p>
+                <p className="mt-3 flex items-baseline gap-2">
+                  <span className="font-nq-serif text-5xl tracking-[-0.02em] text-mk-ink">
+                    {plan.price}
+                  </span>
+                  <span className="text-sm text-mk-ink-3">{plan.period}</span>
+                </p>
+                <ul className="mt-6 flex-1 space-y-2.5 text-[0.9375rem] text-mk-ink-2">
+                  {plan.points.map((point) => (
+                    <li key={point} className="flex gap-3">
+                      <span
+                        aria-hidden
+                        className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-mk-violet"
+                      />
+                      {point}
                     </li>
                   ))}
                 </ul>
                 <Link
                   href={plan.href}
-                  className={plan.highlighted ? 'btn-primary w-full' : 'btn-secondary w-full'}
+                  className={`mk-btn mt-8 self-start ${plan.featured ? 'mk-btn-primary' : 'mk-btn-quiet'}`}
                 >
                   {plan.cta}
                 </Link>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Desktop app */}
-      <section className="py-20 border-t border-border/50">
-        <div className="max-w-6xl mx-auto px-6 grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              <MonitorDown className="w-3.5 h-3.5" />
-              NatureQuery Desktop for Windows
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight mb-3">
-              Databases on your office network?
-            </h2>
-            <p className="text-muted-foreground max-w-2xl">
-              The Windows app connects from your PC to databases a website can&apos;t reach, and
-              keeps your passwords on your computer.{' '}
-              <Link href="/download" className="text-primary hover:underline">
-                Learn more
-              </Link>
-            </p>
-          </div>
-          <StoreBadge />
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to talk to your database?</h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Connect your database and start asking questions in plain English — no setup, no SQL
-            knowledge required.
-          </p>
-          <Link href="/register" className="btn-primary text-base px-8 py-3 shadow-lg glow-primary">
-            Get Started Free
-            <ArrowRight className="w-4 h-4" />
+          <Link href="/pricing" className="mk-link mt-6 inline-flex text-[0.9375rem]">
+            Compare every feature
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-            <div className="col-span-2 md:col-span-1">
-              <Link href="/" className="mb-3 inline-flex">
-                <AppLogo size="sm" />
-              </Link>
-              <p className="text-sm text-muted-foreground">Natural language to SQL, made simple.</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-3">Product</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link href="/features" className="hover:text-foreground transition-colors">
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/pricing" className="hover:text-foreground transition-colors">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/download" className="hover:text-foreground transition-colors">
-                    Download for Windows
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/changelog" className="hover:text-foreground transition-colors">
-                    Changelog
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="hover:text-foreground transition-colors">
-                    Sign In
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-3">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link href="/about" className="hover:text-foreground transition-colors">
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="hover:text-foreground transition-colors">
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/faq" className="hover:text-foreground transition-colors">
-                    FAQ
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm mb-3">Legal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link href="/terms" className="hover:text-foreground transition-colors">
-                    Terms of Service
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacy" className="hover:text-foreground transition-colors">
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="mailto:hello@naturequery.app"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Support
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-border mt-8 pt-8 text-center text-xs text-muted-foreground">
-            &copy; 2026 NatureQuery. All rights reserved.
+      {/* Closing */}
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-32">
+          <h2 className="max-w-4xl text-balance font-nq-serif text-[clamp(2.4rem,5.4vw,4.5rem)] font-normal italic leading-[1.02] tracking-[-0.025em] text-mk-ink">
+            What would you ask your data first?
+          </h2>
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <Link href="/register" className="mk-btn mk-btn-primary">
+              Start free
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href="/download" className="mk-btn mk-btn-quiet">
+              Download for Windows
+            </Link>
           </div>
         </div>
-      </footer>
-    </div>
+      </section>
+    </MarketingShell>
   )
 }

@@ -1,625 +1,329 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { AppLogo } from '@/components/AppLogo'
-import {
-  Sparkles,
-  Database,
-  MessageSquare,
-  Brain,
-  Wand2,
-  Search,
-  FileSpreadsheet,
-  AlignLeft,
-  LayoutTemplate,
-  UploadCloud,
-  Filter,
-  Pin,
-  Clock,
-  Share2,
-  Users,
-  ShieldCheck,
-  KeyRound,
-  ScrollText,
-  Lock,
-  Zap,
-  ArrowRight,
-  Check,
-  BarChart3,
-  Globe,
-  Eye,
-  Lightbulb,
-  Table2,
-  RefreshCw,
-  type LucideIcon,
-} from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { MarketingShell } from '@/components/marketing/MarketingShell'
+import { Shot } from '@/components/marketing/Shot'
 
 export const metadata: Metadata = {
   title: 'Features - Everything NatureQuery Offers',
   description:
-    'Explore all NatureQuery features: AI-powered SQL generation, conversational follow-ups, chain-of-thought reasoning, multi-database support, team collaboration, and enterprise security.',
+    'Plain-English questions to SQL with follow-ups and step-by-step reasoning, 20 databases, charts, dashboards, scheduled queries, team plans and read-only security.',
 }
 
-// ---------------------------------------------------------------------------
-// Feature data
-// ---------------------------------------------------------------------------
-
 interface Feature {
-  icon: LucideIcon
   title: string
   description: string
 }
 
-interface FeatureSection {
+interface Chapter {
   id: string
-  badge: string
-  badgeIcon: LucideIcon
+  label: string
   title: string
   subtitle: string
   features: Feature[]
+  figure?: {
+    src: string
+    alt: string
+    caption: string
+    region: { x: number; y: number; w: number }
+    aspect: number
+  }
 }
 
-const SECTIONS: FeatureSection[] = [
+const CHAPTERS: Chapter[] = [
   {
-    id: 'ai',
-    badge: 'Core AI Engine',
-    badgeIcon: Sparkles,
-    title: 'AI that actually understands your data',
-    subtitle: 'Ask questions in plain English. Get production-ready SQL in seconds, not hours.',
+    id: 'ask',
+    label: 'Asking',
+    title: 'AI that understands your tables.',
+    subtitle: 'Ask in plain English and get SQL written for your database, in seconds.',
     features: [
       {
-        icon: Sparkles,
-        title: 'Natural Language to SQL',
+        title: 'Plain English to SQL',
         description:
-          'Type "show me top customers by revenue" and get optimized, join-aware SQL instantly. No SQL knowledge needed.',
+          'Type “show me top customers by revenue” and get join-aware SQL for your schema. No SQL knowledge needed.',
       },
       {
-        icon: MessageSquare,
-        title: 'Conversational Follow-ups',
+        title: 'Follow-up questions',
         description:
-          'Refine results naturally. Say "filter to New York" or "break down by month", and the AI modifies your previous query contextually.',
+          'Say “filter to New York” or “break it down by month” and NatureQuery changes the query it just wrote.',
       },
       {
-        icon: Brain,
-        title: 'Chain-of-Thought Reasoning',
+        title: 'Step-by-step reasoning',
         description:
-          'Watch the AI think step-by-step in real time. See which tables it picks, how it plans JOINs, and why it chose that approach.',
+          'Watch it work: which tables it picks, how it joins them, and why, before the SQL appears.',
       },
       {
-        icon: Lightbulb,
-        title: 'AI Schema Discovery',
+        title: 'Schema insights',
         description:
-          'Connect a database and instantly get suggested questions. The AI analyzes your schema and proposes the most useful queries.',
+          'Connect a database and get suggested questions based on the tables and columns it finds.',
       },
       {
-        icon: Wand2,
-        title: 'AI Fix It',
+        title: 'Fix with AI',
         description:
-          'Query failed? One click and the AI analyzes the error, fixes the SQL, and retries. Turns frustration into a solved problem.',
+          'When the database rejects a query, NatureQuery reads the error, corrects the SQL and runs it again.',
       },
       {
-        icon: Eye,
-        title: 'SQL Explanation',
+        title: 'Explain any query',
         description:
-          'Click "Explain" on any generated SQL and get a plain-English breakdown. Understand exactly what the query does before running it.',
+          'A plain-English breakdown of what a query does, so you can check it before you trust the answer.',
+      },
+    ],
+    figure: {
+      src: '/marketing/ask.png',
+      alt: 'A follow-up box, the SQL NatureQuery wrote, and the result table',
+      caption: 'A question, its SQL and the result, with a follow-up box ready',
+      region: { x: 540, y: 118, w: 1380 },
+      aspect: 1.85,
+    },
+  },
+  {
+    id: 'analyze',
+    label: 'Working with results',
+    title: 'Tools for the answer, not just the query.',
+    subtitle: 'Explore, format, chart and export what comes back.',
+    features: [
+      {
+        title: 'Column filters and search',
+        description:
+          'Search across every result, and filter each column by type: text matches for strings, ranges for numbers.',
+      },
+      {
+        title: 'Charts in one click',
+        description:
+          'Draw any result as a bar, line, area, pie or scatter chart, with a recommended type for the shape of your data.',
+      },
+      {
+        title: 'Excel and CSV export',
+        description:
+          'Download results as formatted Excel workbooks or CSV files, with headers and types kept.',
+      },
+      {
+        title: 'CSV and Excel uploads',
+        description:
+          'Drop in a spreadsheet and NatureQuery turns it into a table you can ask questions about straight away.',
+      },
+      {
+        title: 'Query templates',
+        description:
+          'Save your best queries as reusable templates and group them by topic, such as sales or inventory.',
+      },
+      {
+        title: 'SQL formatter',
+        description: 'One click turns a long query into neatly indented, readable SQL.',
+      },
+    ],
+    figure: {
+      src: '/marketing/chart.png',
+      alt: 'Twelve months of revenue drawn as an area chart, with bar, line, pie and scatter options',
+      caption: 'Monthly revenue as an area chart, one click from the table',
+      region: { x: 545, y: 548, w: 1375 },
+      aspect: 3.2,
+    },
+  },
+  {
+    id: 'share',
+    label: 'Dashboards and sharing',
+    title: 'From one answer to a dashboard.',
+    subtitle: 'Keep the numbers you check every week in one place, and send them to people.',
+    features: [
+      {
+        title: 'Pin to a dashboard',
+        description:
+          'Turn any result into a dashboard widget, then arrange and resize widgets into your own view.',
+      },
+      {
+        title: 'Scheduled queries',
+        description: 'Run a query every day, week or month and get the results by email.',
+      },
+      {
+        title: 'Shared query links',
+        description:
+          'Send a secure link to a result. The people you share it with see the data without an account.',
+      },
+      {
+        title: 'Refresh on demand',
+        description: 'Widgets show the latest data whenever you refresh them.',
       },
     ],
   },
   {
-    id: 'data-tools',
-    badge: 'Data Tools',
-    badgeIcon: Table2,
-    title: 'Professional tools for serious analysis',
-    subtitle: 'Everything you need to explore, format, filter, and export your query results.',
+    id: 'teams',
+    label: 'Teams',
+    title: 'One plan for the whole team.',
+    subtitle: 'From one analyst to a whole department, on the same account.',
     features: [
       {
-        icon: Filter,
-        title: 'Column Filters & Search',
+        title: 'Team plans',
         description:
-          'Global search across all results. Per-column filters with smart type detection: text search for strings, min/max ranges for numbers.',
+          'Invite colleagues to your team and they use your plan on the website and in NatureQuery Desktop: 5 people on Pro, unlimited on Enterprise.',
       },
       {
-        icon: AlignLeft,
-        title: 'SQL Auto-Formatter',
+        title: 'Roles',
         description:
-          'One-click SQL beautification. Messy AI output becomes perfectly indented, readable SQL with proper keyword casing.',
+          'Owner, admin, member and viewer roles decide who can invite people, manage connections or run queries.',
       },
       {
-        icon: FileSpreadsheet,
-        title: 'Export to Excel & CSV',
+        title: '20 databases',
         description:
-          'Download results as formatted Excel spreadsheets or CSV files. Headers, data types, and formatting preserved automatically.',
+          'PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, BigQuery, MongoDB and 13 more, side by side in one workspace.',
       },
       {
-        icon: UploadCloud,
-        title: 'Magic CSV Upload',
-        description:
-          'Drag and drop any CSV file. We auto-create a database table, infer column types, and you can query it immediately with AI.',
+        title: 'API access',
+        description: 'A REST API with key-based authentication for your own scripts and tools.',
       },
       {
-        icon: LayoutTemplate,
-        title: 'Custom Query Templates',
-        description:
-          'Save your best queries as reusable templates. Organize by category like analytics, sales, inventory, or create your own.',
+        title: 'Your language',
+        description: 'The interface is available in English, Spanish, French, German and Japanese.',
       },
       {
-        icon: BarChart3,
-        title: 'Auto Visualizations',
+        title: 'NatureQuery Desktop',
         description:
-          'Results automatically generate bar, line, and pie charts. The AI recommends the best chart type based on your data shape.',
-      },
-    ],
-  },
-  {
-    id: 'dashboards',
-    badge: 'Dashboards & Automation',
-    badgeIcon: Pin,
-    title: 'From query to dashboard in one click',
-    subtitle:
-      'Pin results, schedule refreshes, and share insights with your team. No BI tool needed.',
-    features: [
-      {
-        icon: Pin,
-        title: 'Pin to Dashboard',
-        description:
-          'Turn any query result into a live dashboard widget. Drag to reorder, resize, and build your custom analytics view.',
-      },
-      {
-        icon: Clock,
-        title: 'Scheduled Queries',
-        description:
-          'Run queries on autopilot: hourly, daily, weekly, or monthly. Get results delivered to your inbox automatically.',
-      },
-      {
-        icon: Share2,
-        title: 'Shared Query Links',
-        description:
-          'Generate a secure link to share any query result with colleagues. They see the data without needing an account.',
-      },
-      {
-        icon: RefreshCw,
-        title: 'Live Refresh',
-        description:
-          'Dashboard widgets refresh on demand or on schedule. Always see the latest data without re-running queries manually.',
-      },
-    ],
-  },
-  {
-    id: 'enterprise',
-    badge: 'Enterprise Ready',
-    badgeIcon: Database,
-    title: 'Built for teams that move fast',
-    subtitle:
-      'Multi-database, multi-team, multi-language. Scale from solo analyst to entire organization.',
-    features: [
-      {
-        icon: Database,
-        title: 'Multi-Database Support',
-        description:
-          'PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, Redshift, and more. Connect any database and switch between them seamlessly.',
-      },
-      {
-        icon: Users,
-        title: 'Team Collaboration',
-        description:
-          'Create teams, invite members with role-based access (owner, admin, member). Share connections and saved queries.',
-      },
-      {
-        icon: KeyRound,
-        title: 'API Access',
-        description:
-          'Full REST API with key-based authentication. Integrate NatureQuery into your existing tools, scripts, and workflows.',
-      },
-      {
-        icon: Globe,
-        title: 'Multi-Language UI',
-        description:
-          'Interface available in English, Spanish, French, German, and more. Each user picks their preferred language.',
+          'A Windows app for databases on your own computer or office network, with the same account and plan.',
       },
     ],
   },
   {
     id: 'security',
-    badge: 'Security & Compliance',
-    badgeIcon: ShieldCheck,
-    title: 'Enterprise-grade security, built in',
-    subtitle: 'Your database credentials and data are protected by multiple layers of security.',
+    label: 'Security',
+    title: 'Careful with production data.',
+    subtitle: 'Several layers between a question and anything that could go wrong.',
     features: [
       {
-        icon: Lock,
-        title: 'AES-256-GCM Encryption',
+        title: 'Read-only queries',
         description:
-          'All database credentials encrypted at rest with AES-256-GCM. Key rotation supported with zero downtime.',
+          'PostgreSQL and Redshift queries are parsed and checked statement by statement; every dialect is checked against a list of commands that change data. Only reads reach your database.',
       },
       {
-        icon: ShieldCheck,
-        title: 'Two-Factor Authentication',
+        title: 'AES-256-GCM encryption',
         description:
-          'TOTP-based 2FA with any authenticator app. Backup codes provided for account recovery. 60-second tolerance window.',
+          'Database credentials are encrypted at rest, and the key can be rotated without downtime.',
       },
       {
-        icon: ScrollText,
-        title: 'Immutable Audit Logs',
+        title: 'Two-factor sign-in',
         description:
-          'Every login, query, and admin action recorded in a tamper-proof hash chain. Full audit trail for security reviews and GDPR requirements.',
+          'Authenticator-app codes with backup codes for recovery, plus a list of every computer signed in to your account.',
       },
       {
-        icon: Zap,
-        title: 'SQL Injection Prevention',
+        title: 'Audit log',
         description:
-          'AST-based SQL validation for PostgreSQL. Keyword blocklist defense for all dialects. Only SELECT queries ever reach your database.',
+          'Sign-ins and sensitive actions are recorded, with entries chained by hashes so changes can be detected.',
       },
       {
-        icon: Search,
-        title: 'Rate Limiting',
+        title: 'Rate limiting',
         description:
-          'Distributed rate limiting via Redis. Per-user, per-endpoint throttling prevents abuse and protects your databases.',
+          'Per-user, per-endpoint limits protect your databases and your account from abuse.',
       },
       {
-        icon: KeyRound,
-        title: 'Security Headers',
+        title: 'Security headers',
         description:
-          'CSP, X-Frame-Options, HSTS, and Permissions-Policy headers on every response. A+ security rating out of the box.',
+          'Content Security Policy, HSTS, frame protection and a strict permissions policy on every response.',
       },
     ],
   },
 ]
-
-const PLANS = [
-  {
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
-    features: [
-      '50 queries / month',
-      '1 database connection',
-      'Excel & CSV export',
-      '30-day query history',
-      'Community support',
-    ],
-    cta: 'Get Started',
-    href: '/register',
-    highlighted: false,
-  },
-  {
-    name: 'Pro',
-    price: '$20',
-    period: '/ month',
-    features: [
-      'Unlimited queries',
-      '10 database connections',
-      'Team collaboration (5 members)',
-      'Dashboard widgets',
-      'Scheduled queries',
-      'API access',
-      'Priority support',
-    ],
-    cta: 'Get Started',
-    href: '/register?plan=pro',
-    highlighted: true,
-  },
-  {
-    name: 'Enterprise',
-    price: '$79',
-    period: '/ month',
-    features: [
-      'Everything in Pro',
-      'Unlimited connections',
-      'Unlimited team members',
-      'Audit logs & compliance',
-      'GDPR data export',
-      'Custom integrations',
-      'Dedicated support & SLA',
-    ],
-    cta: 'Contact Sales',
-    href: '/register?plan=enterprise',
-    highlighted: false,
-  },
-]
-
-// ---------------------------------------------------------------------------
-// Components
-// ---------------------------------------------------------------------------
-
-function Nav() {
-  return (
-    <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <AppLogo size="md" />
-        </Link>
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="/features" className="text-sm text-foreground font-medium">
-            Features
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/download"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Download
-          </Link>
-          <Link
-            href="/about"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            About
-          </Link>
-          <Link
-            href="/login"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link href="/register" className="btn-primary text-sm py-2">
-            Get Started Free
-          </Link>
-        </div>
-        <div className="md:hidden flex items-center gap-3">
-          <Link href="/login" className="btn-ghost text-sm py-2">
-            Sign In
-          </Link>
-          <Link href="/register" className="btn-primary text-sm py-2">
-            Sign Up
-          </Link>
-        </div>
-      </div>
-    </nav>
-  )
-}
-
-function FeatureCard({ icon: Icon, title, description }: Feature) {
-  return (
-    <div className="group relative p-6 rounded-2xl border border-border/60 bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
-      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
-        <Icon className="w-5 h-5 text-primary" />
-      </div>
-      <h3 className="font-semibold text-base mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-    </div>
-  )
-}
-
-function SectionBlock({ section, index }: { section: FeatureSection; index: number }) {
-  const BadgeIcon = section.badgeIcon
-  const isWide = section.features.length <= 4
-
-  return (
-    <section id={section.id} className={`py-20 ${index % 2 === 1 ? 'bg-secondary/30' : ''}`}>
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider mb-4">
-            <BadgeIcon className="w-3.5 h-3.5" />
-            {section.badge}
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">{section.title}</h2>
-          <p className="text-muted-foreground text-lg">{section.subtitle}</p>
-        </div>
-        <div
-          className={`grid gap-5 ${isWide ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'}`}
-        >
-          {section.features.map((feature) => (
-            <FeatureCard key={feature.title} {...feature} />
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function PricingSection() {
-  return (
-    <section id="pricing" className="py-20 bg-secondary/30">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider mb-4">
-            <Zap className="w-3.5 h-3.5" />
-            Pricing
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-            Simple, transparent pricing
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Start free. Upgrade when you need more power.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl p-8 border transition-all duration-300 ${
-                plan.highlighted
-                  ? 'border-primary bg-card shadow-xl shadow-primary/10 scale-[1.02]'
-                  : 'border-border/60 bg-card hover:border-border'
-              }`}
-            >
-              {plan.highlighted && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                  Most Popular
-                </div>
-              )}
-              <div className="mb-6">
-                <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground text-sm">{plan.period}</span>
-                </div>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href={plan.href}
-                className={`block w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  plan.highlighted ? 'btn-primary' : 'btn-secondary'
-                }`}
-              >
-                {plan.cta}
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function CtaSection() {
-  return (
-    <section className="py-24">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="relative rounded-3xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
-          <div className="relative px-8 py-16 sm:px-16 sm:py-20 text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              Ready to talk to your database?
-            </h2>
-            <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-              Start asking questions in plain English. No credit card required. Set up in under 2
-              minutes.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-white text-primary font-semibold rounded-xl hover:bg-white/90 transition-colors shadow-lg"
-              >
-                Start Free
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 px-8 py-3 text-white/90 font-medium rounded-xl border border-white/20 hover:bg-white/10 transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function Footer() {
-  return (
-    <footer className="border-t border-border/50 py-10">
-      <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <AppLogo size="xs" showText={false} />
-          <span className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} NatureQuery. All rights reserved.
-          </span>
-        </div>
-        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <Link href="/terms" className="hover:text-foreground transition-colors">
-            Terms
-          </Link>
-          <Link href="/privacy" className="hover:text-foreground transition-colors">
-            Privacy
-          </Link>
-          <Link href="/faq" className="hover:text-foreground transition-colors">
-            FAQ
-          </Link>
-        </div>
-      </div>
-    </footer>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <Nav />
-
+    <MarketingShell current="/features">
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 relative">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Sparkles className="w-3.5 h-3.5" />
-              Platform Overview
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Everything you need to
-              <span className="gradient-text block">talk to your database</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              From AI-powered SQL generation to enterprise security, NatureQuery gives your team the
-              tools to explore data without writing a single line of SQL.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/register" className="btn-primary text-base px-8 py-3 shadow-lg">
-                Start Free
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a href="#ai" className="btn-secondary text-base px-8 py-3">
-                Explore Features
-              </a>
-            </div>
-          </div>
-        </div>
+      <section className="mx-auto max-w-[1200px] px-5 pt-14 sm:px-8 sm:pt-24">
+        <p className="mk-label">Product</p>
+        <h1 className="mt-5 max-w-5xl text-balance font-nq-serif text-[clamp(2.6rem,5.8vw,4.9rem)] font-normal leading-[1.02] tracking-[-0.03em] text-mk-ink">
+          Everything between a question{' '}
+          <em className="text-mk-ink-2">and the decision it leads to.</em>
+        </h1>
+        <p className="mt-7 max-w-[38rem] text-lg leading-relaxed text-mk-ink-2">
+          NatureQuery writes the SQL, runs it read-only, and gives your team answers they can chart,
+          share and act on. Here is everything it does.
+        </p>
       </section>
 
-      {/* Feature quick nav */}
-      <div className="sticky top-16 z-40 bg-background/80 backdrop-blur-sm border-b border-border/50">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex items-center gap-1 overflow-x-auto py-3 scrollbar-hide">
-            {SECTIONS.map((section) => {
-              const Icon = section.badgeIcon
-              return (
+      <div className="mx-auto mt-16 grid max-w-[1200px] gap-12 px-5 sm:mt-24 sm:px-8 lg:grid-cols-[13rem_1fr] lg:gap-16">
+        {/* Index */}
+        <nav aria-label="On this page" className="hidden lg:block">
+          <ol className="sticky top-28 space-y-3 border-l border-mk-rule pl-5">
+            {CHAPTERS.map((chapter, index) => (
+              <li key={chapter.id}>
                 <a
-                  key={section.id}
-                  href={`#${section.id}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors whitespace-nowrap"
+                  href={`#${chapter.id}`}
+                  className="group flex gap-3 text-[0.9375rem] text-mk-ink-2 hover:text-mk-ink"
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  {section.badge}
+                  <span className="font-nq-mono text-[0.72rem] leading-6 text-mk-ink-3 group-hover:text-mk-violet">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  {chapter.label}
                 </a>
-              )
-            })}
-            <a
-              href="#pricing"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors whitespace-nowrap"
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        <div className="min-w-0">
+          {CHAPTERS.map((chapter, index) => (
+            <section
+              key={chapter.id}
+              id={chapter.id}
+              className="scroll-mt-24 border-t border-mk-rule pb-20 pt-10 first:border-t-0 first:pt-0 sm:pb-24"
             >
-              <Zap className="w-3.5 h-3.5" />
-              Pricing
-            </a>
-          </div>
+              <p className="mk-label">
+                <span className="text-mk-violet">{String(index + 1).padStart(2, '0')}</span>{' '}
+                {chapter.label}
+              </p>
+              <h2 className="mt-4 text-balance font-nq-serif text-[clamp(2rem,3.4vw,2.9rem)] font-normal leading-[1.06] tracking-[-0.02em] text-mk-ink">
+                {chapter.title}
+              </h2>
+              <p className="mt-4 max-w-[36rem] text-[1.0625rem] leading-relaxed text-mk-ink-2">
+                {chapter.subtitle}
+              </p>
+
+              {chapter.figure && (
+                <figure className="mt-10">
+                  <div className="overflow-hidden rounded-lg border border-mk-rule shadow-[0_30px_60px_-38px_hsl(var(--mk-ink)/0.45)]">
+                    <Shot
+                      src={chapter.figure.src}
+                      alt={chapter.figure.alt}
+                      region={chapter.figure.region}
+                      aspect={chapter.figure.aspect}
+                    />
+                  </div>
+                  <figcaption className="mt-3 font-nq-mono text-[0.72rem] text-mk-ink-3">
+                    {chapter.figure.caption}
+                  </figcaption>
+                </figure>
+              )}
+
+              <dl className="mt-10 grid gap-x-12 sm:grid-cols-2">
+                {chapter.features.map((feature) => (
+                  <div key={feature.title} className="border-t border-mk-rule py-6">
+                    <dt className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-mk-ink">
+                      {feature.title}
+                    </dt>
+                    <dd className="mt-2 leading-relaxed text-mk-ink-2">{feature.description}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ))}
         </div>
       </div>
 
-      {/* Feature sections */}
-      {SECTIONS.map((section, index) => (
-        <SectionBlock key={section.id} section={section} index={index} />
-      ))}
-
-      {/* Pricing */}
-      <PricingSection />
-
-      {/* Final CTA */}
-      <CtaSection />
-
-      {/* Footer */}
-      <Footer />
-    </div>
+      {/* Closing */}
+      <section className="border-t border-mk-rule">
+        <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-28">
+          <h2 className="max-w-4xl text-balance font-nq-serif text-[clamp(2.2rem,4.6vw,3.9rem)] font-normal italic leading-[1.04] tracking-[-0.025em] text-mk-ink">
+            See it with your own data.
+          </h2>
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <Link href="/register" className="mk-btn mk-btn-primary">
+              Start free
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href="/pricing" className="mk-btn mk-btn-quiet">
+              Compare plans
+            </Link>
+          </div>
+        </div>
+      </section>
+    </MarketingShell>
   )
 }

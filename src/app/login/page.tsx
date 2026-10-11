@@ -220,7 +220,7 @@ function LoginForm() {
     return (
       <div className="glass-card rounded-2xl p-8 shadow-xl animate-fadeIn border border-border">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg mb-4">
+          <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center mb-4">
             <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold">{t('auth.login.twoFactorCode')}</h1>
