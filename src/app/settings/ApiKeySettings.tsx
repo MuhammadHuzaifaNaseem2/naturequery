@@ -259,7 +259,7 @@ export function ApiKeySettings() {
         <h4 className="text-sm font-medium mb-2">{t('settings.apiKeys.usageTitle')}</h4>
         <p className="text-xs text-muted-foreground mb-2">{t('settings.apiKeys.usageDesc')}</p>
         <code className="block px-3 py-2 bg-secondary rounded-lg text-xs font-mono">
-          Authorization: Bearer rp_your_api_key_here
+          Authorization: Bearer nq_your_api_key_here
         </code>
       </div>
 

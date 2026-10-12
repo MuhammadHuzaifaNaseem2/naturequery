@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateApiKey } from '@/actions/api-keys'
+import { hasApiKeyPrefix } from '@/lib/encryption'
 import { rateLimitAsync } from '@/lib/rate-limit'
 
 export interface ApiAuthResult {
@@ -16,17 +17,14 @@ export async function authenticateApiRequest(
   const authHeader = request.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return NextResponse.json(
-      { success: false, error: 'Missing or invalid Authorization header. Use: Bearer rp_xxx' },
+      { success: false, error: 'Missing or invalid Authorization header. Use: Bearer nq_xxx' },
       { status: 401 }
     )
   }
 
   const rawKey = authHeader.slice(7)
-  if (!rawKey || !rawKey.startsWith('rp_')) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid API key format' },
-      { status: 401 }
-    )
+  if (!rawKey || !hasApiKeyPrefix(rawKey)) {
+    return NextResponse.json({ success: false, error: 'Invalid API key format' }, { status: 401 })
   }
 
   const userId = await validateApiKey(rawKey)

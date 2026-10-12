@@ -190,7 +190,7 @@ export default function ApiDocsPage() {
               </Link>{' '}
               tab.
             </p>
-            <CodeBlock title="Authorization Header">{`Authorization: Bearer rp_your_api_key_here`}</CodeBlock>
+            <CodeBlock title="Authorization Header">{`Authorization: Bearer nq_your_api_key_here`}</CodeBlock>
             <div className="mt-4 p-4 rounded-lg border border-mk-rule bg-mk-sunken">
               <p className="text-sm text-mk-ink-2">
                 <strong className="text-mk-ink">Security:</strong> API keys are hashed with SHA-256
@@ -264,7 +264,7 @@ export default function ApiDocsPage() {
             description="Returns all database connections for your account. Passwords are never included."
             icon={Database}
             curl={`curl ${BASE_URL}/api/v1/connections \\
-  -H "Authorization: Bearer rp_your_key"`}
+  -H "Authorization: Bearer nq_your_key"`}
             response={`{
   "success": true,
   "data": [
@@ -309,7 +309,7 @@ export default function ApiDocsPage() {
               </>
             }
             curl={`curl "${BASE_URL}/api/v1/queries?page=1&pageSize=10" \\
-  -H "Authorization: Bearer rp_your_key"`}
+  -H "Authorization: Bearer nq_your_key"`}
             response={`{
   "success": true,
   "data": [
@@ -374,7 +374,7 @@ export default function ApiDocsPage() {
               </>
             }
             curl={`curl -X POST ${BASE_URL}/api/v1/queries \\
-  -H "Authorization: Bearer rp_your_key" \\
+  -H "Authorization: Bearer nq_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Monthly Revenue",
@@ -415,7 +415,7 @@ export default function ApiDocsPage() {
               </Param>
             }
             curl={`curl ${BASE_URL}/api/v1/queries/cm_query_id \\
-  -H "Authorization: Bearer rp_your_key"`}
+  -H "Authorization: Bearer nq_your_key"`}
             response={`{
   "success": true,
   "data": {
@@ -454,7 +454,7 @@ export default function ApiDocsPage() {
               </>
             }
             curl={`curl -X POST ${BASE_URL}/api/v1/query/execute \\
-  -H "Authorization: Bearer rp_your_key" \\
+  -H "Authorization: Bearer nq_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "connectionId": "cm_connection_id",
@@ -497,7 +497,7 @@ export default function ApiDocsPage() {
               </>
             }
             curl={`curl -X POST ${BASE_URL}/api/v1/query/generate \\
-  -H "Authorization: Bearer rp_your_key" \\
+  -H "Authorization: Bearer nq_your_key" \\
   -H "Content-Type: application/json" \\
   -d '{
     "question": "top 10 customers by total revenue",
@@ -541,7 +541,7 @@ export default function ApiDocsPage() {
               </>
             }
             curl={`curl "${BASE_URL}/api/v1/history?page=1&pageSize=10&status=success" \\
-  -H "Authorization: Bearer rp_your_key"`}
+  -H "Authorization: Bearer nq_your_key"`}
             response={`{
   "success": true,
   "data": [

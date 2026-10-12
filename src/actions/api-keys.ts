@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { generateApiKey, hashApiKey } from '@/lib/encryption'
+import { API_KEY_PREFIX, generateApiKey, hashApiKey } from '@/lib/encryption'
 import { checkPlanLimits } from '@/lib/plan-limits'
 import { rateLimitAsync } from '@/lib/rate-limit'
 import { IdSchema } from '@/lib/validation'
@@ -37,7 +37,7 @@ export async function createApiKey(name: string, expiresInDays?: number) {
     return { success: false, error: message }
   }
 
-  const { key, hash, prefix } = generateApiKey('rp_')
+  const { key, hash, prefix } = generateApiKey(API_KEY_PREFIX)
 
   const expiresAt = expiresInDays
     ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)

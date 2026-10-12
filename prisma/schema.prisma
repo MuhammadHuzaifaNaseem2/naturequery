@@ -335,7 +335,7 @@ model ApiKey {
   id         String    @id @default(cuid())
   name       String
   key        String    @unique // hashed
-  prefix     String // first 8 chars for display (e.g., "rp_12345678...")
+  prefix     String // first 8 chars for display (e.g., "nq_12345678..."; keys before Oct 2026 start rp_)
   userId     String
   lastUsedAt DateTime?
   expiresAt  DateTime?

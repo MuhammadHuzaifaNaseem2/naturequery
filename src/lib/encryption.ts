@@ -35,14 +35,14 @@ export function encrypt(text: string): string {
     const key = getKey()
     const iv = crypto.randomBytes(IV_LENGTH)
     const salt = crypto.randomBytes(SALT_LENGTH)
-    
+
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
-    
+
     let encrypted = cipher.update(text, 'utf8', 'hex')
     encrypted += cipher.final('hex')
-    
+
     const tag = cipher.getAuthTag()
-    
+
     // Combine iv, salt, tag, and encrypted data
     return `${iv.toString('hex')}:${salt.toString('hex')}:${tag.toString('hex')}:${encrypted}`
   } catch (error) {
@@ -119,16 +119,33 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 /**
+ * New API keys start with nq_ (NatureQuery). Keys made before October 2026 start with
+ * rp_ (from the old name, ReportFlow) and keep working. Desktop sign-in tokens start with
+ * nqd_, so they never pass for an API key.
+ */
+export const API_KEY_PREFIX = 'nq_'
+const ACCEPTED_API_KEY_PREFIXES = [API_KEY_PREFIX, 'rp_']
+
+/** True when the value has the shape of a NatureQuery API key (new or old prefix). */
+export function hasApiKeyPrefix(value: string): boolean {
+  return ACCEPTED_API_KEY_PREFIXES.some((prefix) => value.startsWith(prefix))
+}
+
+/**
  * Generate a random API key
- * @param prefix - Prefix for the key (e.g., 'rp_')
+ * @param prefix - Prefix for the key (new keys use API_KEY_PREFIX)
  * @returns Object with key and hashed version
  */
-export function generateApiKey(prefix: string = 'rp_'): { key: string; hash: string; prefix: string } {
+export function generateApiKey(prefix: string = API_KEY_PREFIX): {
+  key: string
+  hash: string
+  prefix: string
+} {
   const randomBytes = crypto.randomBytes(32).toString('hex')
   const key = `${prefix}${randomBytes}`
   const hash = crypto.createHash('sha256').update(key).digest('hex')
   const displayPrefix = key.substring(0, prefix.length + 8)
-  
+
   return {
     key,
     hash,

@@ -18,6 +18,23 @@ describe('API Key Utilities', () => {
     expect(result.hash).toHaveLength(64) // SHA-256 hex
   })
 
+  it('makes new keys with the nq_ prefix', async () => {
+    const { generateApiKey, API_KEY_PREFIX } = await import('@/lib/encryption')
+    expect(API_KEY_PREFIX).toBe('nq_')
+    const result = generateApiKey()
+    expect(result.key).toMatch(/^nq_[a-f0-9]{64}$/)
+    expect(result.prefix).toMatch(/^nq_[a-f0-9]{8}$/)
+  })
+
+  it('accepts new nq_ keys and older rp_ keys, but not desktop sign-in tokens', async () => {
+    const { generateApiKey, hasApiKeyPrefix } = await import('@/lib/encryption')
+    expect(hasApiKeyPrefix(generateApiKey().key)).toBe(true)
+    expect(hasApiKeyPrefix(generateApiKey('rp_').key)).toBe(true)
+    expect(hasApiKeyPrefix('nqd_at_abc123')).toBe(false)
+    expect(hasApiKeyPrefix('sk_live_abc123')).toBe(false)
+    expect(hasApiKeyPrefix('')).toBe(false)
+  })
+
   it('generates unique keys each call', async () => {
     const { generateApiKey } = await import('@/lib/encryption')
     const key1 = generateApiKey('rp_')
