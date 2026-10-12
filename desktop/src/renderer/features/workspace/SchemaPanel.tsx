@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner'
 import type { TableInfo } from '@shared/types'
 import { ErrorNotice, IconButton, Input, Spinner } from '../../components/ui'
+import { PanelResizer, usePanelWidth } from '../../components/resizable'
 import { formatCount } from '../../lib/format'
 import { api } from '../../lib/nq'
 import { previewQuery } from '../../lib/sql'
@@ -117,6 +118,7 @@ const TableRow = memo(function TableRow({
 export function SchemaPanel({ connectionId }: { connectionId: string }) {
   const connection = useConnection(connectionId)
   const state = useApp((s) => s.schemas[connectionId])
+  const panel = usePanelWidth('nq.schemaPanelWidth', 272, 200, 560)
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
@@ -146,9 +148,11 @@ export function SchemaPanel({ connectionId }: { connectionId: string }) {
 
   return (
     <aside
-      className="flex h-full w-[272px] shrink-0 flex-col border-r border-border/70 bg-card/30"
+      style={{ width: panel.width }}
+      className="relative flex h-full shrink-0 flex-col border-r border-border/70 bg-card/30"
       aria-label="Tables"
     >
+      <PanelResizer label="Resize the tables list" panel={panel} />
       <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/70 pl-3 pr-1.5">
         <span className="flex-1 truncate text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
           Tables

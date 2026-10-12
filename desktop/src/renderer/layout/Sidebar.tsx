@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import type { ConnectionInfo } from '@shared/types'
 import { DbIcon } from '../components/brand'
 import { IconButton, Menu, Spinner } from '../components/ui'
+import { PanelResizer, usePanelWidth } from '../components/resizable'
 import { api } from '../lib/nq'
 import {
   connectionLabel,
@@ -176,12 +177,15 @@ export function Sidebar() {
   const connections = useApp((state) => state.connections)
   const sample = useApp((state) => state.sample)
   const tabCount = useApp((state) => state.tabs.length)
+  const panel = usePanelWidth('nq.sidebarWidth', 264, 200, 420)
 
   return (
     <aside
-      className="flex w-[264px] shrink-0 flex-col border-r border-border/70 bg-sidebar"
+      style={{ width: panel.width }}
+      className="relative flex shrink-0 flex-col border-r border-border/70 bg-sidebar"
       aria-label="Navigation"
     >
+      <PanelResizer label="Resize the side menu" panel={panel} />
       <nav className="space-y-0.5 p-2.5">
         <NavItem view="home" icon={<Home className="h-4 w-4" />} label="Home" />
         <NavItem
