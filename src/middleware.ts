@@ -21,6 +21,8 @@ const PUBLIC_EXACT = new Set([
   '/contact',
   '/faq',
   '/changelog',
+  // The page behind 'Stop weekly summaries' in the email; the link is signed
+  '/email/unsubscribe',
 ])
 
 const AUTH_PAGES = new Set(['/login', '/register'])

@@ -14,12 +14,18 @@ import { checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limit
 import { createNotification } from '@/actions/notifications'
 import { runDueReconciliationMonitors } from '@/lib/reconciliation-monitor-runner'
 import { nextRunAt } from '@/lib/schedule-time'
+import { runNightlyInsights, runDailyAuditCheck } from '@/lib/nightly-insights'
+
+// Room for the scheduled queries plus a few summaries per call (Hobby allows 60s).
+export const maxDuration = 60
 
 /**
  * GET /api/cron/run-schedules
  *
  * Executes all enabled scheduled queries whose nextRunAt is in the past, then moves
- * each to its next time (src/lib/schedule-time.ts). Protected by CRON_SECRET:
+ * each to its next time (src/lib/schedule-time.ts). Then it runs the daily jobs that
+ * are due: the Insights summaries after 02:00 UTC (emailed on Mondays) and the audit-log
+ * check after 02:30 UTC (src/lib/nightly-insights.ts). Protected by CRON_SECRET:
  *   Authorization: Bearer <CRON_SECRET>
  *
  * Called once an hour by .github/workflows/run-schedules.yml, and once a day by the
@@ -58,6 +64,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ran: 0,
       message: 'No scheduled queries due',
+      daily: await runDailyJobs(now),
       monitors: {
         ran: monitorResults.length,
         alerts: monitorResults.filter((result) => result.status === 'alert').length,
@@ -217,6 +224,7 @@ export async function GET(request: Request) {
     succeeded,
     failed,
     results,
+    daily: await runDailyJobs(now),
     monitors: {
       ran: monitorResults.length,
       alerts: monitorResults.filter((result) => result.status === 'alert').length,
@@ -224,4 +232,17 @@ export async function GET(request: Request) {
       results: monitorResults,
     },
   })
+}
+
+// A failing daily job is reported in the response and never stops the schedules.
+async function runDailyJobs(now: Date) {
+  const insights = await runNightlyInsights(now).catch((error) => {
+    console.error('[cron] nightly insights failed:', error)
+    return { error: error instanceof Error ? error.message : String(error) }
+  })
+  const audit = await runDailyAuditCheck(now).catch((error) => {
+    console.error('[cron] audit check failed:', error)
+    return { error: error instanceof Error ? error.message : String(error) }
+  })
+  return { insights, audit }
 }

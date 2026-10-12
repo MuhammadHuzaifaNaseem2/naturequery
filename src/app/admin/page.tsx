@@ -176,6 +176,12 @@ const ACTIONS: Record<string, { icon: typeof Activity; text: string; destructive
   REVOKE_API_KEY: { icon: Trash2, text: 'revoked an API key', destructive: true },
   DESKTOP_SESSION_REVOKED: { icon: LogOut, text: 'signed out a desktop app' },
   NIGHTLY_INSIGHT_GENERATED: { icon: Activity, text: 'received a nightly summary' },
+  AUDIT_CHAIN_VERIFIED: { icon: Shield, text: 'confirmed the audit log is intact' },
+  AUDIT_CHAIN_INTEGRITY_FAILED: {
+    icon: Shield,
+    text: 'found a break in the audit log',
+    destructive: true,
+  },
 }
 
 function describe(action: string) {

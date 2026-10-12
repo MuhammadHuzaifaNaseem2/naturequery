@@ -119,7 +119,8 @@ export function InsightsClient({ insights, liveMetrics }: Props) {
       )}
 
       <p className="font-mono text-[11px] text-muted-foreground">
-        Figures cover rolling 7-day and 30-day windows. Summaries are written nightly at 2 AM UTC.
+        Figures cover rolling 7-day and 30-day windows. Summaries are written nightly after 2 AM
+        UTC, and on Mondays the summary is also emailed to you. Turn the email off in Settings.
       </p>
     </div>
   )

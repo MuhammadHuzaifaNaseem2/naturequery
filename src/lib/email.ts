@@ -8,6 +8,8 @@
  */
 
 import { rateLimitAsync } from '@/lib/rate-limit'
+import type { InsightMetrics } from '@/lib/nightly-insights'
+import { weeklySummaryUnsubscribeUrl } from '@/lib/email-unsubscribe'
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 const from = process.env.EMAIL_FROM || 'NatureQuery <hello@naturequery.app>'
@@ -32,9 +34,9 @@ function baseTemplate(content: string) {
     .header h1 { margin: 0; font-size: 20px; font-weight: 700; color: #18181b; }
     .body { padding: 32px; color: #3f3f46; font-size: 15px; line-height: 1.6; }
     .body p { margin: 0 0 16px; }
-    .btn { display: inline-block; padding: 12px 28px; background: #6366f1; color: #fff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; }
+    .btn { display: inline-block; padding: 12px 28px; background: #151127; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; }
     .footer { padding: 20px 32px; background: #fafafa; border-top: 1px solid #e4e4e7; color: #a1a1aa; font-size: 12px; text-align: center; }
-    .code { font-family: monospace; font-size: 28px; font-weight: 700; letter-spacing: 4px; color: #6366f1; background: #eef2ff; padding: 12px 20px; border-radius: 8px; display: inline-block; }
+    .code { font-family: monospace; font-size: 28px; font-weight: 700; letter-spacing: 4px; color: #5336d3; background: #efedfb; padding: 12px 20px; border-radius: 8px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -53,7 +55,12 @@ async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  options: { replyTo?: string; rateLimitKey?: string } = {}
+  options: {
+    replyTo?: string
+    rateLimitKey?: string
+    text?: string
+    headers?: Record<string, string>
+  } = {}
 ): Promise<void> {
   // Global rate limit: max 5 emails per minute per recipient (prevents abuse)
   const rl = await rateLimitAsync(`email:${options.rateLimitKey || to}`, {
@@ -72,7 +79,15 @@ async function sendEmail(
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, subject, html, reply_to: options.replyTo }),
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        html,
+        text: options.text,
+        reply_to: options.replyTo,
+        headers: options.headers,
+      }),
     })
     if (!response.ok) {
       const err = await response.text()
@@ -90,7 +105,15 @@ async function sendEmail(
       secure: process.env.SMTP_PORT === '465',
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
     })
-    await transporter.sendMail({ from, to, subject, html, replyTo: options.replyTo })
+    await transporter.sendMail({
+      from,
+      to,
+      subject,
+      html,
+      text: options.text,
+      replyTo: options.replyTo,
+      headers: options.headers,
+    })
     return
   }
 
@@ -471,4 +494,156 @@ export async function sendPasswordChangedEmail(email: string): Promise<void> {
   `)
 
   await sendEmail(email, 'Your NatureQuery password was changed', html)
+}
+
+// ---------- Weekly summary ----------
+
+const INK = '#151127'
+const MUTED = '#5c5970'
+const RULE = '#dcd9e8'
+const PAPER = '#f6f5fa'
+const VIOLET = '#5336d3'
+const MARIGOLD = '#f7b83b'
+const SERIF = "Georgia, 'Times New Roman', serif"
+const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+const MONO = "'IBM Plex Mono', Consolas, 'Courier New', monospace"
+
+function plain(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function trendText(m: InsightMetrics): string {
+  // With nothing last week there is no percentage to give.
+  if (m.queries7d_prev === 0)
+    return m.queries7d > 0 ? 'none the week before' : 'none last week either'
+  if (m.wowDirection === 'up') return `up ${m.wowDelta}% on last week`
+  if (m.wowDirection === 'down') return `down ${Math.abs(m.wowDelta)}% on last week`
+  return 'about the same as last week'
+}
+
+export function weeklySummarySubject(m: InsightMetrics): string {
+  return `Your week in NatureQuery: ${m.queries7d} question${m.queries7d !== 1 ? 's' : ''}`
+}
+
+/** The weekly summary in the site's look: paper, ink, violet, and marigold for the answer. */
+export function weeklySummaryEmailHtml(input: {
+  name: string | null
+  narrative: string
+  metrics: InsightMetrics
+  unsubscribeUrl: string
+  baseUrl: string
+  date?: Date
+}): string {
+  const { metrics: m, baseUrl } = input
+  const date = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(input.date ?? new Date())
+  const label = `font-family:${MONO}; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:${MUTED};`
+  const figure = (name: string, value: string, note?: string) => `
+          <td width="50%" valign="top" style="padding:14px 16px; border:1px solid ${RULE}; background:#ffffff;">
+            <div style="${label}">${name}</div>
+            <div style="font-family:${MONO}; font-size:26px; line-height:1.1; color:${INK}; margin-top:8px;">${value}</div>
+            ${note ? `<div style="font-family:${SANS}; font-size:12px; color:${MUTED}; margin-top:6px;">${plain(note)}</div>` : ''}
+          </td>`
+  const connections = m.topConnections
+    .map(
+      (c) => `
+          <tr>
+            <td style="font-family:${SANS}; font-size:14px; color:${INK}; padding:8px 0; border-bottom:1px solid ${RULE};">${plain(c.name)}</td>
+            <td align="right" style="font-family:${MONO}; font-size:13px; color:${MUTED}; padding:8px 0; border-bottom:1px solid ${RULE};">${c.count}</td>
+          </tr>`
+    )
+    .join('')
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${plain(weeklySummarySubject(m))}</title>
+</head>
+<body style="margin:0; padding:0; background:${PAPER};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER};">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="font-family:${SANS}; font-size:15px; font-weight:700; color:${INK}; padding-bottom:20px;">NatureQuery</td></tr>
+        <tr><td style="${label}">Weekly summary &middot; ${plain(date)}</td></tr>
+        <tr><td style="font-family:${SERIF}; font-size:28px; line-height:1.15; color:${INK}; padding:10px 0 20px;">Your week in NatureQuery${input.name ? `, ${plain(input.name)}` : ''}.</td></tr>
+        <tr><td style="border-left:3px solid ${MARIGOLD}; background:#ffffff; padding:16px 20px; font-family:${SANS}; font-size:15px; line-height:1.6; color:${INK};">${plain(input.narrative)}</td></tr>
+        <tr><td style="padding-top:20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <tr>${figure('Questions this week', String(m.queries7d), trendText(m))}${figure('This month', String(m.queries30d))}</tr>
+            <tr>${figure('Active connections', String(m.connectionCount))}${figure('Saved questions', String(m.savedQueryCount))}</tr>
+          </table>
+        </td></tr>
+        ${
+          connections
+            ? `<tr><td style="${label} padding-top:24px;">Busiest connections this week</td></tr>
+        <tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${connections}</table></td></tr>`
+            : ''
+        }
+        <tr><td style="padding:28px 0;">
+          <a href="${baseUrl}/dashboard" style="display:inline-block; background:${INK}; color:#ffffff; text-decoration:none; font-family:${SANS}; font-size:14px; font-weight:600; padding:12px 22px; border-radius:6px;">Open NatureQuery</a>
+        </td></tr>
+        <tr><td style="border-top:1px solid ${RULE}; padding-top:16px; font-family:${SANS}; font-size:12px; line-height:1.6; color:${MUTED};">
+          You get this summary every Monday. <a href="${input.unsubscribeUrl}" style="color:${VIOLET};">Stop weekly summaries</a> or manage them in <a href="${baseUrl}/settings" style="color:${VIOLET};">Settings</a>.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+export function weeklySummaryEmailText(input: {
+  name: string | null
+  narrative: string
+  metrics: InsightMetrics
+  unsubscribeUrl: string
+  baseUrl: string
+}): string {
+  const m = input.metrics
+  return [
+    `Your week in NatureQuery${input.name ? `, ${input.name}` : ''}.`,
+    '',
+    input.narrative,
+    '',
+    `Questions this week: ${m.queries7d} (${trendText(m)})`,
+    `This month: ${m.queries30d}`,
+    `Active connections: ${m.connectionCount}`,
+    `Saved questions: ${m.savedQueryCount}`,
+    '',
+    `Open NatureQuery: ${input.baseUrl}/dashboard`,
+    '',
+    `You get this summary every Monday. Stop weekly summaries: ${input.unsubscribeUrl}`,
+  ].join('\n')
+}
+
+export async function sendWeeklySummaryEmail(input: {
+  to: string
+  name: string | null
+  narrative: string
+  metrics: InsightMetrics
+  unsubscribeToken: string
+}): Promise<void> {
+  const unsubscribeUrl = weeklySummaryUnsubscribeUrl(appUrl, input.unsubscribeToken)
+  // Mail apps offer their own one-click "unsubscribe", which posts to this address.
+  const oneClickUrl = `${appUrl.replace(/\/$/, '')}/api/email/unsubscribe?t=${encodeURIComponent(input.unsubscribeToken)}`
+  const content = { ...input, unsubscribeUrl, baseUrl: appUrl.replace(/\/$/, '') }
+
+  await sendEmail(input.to, weeklySummarySubject(input.metrics), weeklySummaryEmailHtml(content), {
+    text: weeklySummaryEmailText(content),
+    headers: {
+      'List-Unsubscribe': `<${oneClickUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  })
 }

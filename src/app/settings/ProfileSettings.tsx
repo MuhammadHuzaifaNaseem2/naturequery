@@ -20,6 +20,7 @@ import { clsx } from 'clsx'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
+import { EmailSettings } from './EmailSettings'
 
 interface ProfileSettingsProps {
   user: {
@@ -227,6 +228,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
           ))}
         </div>
       </div>
+
+      <EmailSettings />
 
       {/* Account Info */}
       <div className="card p-5">

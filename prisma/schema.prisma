@@ -72,6 +72,9 @@ model User {
   // The shared page also shows each chart with its numbers (DashboardWidget.snapshot)
   dashboardShareCharts Boolean @default(false)
 
+  // Monday email with the week's summary (src/lib/nightly-insights.ts); off from Settings or the email
+  weeklySummaryEmail Boolean @default(true)
+
   @@index([email])
 }
 
@@ -482,6 +485,15 @@ model ScheduledQuery {
 
   @@index([userId])
   @@index([enabled, nextRunAt])
+}
+
+// One row per daily job run, so overlapping calls never repeat it.
+// Keys look like "insight:<userId>:2026-10-12" or "audit-chain:2026-10-12".
+model JobRun {
+  key       String   @id
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model AuditLog {
