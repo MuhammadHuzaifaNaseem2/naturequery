@@ -153,6 +153,7 @@ export default function DashboardPage() {
               generatedSQL={dashboard.generatedSQL}
               onSQLChange={dashboard.setGeneratedSQL}
               isGenerating={dashboard.isGenerating}
+              isWaitingForTables={dashboard.isWaitingForTables}
               isExecuting={dashboard.isExecuting}
               isExporting={dashboard.isExporting}
               isFixing={dashboard.isFixing}

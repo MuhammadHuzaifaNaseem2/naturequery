@@ -307,6 +307,7 @@
       "saveButton": "Guardar consulta",
       "clearButton": "Limpiar",
       "generating": "Generando SQL...",
+      "readingTables": "Leyendo tus tablas...",
       "executing": "Ejecutando consulta...",
       "sqlPreview": "Vista previa SQL",
       "editSql": "Editar SQL",

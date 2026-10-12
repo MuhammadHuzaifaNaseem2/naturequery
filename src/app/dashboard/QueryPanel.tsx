@@ -67,6 +67,8 @@ interface QueryPanelProps {
   generatedSQL: string
   onSQLChange?: (sql: string) => void
   isGenerating: boolean
+  /** A question is waiting for the connection's tables to finish loading. */
+  isWaitingForTables?: boolean
   isExecuting: boolean
   isExporting: boolean
   isFixing?: boolean
@@ -131,6 +133,7 @@ export function QueryPanel({
   generatedSQL,
   onSQLChange,
   isGenerating,
+  isWaitingForTables = false,
   isExecuting,
   isExporting,
   isFixing,
@@ -454,13 +457,20 @@ export function QueryPanel({
                   </span>
                   <button
                     onClick={onGenerateSQL}
-                    disabled={!activeConnection || !nlQuery.trim() || isGenerating}
-                    className={clsx('btn-primary ml-auto', isGenerating && 'btn-generating')}
+                    disabled={
+                      !activeConnection || !nlQuery.trim() || isGenerating || isWaitingForTables
+                    }
+                    className={clsx(
+                      'btn-primary ml-auto',
+                      (isGenerating || isWaitingForTables) && 'btn-generating'
+                    )}
                   >
-                    {isGenerating ? (
+                    {isGenerating || isWaitingForTables ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                        {t('dashboard.queryPanel.generating')}
+                        {isWaitingForTables
+                          ? t('dashboard.queryPanel.readingTables')
+                          : t('dashboard.queryPanel.generating')}
                       </>
                     ) : (
                       t('dashboard.queryPanel.generateButton')

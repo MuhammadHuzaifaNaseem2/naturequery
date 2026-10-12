@@ -307,6 +307,7 @@
       "saveButton": "Abfrage speichern",
       "clearButton": "Löschen",
       "generating": "SQL wird generiert...",
+      "readingTables": "Tabellen werden gelesen...",
       "executing": "Abfrage wird ausgeführt...",
       "sqlPreview": "SQL-Vorschau",
       "editSql": "SQL bearbeiten",

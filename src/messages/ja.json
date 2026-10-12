@@ -307,6 +307,7 @@
       "saveButton": "クエリを保存",
       "clearButton": "クリア",
       "generating": "SQLを生成中...",
+      "readingTables": "テーブルを読み込み中...",
       "executing": "クエリを実行中...",
       "sqlPreview": "SQLプレビュー",
       "editSql": "SQLを編集",

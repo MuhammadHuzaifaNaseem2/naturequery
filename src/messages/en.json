@@ -307,6 +307,7 @@
       "saveButton": "Save Query",
       "clearButton": "Clear",
       "generating": "Generating SQL...",
+      "readingTables": "Reading your tables...",
       "executing": "Executing query...",
       "sqlPreview": "SQL Preview",
       "editSql": "Edit SQL",

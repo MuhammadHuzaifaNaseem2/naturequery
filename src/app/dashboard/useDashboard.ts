@@ -70,6 +70,9 @@ export function useDashboard() {
   const [nlQuery, setNlQuery] = useState('')
   const [generatedSQL, setGeneratedSQL] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  // A question asked before the connection's tables have loaded waits for them.
+  const [isWaitingForTables, setIsWaitingForTables] = useState(false)
+  const pendingGenerateRef = useRef<string | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isFixing, setIsFixing] = useState(false)
@@ -762,9 +765,49 @@ export function useDashboard() {
     [activeConnection, setShowPlanLimit]
   )
 
+  // Loads a connection's tables again after an earlier attempt failed.
+  const retrySchema = useCallback(async (connectionId: string) => {
+    setConnections((prev) =>
+      prev.map((c) =>
+        c.id === connectionId ? { ...c, status: 'active' as const, schemaError: undefined } : c
+      )
+    )
+    const result = await fetchSchemaByConnection(connectionId)
+    if (result.success && result.data) {
+      schemaCache.set(connectionId, result.data)
+      setConnections((prev) =>
+        prev.map((c) =>
+          c.id === connectionId ? { ...c, schema: result.data, status: 'active' as const } : c
+        )
+      )
+    } else {
+      setConnections((prev) =>
+        prev.map((c) =>
+          c.id === connectionId
+            ? {
+                ...c,
+                status: 'error' as const,
+                schemaError: result.error || 'Failed to load schema',
+              }
+            : c
+        )
+      )
+    }
+  }, [])
+
   // Handle generating SQL from natural language
   const handleGenerateSQL = useCallback(async () => {
-    if (!activeConnection?.schema || !nlQuery.trim()) return
+    if (!activeConnection || !nlQuery.trim()) return
+
+    // The tables are still loading, or failed to load: wait for them instead of
+    // ignoring the click. The effect below generates as soon as they arrive.
+    if (!activeConnection.schema) {
+      pendingGenerateRef.current = activeConnection.id
+      setIsWaitingForTables(true)
+      setError(null)
+      if (activeConnection.status === 'error') retrySchema(activeConnection.id)
+      return
+    }
 
     setIsGenerating(true)
     setError(null)
@@ -827,7 +870,32 @@ export function useDashboard() {
       setError(result.error || 'Failed to generate SQL')
       toast.error('SQL generation failed', { description: result.error })
     }
-  }, [activeConnection, nlQuery])
+  }, [activeConnection, nlQuery, retrySchema])
+
+  // Finish a question that was waiting for the tables: generate once they arrive,
+  // explain if they could not be read, and drop it if another connection was opened.
+  useEffect(() => {
+    const pending = pendingGenerateRef.current
+    if (!pending) return
+    if (activeConnection?.id !== pending) {
+      pendingGenerateRef.current = null
+      setIsWaitingForTables(false)
+      return
+    }
+    if (activeConnection.schema) {
+      pendingGenerateRef.current = null
+      setIsWaitingForTables(false)
+      handleGenerateSQL()
+    } else if (activeConnection.status === 'error') {
+      pendingGenerateRef.current = null
+      setIsWaitingForTables(false)
+      setError(
+        `NatureQuery could not read the tables in ${activeConnection.name}, so it cannot write SQL for it yet. ` +
+          (activeConnection.schemaError ?? 'Check that the database is running and reachable.') +
+          ' Then click Generate SQL to try again.'
+      )
+    }
+  }, [activeConnection, handleGenerateSQL])
 
   // Handle executing the generated SQL
   const handleExecuteSQL = useCallback(
@@ -1223,6 +1291,7 @@ export function useDashboard() {
     generatedSQL,
     setGeneratedSQL,
     isGenerating,
+    isWaitingForTables,
     isExecuting,
     isExporting,
     isFixing,

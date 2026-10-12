@@ -307,6 +307,7 @@
       "saveButton": "Enregistrer la requête",
       "clearButton": "Effacer",
       "generating": "Génération SQL...",
+      "readingTables": "Lecture de vos tables...",
       "executing": "Exécution de la requête...",
       "sqlPreview": "Aperçu SQL",
       "editSql": "Modifier SQL",

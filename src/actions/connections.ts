@@ -67,7 +67,7 @@ function friendlyConnectionError(error: unknown): string {
   if (lower.includes('does not exist') && lower.includes('database'))
     return `Database not found. Check the database name is correct.`
   if (lower.includes('connection refused') || lower.includes('econnrefused'))
-    return 'Connection refused. Check the host and port — make sure the database server is reachable.'
+    return 'Connection refused. Check the host and port, and that the database server is running and reachable.'
   if (
     lower.includes('timeout') ||
     lower.includes('etimedout') ||
