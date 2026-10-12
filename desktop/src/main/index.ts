@@ -454,6 +454,8 @@ async function start() {
     try {
       await writeExport(request.format, result.filePath, request.columns, request.rows)
     } catch (error) {
+      // NqErrors are not logged on their way out, so record the real cause here.
+      logger.error(`Export to ${request.format} failed`, error)
       throw new NqError('UNKNOWN', 'The file could not be saved.', {
         hint: 'Check that the file is not open in another program and that you can write to that folder.',
         detail: (error as Error).message,

@@ -56,8 +56,18 @@ export async function writeJson(file: string, columns: string[], rows: unknown[]
   await fs.promises.writeFile(file, JSON.stringify(objects, null, 2), 'utf8')
 }
 
+/**
+ * exceljs is a CommonJS package. In the built app, import() hands back its exports under
+ * `default` (so `ExcelJS.stream` was undefined and every Excel export failed), while
+ * test runners flatten them. Take whichever shape arrives.
+ */
+export function commonJsModule<T extends object>(imported: T): T {
+  const wrapped = (imported as { default?: T }).default
+  return wrapped && typeof wrapped === 'object' ? wrapped : imported
+}
+
 export async function writeXlsx(file: string, columns: string[], rows: unknown[][]): Promise<void> {
-  const ExcelJS = await import('exceljs')
+  const ExcelJS = commonJsModule(await import('exceljs'))
   const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ filename: file, useStyles: true })
   workbook.creator = 'NatureQuery Desktop'
   workbook.created = new Date()
