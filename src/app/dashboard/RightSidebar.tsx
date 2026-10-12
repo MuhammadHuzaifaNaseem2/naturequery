@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { clsx } from 'clsx'
+import { Loader2 } from 'lucide-react'
 import { SchemaBrowser } from '@/components/SchemaBrowser'
 import { QueryHistory } from '@/components/QueryHistory'
 import { SavedQueries } from '@/components/SavedQueries'
@@ -133,20 +134,47 @@ export function RightSidebar({
             )
           ) : (
             <>
-              {activeTab === 'schema' && (
-                <SchemaBrowser
-                  schema={activeConnection.schema || null}
-                  onRefreshSchema={onRefreshSchema}
-                  isRefreshing={isRefreshingSchema}
-                  onColumnClick={(tableName, columnName) => {
-                    const currentQuery = nlQuery.trim()
-                    const addition = currentQuery
-                      ? ` ${tableName}.${columnName}`
-                      : `Show me ${columnName} from ${tableName}`
-                    onNlQueryChange(currentQuery + addition)
-                  }}
-                />
-              )}
+              {/* Tables loaded, still loading, or could not be read */}
+              {activeTab === 'schema' &&
+                (activeConnection.schema ? (
+                  <SchemaBrowser
+                    schema={activeConnection.schema}
+                    onRefreshSchema={onRefreshSchema}
+                    isRefreshing={isRefreshingSchema}
+                    onColumnClick={(tableName, columnName) => {
+                      const currentQuery = nlQuery.trim()
+                      const addition = currentQuery
+                        ? ` ${tableName}.${columnName}`
+                        : `Show me ${columnName} from ${tableName}`
+                      onNlQueryChange(currentQuery + addition)
+                    }}
+                  />
+                ) : activeConnection.status === 'error' ? (
+                  <div role="alert" className="p-4 text-center text-sm">
+                    <p className="font-medium text-foreground">
+                      {t('dashboard.schemaBrowser.couldNotRead')}
+                    </p>
+                    {activeConnection.schemaError && (
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
+                        {activeConnection.schemaError}
+                      </p>
+                    )}
+                    {onRefreshSchema && (
+                      <button
+                        onClick={onRefreshSchema}
+                        disabled={isRefreshingSchema}
+                        className="btn-secondary mx-auto mt-3 px-3 py-1.5 text-xs"
+                      >
+                        {isRefreshingSchema && (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                        )}
+                        {t('common.tryAgain')}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <SchemaBrowserSkeleton />
+                ))}
               {activeTab === 'history' && (
                 <QueryHistory
                   history={queryHistory}

@@ -462,6 +462,7 @@
     "schemaBrowser": {
       "noSchemaLoaded": "スキーマが読み込まれていません",
       "connectToDatabase": "データベースに接続してテーブルを参照",
+      "couldNotRead": "テーブルを読み込めませんでした",
       "searchTables": "テーブルを検索...",
       "refreshSchema": "スキーマを更新",
       "tables": "テーブル",

@@ -462,6 +462,7 @@
     "schemaBrowser": {
       "noSchemaLoaded": "Aucun schéma chargé",
       "connectToDatabase": "Connectez une base de données pour parcourir les tables",
+      "couldNotRead": "Impossible de lire les tables",
       "searchTables": "Rechercher des tables...",
       "refreshSchema": "Actualiser le schéma",
       "tables": "tables",

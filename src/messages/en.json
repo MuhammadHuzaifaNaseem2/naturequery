@@ -462,6 +462,7 @@
     "schemaBrowser": {
       "noSchemaLoaded": "No schema loaded",
       "connectToDatabase": "Connect to a database to browse tables",
+      "couldNotRead": "Could not read the tables",
       "searchTables": "Search tables...",
       "refreshSchema": "Refresh schema",
       "tables": "tables",

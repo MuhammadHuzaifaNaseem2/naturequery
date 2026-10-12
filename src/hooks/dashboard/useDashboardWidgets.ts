@@ -62,8 +62,8 @@ export function useDashboardWidgets(
             position: w.position,
           },
         ])
+        // Switching to the dashboard, with the new chart on it, confirms the pin.
         window.dispatchEvent(new Event('switchToDashboard'))
-        toast.success('Pinned to dashboard')
         updateChecklistItem('pinnedChart', true).catch(() => {})
         window.dispatchEvent(
           new CustomEvent('onboarding:complete', { detail: { item: 'pinnedChart' } })

@@ -692,10 +692,29 @@ export function useDashboard() {
     try {
       const result = await refreshSchemaByConnection(activeConnection.id)
       if (result.success && result.data) {
+        schemaCache.set(activeConnection.id, result.data)
         setConnections((prev) =>
-          prev.map((c) => (c.id === activeConnection.id ? { ...c, schema: result.data } : c))
+          prev.map((c) =>
+            c.id === activeConnection.id
+              ? { ...c, schema: result.data, status: 'active' as const, schemaError: undefined }
+              : c
+          )
         )
-        toast.success('Schema refreshed')
+        // Tables appearing in place of the error is confirmation enough.
+        if (activeConnection.schema) toast.success('Schema refreshed')
+      } else if (!activeConnection.schema) {
+        // The Schema panel shows why the tables could not be read.
+        setConnections((prev) =>
+          prev.map((c) =>
+            c.id === activeConnection.id
+              ? {
+                  ...c,
+                  status: 'error' as const,
+                  schemaError: result.error || 'Failed to load schema',
+                }
+              : c
+          )
+        )
       } else {
         toast.error(result.error || 'Failed to refresh schema')
       }

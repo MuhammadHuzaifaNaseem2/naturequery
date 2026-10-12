@@ -462,6 +462,7 @@
     "schemaBrowser": {
       "noSchemaLoaded": "Kein Schema geladen",
       "connectToDatabase": "Verbinden Sie eine Datenbank, um Tabellen zu durchsuchen",
+      "couldNotRead": "Die Tabellen konnten nicht gelesen werden",
       "searchTables": "Tabellen suchen...",
       "refreshSchema": "Schema aktualisieren",
       "tables": "Tabellen",

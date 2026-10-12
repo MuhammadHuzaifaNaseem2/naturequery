@@ -462,6 +462,7 @@
     "schemaBrowser": {
       "noSchemaLoaded": "No hay esquema cargado",
       "connectToDatabase": "Conecta una base de datos para explorar las tablas",
+      "couldNotRead": "No se pudieron leer las tablas",
       "searchTables": "Buscar tablas...",
       "refreshSchema": "Actualizar esquema",
       "tables": "tablas",
