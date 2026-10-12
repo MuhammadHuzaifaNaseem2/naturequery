@@ -527,7 +527,7 @@ function trendText(m: InsightMetrics): string {
 }
 
 export function weeklySummarySubject(m: InsightMetrics): string {
-  return `Your week in NatureQuery: ${m.queries7d} question${m.queries7d !== 1 ? 's' : ''}`
+  return `Your week in NatureQuery: ${m.queries7d} quer${m.queries7d !== 1 ? 'ies' : 'y'}`
 }
 
 /** The weekly summary in the site's look: paper, ink, violet, and marigold for the answer. */
@@ -580,8 +580,8 @@ export function weeklySummaryEmailHtml(input: {
         <tr><td style="border-left:3px solid ${MARIGOLD}; background:#ffffff; padding:16px 20px; font-family:${SANS}; font-size:15px; line-height:1.6; color:${INK};">${plain(input.narrative)}</td></tr>
         <tr><td style="padding-top:20px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-            <tr>${figure('Questions this week', String(m.queries7d), trendText(m))}${figure('This month', String(m.queries30d))}</tr>
-            <tr>${figure('Active connections', String(m.connectionCount))}${figure('Saved questions', String(m.savedQueryCount))}</tr>
+            <tr>${figure('Queries this week', String(m.queries7d), trendText(m))}${figure('This month', String(m.queries30d))}</tr>
+            <tr>${figure('Active connections', String(m.connectionCount))}${figure('Saved queries', String(m.savedQueryCount))}</tr>
           </table>
         </td></tr>
         ${
@@ -616,10 +616,10 @@ export function weeklySummaryEmailText(input: {
     '',
     input.narrative,
     '',
-    `Questions this week: ${m.queries7d} (${trendText(m)})`,
+    `Queries this week: ${m.queries7d} (${trendText(m)})`,
     `This month: ${m.queries30d}`,
     `Active connections: ${m.connectionCount}`,
-    `Saved questions: ${m.savedQueryCount}`,
+    `Saved queries: ${m.savedQueryCount}`,
     '',
     `Open NatureQuery: ${input.baseUrl}/dashboard`,
     '',

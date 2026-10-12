@@ -74,7 +74,7 @@ export function InsightsClient({ insights, liveMetrics }: Props) {
           </h2>
           <dl className="mt-3 grid grid-cols-2 divide-border overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-4 lg:divide-x [&>div:nth-child(-n+2)]:border-b [&>div:nth-child(-n+2)]:border-border lg:[&>div:nth-child(-n+2)]:border-b-0 [&>div:nth-child(odd)]:border-r [&>div:nth-child(odd)]:border-border lg:[&>div:nth-child(odd)]:border-r-0">
             <Figure
-              label="Questions, 7 days"
+              label="Queries, 7 days"
               value={stats.queries7d}
               trend={
                 stats.wowDirection !== 'stable'
@@ -82,7 +82,7 @@ export function InsightsClient({ insights, liveMetrics }: Props) {
                   : undefined
               }
             />
-            <Figure label="Questions, 30 days" value={stats.queries30d} />
+            <Figure label="Queries, 30 days" value={stats.queries30d} />
             <Figure label="Connections in use" value={stats.connectionCount} />
             <Figure label="Saved queries" value={stats.savedQueryCount} />
           </dl>
@@ -119,8 +119,11 @@ export function InsightsClient({ insights, liveMetrics }: Props) {
       )}
 
       <p className="font-mono text-[11px] text-muted-foreground">
-        Figures cover rolling 7-day and 30-day windows. Summaries are written nightly after 2 AM
-        UTC, and on Mondays the summary is also emailed to you. Turn the email off in Settings.
+        Figures cover rolling 7-day and 30-day windows. Queries count everything that ran, as on
+        your plan: your questions, dashboard charts refreshing, scheduled runs and the desktop app.
+        Other activity is whatever ran outside your busiest connections&apos; questions. Summaries
+        are written nightly after 2 AM UTC, and on Mondays the summary is also emailed to you. Turn
+        the email off in Settings.
       </p>
     </div>
   )
@@ -184,7 +187,7 @@ function EmptyDigest() {
       </p>
       <ul className="mt-4 grid max-w-xl gap-x-8 gap-y-2 text-sm text-foreground/85 sm:grid-cols-2">
         {[
-          'How many questions you asked this week',
+          'How many queries you ran this week',
           'How that compares with last week',
           'Which connections you used most',
           'One suggestion for the week ahead',
@@ -219,7 +222,7 @@ function InsightHistoryRow({ insight }: { insight: NightlyInsightRecord }) {
         </div>
         <div className="flex flex-shrink-0 items-center gap-4">
           <span className="hidden font-mono text-[11px] tabular-nums text-muted-foreground sm:inline">
-            {metrics.queries7d} questions
+            {metrics.queries7d} {metrics.queries7d === 1 ? 'query' : 'queries'}
           </span>
           <TrendText direction={metrics.wowDirection} delta={metrics.wowDelta} />
           {expanded ? (
@@ -235,8 +238,8 @@ function InsightHistoryRow({ insight }: { insight: NightlyInsightRecord }) {
           <p className="my-4 max-w-3xl font-serif text-[17px] leading-[1.6]">{insight.narrative}</p>
           <dl className="grid grid-cols-2 gap-4 font-mono text-xs sm:grid-cols-4">
             {[
-              ['Questions, 7 days', metrics.queries7d],
-              ['Questions, 30 days', metrics.queries30d],
+              ['Queries, 7 days', metrics.queries7d],
+              ['Queries, 30 days', metrics.queries30d],
               ['Connections', metrics.connectionCount],
               ['Saved', metrics.savedQueryCount],
             ].map(([name, value]) => (
@@ -281,21 +284,36 @@ function TrendText({ direction, delta }: { direction: 'up' | 'down' | 'stable'; 
   )
 }
 
-function TopConnectionsBars({ connections }: { connections: { name: string; count: number }[] }) {
-  const max = connections[0]?.count ?? 1
+function TopConnectionsBars({
+  connections,
+}: {
+  connections: { name: string; count: number; other?: boolean }[]
+}) {
+  // The other-activity row comes last and can be the longest bar.
+  const max = Math.max(1, ...connections.map((c) => c.count))
   return (
     <div className="space-y-2.5">
       {connections.map((c) => (
         <div key={c.name} className="flex items-center gap-3 text-sm">
-          <span className="w-36 flex-shrink-0 truncate text-sm">{c.name}</span>
+          <span
+            className={clsx(
+              'w-36 flex-shrink-0 truncate text-sm',
+              c.other && 'text-muted-foreground'
+            )}
+          >
+            {c.name}
+          </span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
             <div
-              className="h-full rounded-full bg-primary transition-[width] duration-500"
+              className={clsx(
+                'h-full rounded-full transition-[width] duration-500',
+                c.other ? 'bg-muted-foreground/40' : 'bg-primary'
+              )}
               style={{ width: `${Math.round((c.count / max) * 100)}%` }}
             />
           </div>
           <span className="w-20 flex-shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground">
-            {c.count} {c.count === 1 ? 'question' : 'questions'}
+            {c.count} {c.count === 1 ? 'query' : 'queries'}
           </span>
         </div>
       ))}

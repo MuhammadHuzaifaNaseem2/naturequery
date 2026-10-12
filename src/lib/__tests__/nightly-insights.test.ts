@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { dailyPeriodStart, isEmailDay } from '../nightly-insights'
+import {
+  busiestConnections,
+  dailyPeriodStart,
+  isEmailDay,
+  OTHER_ACTIVITY,
+} from '../nightly-insights'
 import {
   readWeeklySummaryUnsubscribeToken,
   weeklySummaryUnsubscribeToken,
@@ -36,6 +41,44 @@ describe('isEmailDay', () => {
     expect(isEmailDay(dailyPeriodStart(new Date('2026-10-13T09:00:00Z'), 2))).toBe(false)
     // Early Monday UTC still belongs to Sunday's period.
     expect(isEmailDay(dailyPeriodStart(new Date('2026-10-12T01:00:00Z'), 2))).toBe(false)
+  })
+})
+
+describe('busiestConnections', () => {
+  const sum = (rows: { count: number }[]) => rows.reduce((total, r) => total + r.count, 0)
+
+  it('lists the connections alone when their questions are everything that ran', () => {
+    const rows = busiestConnections(
+      [
+        { name: 'Sales', count: 5 },
+        { name: 'Billing', count: 3 },
+      ],
+      8
+    )
+    expect(rows).toEqual([
+      { name: 'Sales', count: 5 },
+      { name: 'Billing', count: 3 },
+    ])
+  })
+
+  it('adds the rest (charts, schedules, the desktop app) as one row, so the rows add up', () => {
+    const rows = busiestConnections([{ name: 'Sales', count: 5 }], 12)
+    expect(rows.at(-1)).toEqual({ name: OTHER_ACTIVITY, count: 7, other: true })
+    expect(sum(rows)).toBe(12)
+  })
+
+  it('shows four connections and folds the rest into the other row', () => {
+    const rows = busiestConnections(
+      [5, 4, 3, 2, 1].map((count, i) => ({ name: `db${i}`, count })),
+      15
+    )
+    expect(rows.map((r) => r.name)).toEqual(['db0', 'db1', 'db2', 'db3', OTHER_ACTIVITY])
+    expect(sum(rows)).toBe(15)
+  })
+
+  it('shows only the other row when nothing came from website questions, and nothing at all for an empty week', () => {
+    expect(busiestConnections([], 6)).toEqual([{ name: OTHER_ACTIVITY, count: 6, other: true }])
+    expect(busiestConnections([], 0)).toEqual([])
   })
 })
 
@@ -109,7 +152,7 @@ describe('weekly summary email', () => {
     expect(html).toContain(input.unsubscribeUrl)
     expect(html).toContain('up 40% on last week')
     expect(html).not.toContain('—')
-    expect(weeklySummarySubject(metrics)).toBe('Your week in NatureQuery: 42 questions')
+    expect(weeklySummarySubject(metrics)).toBe('Your week in NatureQuery: 42 queries')
     expect(weeklySummaryEmailText(input)).toContain(
       'Stop weekly summaries: ' + input.unsubscribeUrl
     )

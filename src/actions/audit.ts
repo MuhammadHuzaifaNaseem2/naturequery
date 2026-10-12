@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { collectInsightMetrics } from '@/lib/nightly-insights'
 
 async function requireUser() {
   const session = await auth()
@@ -106,7 +107,7 @@ export interface NightlyInsightRecord {
     wowDirection: 'up' | 'down' | 'stable'
     connectionCount: number
     savedQueryCount: number
-    topConnections: { name: string; count: number }[]
+    topConnections: { name: string; count: number; other?: boolean }[]
   }
   generatedAt: string
 }
@@ -217,12 +218,8 @@ export async function exportAuditLogsCSV(options: { action?: string } = {}): Pro
 export type LiveInsightMetrics = NightlyInsightRecord['metrics']
 
 /**
- * Returns live (current) metrics for the insights page — always reflects
- * the real DB state, never a stale snapshot.
- *
- * Query counts come from UsageRecord (authoritative billing source).
- * Top connections come from QueryHistory (has connection names).
- * Connection count comes from DatabaseConnection (what the user has set up).
+ * Live figures for the Insights page, counted exactly like the nightly summary
+ * (src/lib/nightly-insights.ts), so the page, the summaries and the email agree.
  */
 export async function getLiveInsightMetrics(): Promise<{
   success: boolean
@@ -231,76 +228,7 @@ export async function getLiveInsightMetrics(): Promise<{
 }> {
   try {
     const user = await requireUser()
-    const userId = user.id
-
-    const now = new Date()
-    const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const d14 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
-    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-    const [
-      queries7d,
-      queries7d_prev,
-      queries30d,
-      connectionCount,
-      savedQueryCount,
-      topConnections,
-    ] = await Promise.all([
-      // UsageRecord is the authoritative billing counter
-      prisma.usageRecord.count({ where: { userId, action: 'QUERY', createdAt: { gte: d7 } } }),
-      prisma.usageRecord.count({
-        where: { userId, action: 'QUERY', createdAt: { gte: d14, lt: d7 } },
-      }),
-      prisma.usageRecord.count({ where: { userId, action: 'QUERY', createdAt: { gte: d30 } } }),
-      // Count connections the user currently has active
-      prisma.databaseConnection.count({ where: { userId, isActive: true } }),
-      // Saved queries (not templates)
-      prisma.savedQuery.count({ where: { userId, isTemplate: false } }),
-      // Top connections by query volume this week (from query history which stores names)
-      prisma.queryHistory.groupBy({
-        by: ['connectionName'],
-        where: {
-          userId,
-          createdAt: { gte: d7 },
-          connectionName: { not: null },
-          status: 'success',
-        },
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 5,
-      }),
-    ])
-
-    // WoW: if no queries last week, treat any queries this week as +100% growth
-    const wowDelta =
-      queries7d_prev === 0
-        ? queries7d > 0
-          ? 100
-          : 0
-        : Math.round(((queries7d - queries7d_prev) / queries7d_prev) * 100)
-
-    // Clamp delta display to ±999% to avoid absurd numbers
-    const clampedDelta = Math.max(-999, Math.min(999, wowDelta))
-
-    return {
-      success: true,
-      data: {
-        queries7d,
-        queries7d_prev,
-        queries30d,
-        wowDelta: clampedDelta,
-        wowDirection: (clampedDelta > 5 ? 'up' : clampedDelta < -5 ? 'down' : 'stable') as
-          | 'up'
-          | 'down'
-          | 'stable',
-        connectionCount,
-        savedQueryCount,
-        topConnections: topConnections.map((c) => ({
-          name: c.connectionName ?? 'Unknown',
-          count: c._count.id,
-        })),
-      },
-    }
+    return { success: true, data: await collectInsightMetrics(user.id) }
   } catch (error) {
     return {
       success: false,

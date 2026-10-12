@@ -22,7 +22,25 @@ export type InsightMetrics = {
   wowDirection: 'up' | 'down' | 'stable'
   connectionCount: number
   savedQueryCount: number
-  topConnections: { name: string; count: number }[]
+  /** Busiest connections, then one `other` row, so the counts add up to queries7d. */
+  topConnections: { name: string; count: number; other?: boolean }[]
+}
+
+/** The row for queries that ran outside the named connections' question history. */
+export const OTHER_ACTIVITY = 'Other activity'
+const SHOWN_CONNECTIONS = 4
+
+/**
+ * The busiest connections (most first), then one "Other activity" row for whatever else
+ * ran, so the rows add up to `total`: the same number the page shows as queries this week.
+ */
+export function busiestConnections(
+  perConnection: { name: string; count: number }[],
+  total: number
+): InsightMetrics['topConnections'] {
+  const busiest = perConnection.slice(0, SHOWN_CONNECTIONS)
+  const rest = total - busiest.reduce((sum, c) => sum + c.count, 0)
+  return rest > 0 ? [...busiest, { name: OTHER_ACTIVITY, count: rest, other: true }] : busiest
 }
 
 const DAY = 24 * 60 * 60 * 1000
@@ -46,7 +64,11 @@ export async function collectInsightMetrics(userId: string): Promise<InsightMetr
   const d14 = new Date(now - 14 * DAY)
   const d30 = new Date(now - 30 * DAY)
 
-  const [queries7d, queries7d_prev, queries30d, connectionCount, savedQueryCount, topConnections] =
+  // The totals count every query that ran (the same count as the plan's monthly quota):
+  // questions asked on the website, dashboard charts refreshing, scheduled runs, the desktop
+  // app and the API. Only website questions record which connection they used, so the
+  // busiest connections come from that history and the rest is one "Other activity" row.
+  const [queries7d, queries7d_prev, queries30d, connectionCount, savedQueryCount, perConnection] =
     await Promise.all([
       prisma.usageRecord.count({ where: { userId, action: 'QUERY', createdAt: { gte: d7 } } }),
       prisma.usageRecord.count({
@@ -54,15 +76,24 @@ export async function collectInsightMetrics(userId: string): Promise<InsightMetr
       }),
       prisma.usageRecord.count({ where: { userId, action: 'QUERY', createdAt: { gte: d30 } } }),
       prisma.databaseConnection.count({ where: { userId, isActive: true } }),
-      prisma.savedQuery.count({ where: { userId } }),
+      prisma.savedQuery.count({ where: { userId, isTemplate: false } }),
       prisma.queryHistory.groupBy({
         by: ['connectionName'],
-        where: { userId, createdAt: { gte: d7 }, connectionName: { not: null } },
+        // The sample store runs in the browser and is not counted toward the quota.
+        where: {
+          userId,
+          createdAt: { gte: d7 },
+          connectionName: { not: null, notIn: ['Demo Database'] },
+        },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
-        take: 3,
       }),
     ])
+
+  const topConnections = busiestConnections(
+    perConnection.map((c) => ({ name: c.connectionName ?? 'Unknown', count: c._count.id })),
+    queries7d
+  )
 
   const wowDelta =
     // Same rule as the live figures on the Insights page: a first active week is +100%.
@@ -83,10 +114,7 @@ export async function collectInsightMetrics(userId: string): Promise<InsightMetr
     wowDirection: wowDelta > 5 ? 'up' : wowDelta < -5 ? 'down' : 'stable',
     connectionCount,
     savedQueryCount,
-    topConnections: topConnections.map((c) => ({
-      name: c.connectionName ?? 'Unknown',
-      count: c._count.id,
-    })),
+    topConnections,
   }
 }
 
@@ -130,17 +158,19 @@ Output plain text only: no markdown, no bullet points, no headers, and no em das
 }
 
 function buildNarrativePrompt(name: string | null, m: InsightMetrics): string {
+  const named = m.topConnections.filter((c) => !c.other)
+  const other = m.topConnections.find((c) => c.other)
   const topConnections =
-    m.topConnections.length > 0
-      ? m.topConnections.map((c) => `${c.name} (${c.count} questions)`).join(', ')
-      : 'no connections used'
+    named.length > 0
+      ? named.map((c) => `${c.name} (${c.count} queries)`).join(', ')
+      : 'none from questions asked on the website'
 
   return `Summarise the last seven days for ${name ?? 'a user'} with these stats:
-- Questions this week: ${m.queries7d} (${m.queries7d_prev === 0 ? 'none the week before, so no percentage change' : `previous week: ${m.queries7d_prev}, ${m.wowDelta > 0 ? '+' : ''}${m.wowDelta}% week over week`})
-- Questions this month: ${m.queries30d}
+- Queries this week: ${m.queries7d} (${m.queries7d_prev === 0 ? 'none the week before, so no percentage change' : `previous week: ${m.queries7d_prev}, ${m.wowDelta > 0 ? '+' : ''}${m.wowDelta}% week over week`})
+- Queries this month: ${m.queries30d}
 - Active database connections: ${m.connectionCount}
-- Saved questions: ${m.savedQueryCount}
-- Most-used connections this week: ${topConnections}
+- Saved queries: ${m.savedQueryCount}
+- Most-used connections this week: ${topConnections}${other ? `\n- Other queries this week (dashboard charts, schedules, desktop app): ${other.count}` : ''}
 
 Mention the trend (${m.queries7d_prev === 0 ? 'a first active week' : m.wowDirection}), highlight the most-used connection if relevant, and end with one practical suggestion.`
 }
@@ -156,8 +186,9 @@ export function buildFallbackNarrative(name: string | null, m: InsightMetrics): 
         : m.wowDirection === 'down'
           ? `down ${Math.abs(m.wowDelta)}% on last week`
           : 'about the same as last week'
-  const top = m.topConnections[0]
-  return `Hi ${name ?? 'there'}. You asked ${m.queries7d} question${m.queries7d !== 1 ? 's' : ''} this week${trend ? `, ${trend}` : ''}, and ${m.queries30d} this month. ${top ? `Your busiest connection was "${top.name}" with ${top.count}. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved question${m.savedQueryCount !== 1 ? 's' : ''}.`
+  const top = m.topConnections.find((c) => !c.other)
+  const queries = (n: number) => `${n} quer${n !== 1 ? 'ies' : 'y'}`
+  return `Hi ${name ?? 'there'}. You ran ${queries(m.queries7d)} this week${trend ? `, ${trend}` : ''}, and ${m.queries30d} this month. ${top ? `Your busiest connection was "${top.name}" with ${top.count}. ` : ''}You have ${m.connectionCount} active connection${m.connectionCount !== 1 ? 's' : ''} and ${m.savedQueryCount} saved ${m.savedQueryCount !== 1 ? 'queries' : 'query'}.`
 }
 
 /**
