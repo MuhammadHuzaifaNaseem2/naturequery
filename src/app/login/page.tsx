@@ -79,6 +79,7 @@ function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
     setError(null)
+    let navigating = false
 
     try {
       // Step 1: Pre-flight check — validate credentials & detect 2FA before calling NextAuth
@@ -116,10 +117,9 @@ function LoginForm() {
 
       if (result?.error) {
         setError('Invalid email or password')
-      } else if (result?.url) {
-        window.location.href = result.url
       } else {
-        window.location.href = callbackUrl
+        navigating = true
+        window.location.href = result?.url || callbackUrl
       }
     } catch (err) {
       setError(
@@ -128,7 +128,9 @@ function LoginForm() {
           : 'An error occurred. Please try again.'
       )
     } finally {
-      setIsLoading(false)
+      // Keep the spinner while the browser moves on, instead of flashing the
+      // "already signed in" panel for a moment.
+      if (!navigating) setIsLoading(false)
     }
   }
 
@@ -147,6 +149,7 @@ function LoginForm() {
 
     setIsLoading(true)
     setError(null)
+    let navigating = false
 
     try {
       const result = await withSignInTimeout(
@@ -163,10 +166,9 @@ function LoginForm() {
         setError('That code did not work. Please try again.')
         setTwoFactorCode(EMPTY_CODE)
         codeInputsRef.current[0]?.focus()
-      } else if (result?.url) {
-        window.location.href = result.url
       } else {
-        window.location.href = callbackUrl
+        navigating = true
+        window.location.href = result?.url || callbackUrl
       }
     } catch (err) {
       setError(
@@ -175,7 +177,7 @@ function LoginForm() {
           : 'An error occurred. Please try again.'
       )
     } finally {
-      setIsLoading(false)
+      if (!navigating) setIsLoading(false)
     }
   }
 
