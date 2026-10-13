@@ -27,7 +27,7 @@ const sections: LegalSection[] = [
       {
         title: 'Technical Data',
         content:
-          'We automatically collect IP addresses, browser type, device information, and access timestamps for security (audit logs) and analytics purposes.',
+          'We record IP addresses, browser type, device information and access times in our audit log, for security. Our error-tracking and analytics services do not store IP addresses.',
       },
     ],
   },
@@ -101,6 +101,15 @@ const sections: LegalSection[] = [
         detail:
           'Sending account emails, and delivering contact messages and AI answer reports to our team',
       },
+      {
+        label: 'Hosting providers',
+        detail: 'Running the website and storing account data and uploaded files',
+      },
+      {
+        label: 'Error tracking and analytics',
+        detail:
+          'Error reports and usage statistics, without IP addresses or screen recordings. See our Security page for the list of services',
+      },
       { label: 'Law enforcement', detail: 'When required by valid legal process' },
     ],
   },
@@ -160,7 +169,7 @@ export default function PrivacyPage() {
       label="Legal"
       title="Privacy Policy"
       intro="Your privacy matters to us. This policy explains what data we collect, how we use it, and the controls you have over your information."
-      updated="October 10, 2026"
+      updated="October 13, 2026"
       sections={sections}
     />
   )

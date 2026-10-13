@@ -15,6 +15,7 @@ const PUBLIC_EXACT = new Set([
   '/features',
   '/terms',
   '/privacy',
+  '/security',
   '/docs',
   '/docs/api',
   '/about',

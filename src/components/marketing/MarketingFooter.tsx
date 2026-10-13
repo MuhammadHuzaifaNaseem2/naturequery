@@ -25,6 +25,7 @@ const COLUMNS = [
     links: [
       { href: '/terms', label: 'Terms of Service' },
       { href: '/privacy', label: 'Privacy Policy' },
+      { href: '/security', label: 'Security' },
     ],
   },
 ]
