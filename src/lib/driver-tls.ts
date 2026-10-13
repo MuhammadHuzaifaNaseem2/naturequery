@@ -64,6 +64,21 @@ export function clickHouseUrl(credentials: DBCredentials): string {
   return `${scheme}://${host}:${port}`
 }
 
+/**
+ * Supabase's pooler answers an unknown project or user with "tenant/user ... not found"
+ * (code ENOTFOUND, which reads like an unknown server name). The usual cause is a user
+ * name without the project ref, or the pooler of another region.
+ */
+export function supabaseProblem(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : String(error)
+  if (!/tenant\/user \S+ not found|tenant or user not found/i.test(message)) return null
+  return (
+    "Supabase couldn't find this project and user. For the Session pooler, the username is " +
+    "postgres.your-project-ref and the host is the pooler for your project's region. " +
+    'Copy both from Connect in Supabase.'
+  )
+}
+
 const CERTIFICATE_ERROR =
   /self[- _]signed|unable to verify the first certificate|unable to get local issuer certificate|certificate has expired|does not match certificate|altnames|CERT_|_CERT\b|LEAF_SIGNATURE|certificate verify failed/i
 

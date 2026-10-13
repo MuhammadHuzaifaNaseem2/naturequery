@@ -2,7 +2,7 @@
 
 import { createDriver, type DatabaseType, MAX_QUERY_ROWS } from '@/lib/db-drivers'
 import { getOrCreateDriver } from '@/lib/driver-pool'
-import { certificateProblem } from '@/lib/driver-tls'
+import { certificateProblem, supabaseProblem } from '@/lib/driver-tls'
 import { auth } from '@/lib/auth'
 import { checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
 import { validateSQLSafety, ensureLimitClause } from '@/lib/sql-validator'
@@ -93,7 +93,9 @@ export async function testConnection(credentials: DBCredentials): Promise<TestCo
     return {
       success: false,
       error:
-        certificateProblem(error) ?? (error instanceof Error ? error.message : 'Connection failed'),
+        certificateProblem(error) ??
+        supabaseProblem(error) ??
+        (error instanceof Error ? error.message : 'Connection failed'),
     }
   } finally {
     await driver.close().catch(() => {})
@@ -117,6 +119,7 @@ export async function fetchSchema(credentials: DBCredentials): Promise<FetchSche
       success: false,
       error:
         certificateProblem(error) ??
+        supabaseProblem(error) ??
         (error instanceof Error ? error.message : 'Failed to fetch schema'),
     }
   }

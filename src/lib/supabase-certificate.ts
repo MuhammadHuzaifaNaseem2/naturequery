@@ -2,7 +2,8 @@
  * Supabase signs its database certificates with its own certificate authority,
  * "Supabase Root 2021 CA", which is not among the public authorities Node trusts.
  * NatureQuery adds it for Supabase's own hosts only (see driver-tls.ts), so
- * Supabase connections get a full certificate check.
+ * Supabase connections get a full certificate check. NatureQuery Desktop has the
+ * same certificate in desktop/src/engine/supabase-certificate.ts: keep the two in step.
  *
  * Source: https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt
  * (Supabase's "Download certificate" link). It matched the root that the pooler at

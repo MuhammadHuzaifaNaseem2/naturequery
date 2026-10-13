@@ -2,7 +2,7 @@
 import { Client } from 'pg'
 import { describe, expect, it } from 'vitest'
 import { createPostgresDriver } from '../db-drivers'
-import { certificateProblem } from '../driver-tls'
+import { certificateProblem, supabaseProblem } from '../driver-tls'
 
 /**
  * Checks the bundled Supabase certificate against Supabase's real pooler. The
@@ -35,6 +35,8 @@ describe.skipIf(process.env.NQ_NET_IT !== '1')("Supabase's certificate", () => {
       const error = await connectionError(() => driver.testConnection())
       expect(certificateProblem(error)).toBeNull()
       expect(String(error)).toMatch(/tenant|not found|password authentication/i)
+      // And the reply gets the plain explanation, not "server not found".
+      expect(supabaseProblem(error)).not.toBeNull()
     } finally {
       await driver.close()
     }

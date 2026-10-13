@@ -6,7 +6,7 @@ import { encrypt, decrypt } from '@/lib/encryption'
 import { checkPlanLimits, checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
 import { assertConnectionTarget } from '@/lib/connection-target'
 import { createDriver, getMaxRows } from '@/lib/db-drivers'
-import { certificateProblem } from '@/lib/driver-tls'
+import { certificateProblem, supabaseProblem } from '@/lib/driver-tls'
 import type { DatabaseType } from '@/lib/db-drivers'
 import type {
   ExecuteSQLResult,
@@ -78,6 +78,8 @@ function friendlyConnectionError(error: unknown): string {
     return 'Connection timed out. The host may be unreachable or blocked by a firewall.'
   const certificate = certificateProblem(error)
   if (certificate) return certificate
+  const supabase = supabaseProblem(error)
+  if (supabase) return supabase
   if (lower.includes('ssl') || lower.includes('tls'))
     return 'Could not set up an encrypted connection with this server. Check the host and port.'
   if (lower.includes('too many connections') || lower.includes('max_connections'))

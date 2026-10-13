@@ -9,6 +9,7 @@ import {
   isSupabaseHost,
   mysqlTls,
   postgresTls,
+  supabaseProblem,
 } from '../driver-tls'
 import { SUPABASE_ROOT_CA } from '../supabase-certificate'
 
@@ -112,5 +113,20 @@ describe('certificate problems', () => {
 
   it('leave other errors alone', () => {
     expect(certificateProblem(new Error('password authentication failed for user "u"'))).toBeNull()
+  })
+})
+
+describe('Supabase problems', () => {
+  it('explain an unknown project or user instead of an unknown server', () => {
+    for (const message of [
+      'tenant/user postgres.abcdefghijkl not found',
+      'Tenant or user not found',
+    ]) {
+      expect(supabaseProblem(new Error(message)), message).toMatch(/postgres\.your-project-ref/)
+    }
+  })
+
+  it('leave real unknown servers alone', () => {
+    expect(supabaseProblem(new Error('getaddrinfo ENOTFOUND db.example.com'))).toBeNull()
   })
 })
