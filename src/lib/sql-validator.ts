@@ -1,17 +1,26 @@
 /**
  * SQL Safety Validator
- * Enforces SELECT-only queries using AST parsing (PostgreSQL/Redshift)
- * and regex-based validation (MySQL, SQLite, SQL Server, others).
+ * Every query passes the shared read-only guard (src/lib/sql-guard.ts, the same rules
+ * as NatureQuery Desktop): one statement, a read keyword first, no writing keywords,
+ * no risky functions for that database, and no writing MongoDB stages. The
+ * PostgreSQL family is also parsed, which catches writes inside CTEs.
  * Used in both server actions and API routes to prevent data destruction.
  */
 import { parse } from 'pgsql-ast-parser'
 import type { DatabaseType } from '@/lib/db-drivers'
+import {
+  assertReadOnlyMongo,
+  assertReadOnlySql,
+  guardDialectFor,
+  SqlGuardError,
+} from '@/lib/sql-guard'
 
 const ALLOWED_STATEMENT_TYPES = new Set([
   'select',
   'union',
   'union all',
   'with',
+  'with recursive',
   'intersect',
   'intersect all',
   'except',
@@ -19,15 +28,7 @@ const ALLOWED_STATEMENT_TYPES = new Set([
 ])
 
 /**
- * Universal dangerous-keyword blocklist. Defense-in-depth layer that runs
- * for ALL dialects before any parser-specific validation.
- */
-const DANGEROUS_KEYWORDS =
-  /\b(DROP|ALTER|TRUNCATE|DELETE|INSERT|UPDATE|CREATE|GRANT|REVOKE|EXEC(?:UTE)?|LOAD\s+DATA|INTO\s+(?:OUT|DUMP)FILE|CALL|MERGE|REPLACE\s+INTO|RENAME|SET\s+(?:GLOBAL|SESSION)|SHUTDOWN|KILL)\b/i
-
-/**
- * Validate SQL safety. Uses full AST parsing for PostgreSQL/Redshift,
- * and a strict regex-based approach for other dialects.
+ * Validate that a query only reads. Returns a user-facing reason when it does not.
  */
 export function validateSQLSafety(
   sql: string,
@@ -37,66 +38,26 @@ export function validateSQLSafety(
     return { valid: false, error: 'SQL query is empty' }
   }
 
-  if (dialect === 'mongodb') {
-    return { valid: true }
-  }
-
-  // ── Universal checks (all dialects) ────────────────────────────────────
-
-  // Reject multiple statements — prevents "SELECT 1; DROP TABLE x"
-  if (sql.replace(/;+\s*$/, '').includes(';')) {
-    return { valid: false, error: 'Multiple SQL statements are not allowed' }
-  }
-
-  // Dangerous keyword blocklist (defense-in-depth)
-  if (DANGEROUS_KEYWORDS.test(sql)) {
-    // Allow "SET" inside SELECT (e.g., OFFSET) but not standalone SET statements
-    const trimmed = sql.trim().toUpperCase()
-    if (trimmed.startsWith('SET')) {
-      return {
-        valid: false,
-        error: 'Only SELECT queries are allowed. This platform is read-only to protect your data.',
-      }
+  const guard = guardDialectFor(dialect)
+  try {
+    if (guard === 'mongodb') {
+      assertReadOnlyMongo(sql)
+      return { valid: true }
     }
-    // Check if the dangerous keyword is at the statement level (not inside a subquery or string)
-    // For safety, if it matches at the start, reject immediately
-    const firstWord = trimmed.split(/\s+/)[0]
-    const blockedStarters = new Set([
-      'DROP',
-      'ALTER',
-      'TRUNCATE',
-      'DELETE',
-      'INSERT',
-      'UPDATE',
-      'CREATE',
-      'GRANT',
-      'REVOKE',
-      'EXEC',
-      'EXECUTE',
-      'LOAD',
-      'CALL',
-      'MERGE',
-      'REPLACE',
-      'RENAME',
-      'SHUTDOWN',
-      'KILL',
-    ])
-    if (blockedStarters.has(firstWord)) {
-      return {
-        valid: false,
-        error: `Only SELECT queries are allowed. Got: ${firstWord}. This platform is read-only to protect your data.`,
-      }
+    // Firestore queries are structured JSON that the driver turns into reads only.
+    if (guard === 'firestore') return { valid: true }
+    assertReadOnlySql(sql, guard)
+  } catch (error) {
+    if (error instanceof SqlGuardError) {
+      const reason = error.message.replace(/\.?$/, '.')
+      return { valid: false, error: error.hint ? `${reason} ${error.hint}` : error.message }
     }
+    throw error
   }
 
-  // ── Dialect-specific validation ────────────────────────────────────────
-
-  if (dialect === 'postgresql' || dialect === 'redshift') {
-    return validateWithPgParser(sql)
-  }
-
-  // For MySQL, SQLite, SQL Server, MariaDB, Oracle — regex-based validation
-  return validateWithRegex(sql)
+  // The PostgreSQL family is also parsed: this catches writes inside CTEs.
+  if (guard === 'postgresql') return validateWithPgParser(sql)
+  return { valid: true }
 }
 
 /**
@@ -147,8 +108,8 @@ function validateWithPgParser(sql: string): { valid: boolean; error?: string } {
 }
 
 /**
- * Temporarily remove string literals and comments so we can run regex
- * checks against the actual SQL keywords without false positives.
+ * Temporarily remove string literals and comments so the LIMIT check below
+ * looks at the actual SQL keywords.
  */
 function stripLiterals(sql: string): string {
   return sql
@@ -157,49 +118,6 @@ function stripLiterals(sql: string): string {
     .replace(/`(?:``|[^`])*`/g, '``') // Replace `backticks`
     .replace(/--.*$/gm, '') // Remove -- comments
     .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* block comments */
-}
-
-/**
- * Regex-based validation for non-PostgreSQL dialects.
- * Ensures the statement starts with SELECT, WITH, or EXPLAIN.
- */
-function validateWithRegex(sql: string): { valid: boolean; error?: string } {
-  const stripped = stripLiterals(sql)
-  const trimmed = stripped.trim()
-  const upper = trimmed.toUpperCase()
-
-  // 1. Check for dangerous keywords in the "clean" SQL
-  if (DANGEROUS_KEYWORDS.test(stripped)) {
-    const matched = stripped.match(DANGEROUS_KEYWORDS)?.[0] || 'Unknown keyword'
-    return {
-      valid: false,
-      error: `Only SELECT queries are allowed. Got forbidden keyword: ${matched.toUpperCase()}.`,
-    }
-  }
-
-  // 2. Must start with a safe keyword
-  const safeStarters = [
-    'SELECT',
-    'WITH',
-    'EXPLAIN',
-    'SHOW',
-    'DESCRIBE',
-    'DESC',
-    'PRAGMA',
-    'LIST',
-    'GET',
-    'CHECK',
-  ]
-  const firstWord = upper.split(/[\s(]+/)[0]
-
-  if (!safeStarters.includes(firstWord)) {
-    return {
-      valid: false,
-      error: `Only SELECT queries are allowed. Got: ${firstWord}. This platform is read-only to protect your data.`,
-    }
-  }
-
-  return { valid: true }
 }
 
 // ── LIMIT Injection ──────────────────────────────────────────────────────

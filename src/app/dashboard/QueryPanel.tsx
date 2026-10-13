@@ -592,7 +592,12 @@ export function QueryPanel({
             const isSecurityBlock =
               lc.includes('only select queries are allowed') ||
               lc.includes('read-only to protect') ||
+              lc.includes('only runs read-only queries') ||
+              lc.includes('is blocked because it can change data') ||
+              lc.includes('writes data, so it is not allowed') ||
+              lc.includes('runs code on the database server') ||
               lc.includes('prohibited query') ||
+              /read[- ]only transaction/i.test(error) ||
               /cannot execute (delete|update|insert|drop|truncate|alter)/i.test(error) ||
               /only supports? select/i.test(error)
 

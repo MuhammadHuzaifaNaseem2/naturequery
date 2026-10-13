@@ -518,7 +518,11 @@ Output only the corrected SQL in <sql></sql> tags.`
             temperature: 0.05,
           })
           const fixedSQL = extractSQL(selfFix.choices[0]?.message?.content ?? '')
-          if (fixedSQL && fixedSQL !== finalSQL && validateSQLSafety(fixedSQL).valid) {
+          if (
+            fixedSQL &&
+            fixedSQL !== finalSQL &&
+            validateSQLSafety(fixedSQL, credentials.dbType).valid
+          ) {
             finalSQL = fixedSQL
             await send('thought', { token: '✅ Self-subtraction fixed.\n' })
           }
@@ -528,7 +532,7 @@ Output only the corrected SQL in <sql></sql> tags.`
       }
 
       // 9. Validate SQL safety — with smart retry for recoverable cases
-      let validation = validateSQLSafety(finalSQL)
+      let validation = validateSQLSafety(finalSQL, credentials.dbType)
       if (!validation.valid) {
         const isMultiStatement =
           !!validation.error?.includes('Multiple SQL statements') ||
@@ -565,7 +569,7 @@ Output only the corrected SQL in <sql></sql> tags.`
             const fixedText = fix.choices[0]?.message?.content ?? ''
             const fixedSQL = extractSQL(fixedText)
             if (fixedSQL && fixedSQL !== finalSQL) {
-              const fixValidation = validateSQLSafety(fixedSQL)
+              const fixValidation = validateSQLSafety(fixedSQL, credentials.dbType)
               if (fixValidation.valid) {
                 finalSQL = fixedSQL
                 validation = { valid: true }
@@ -679,7 +683,7 @@ Output only the corrected SQL in <sql></sql> tags.`
           const fixedSQL = extractSQL(fixedText)
 
           if (fixedSQL && fixedSQL !== finalSQL) {
-            const fixValidation = validateSQLSafety(fixedSQL)
+            const fixValidation = validateSQLSafety(fixedSQL, credentials.dbType)
             if (fixValidation.valid) {
               correctedSQL = fixedSQL
               await send('thought', { token: '✅ SQL fixed successfully.\n' })
@@ -738,7 +742,7 @@ Fix the issue and output only the corrected SQL in <sql></sql> tags.`,
           const fixedSQL = extractSQL(fixedText)
 
           if (fixedSQL && fixedSQL !== finalSQL) {
-            const fixValidation = validateSQLSafety(fixedSQL)
+            const fixValidation = validateSQLSafety(fixedSQL, credentials.dbType)
             if (fixValidation.valid) {
               correctedSQL = fixedSQL
               await send('thought', { token: '✅ Query rebuilt with corrected JOIN strategy.\n' })

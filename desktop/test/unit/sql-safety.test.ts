@@ -150,6 +150,16 @@ describe('read-only SQL guard', () => {
     allows('SHOW search_path', 'postgresql')
     blocks('SHOW TABLES', 'sqlserver')
   })
+
+  it('allows PRAGMA only for reading details', () => {
+    allows('PRAGMA main.index_list(orders)', 'sqlite')
+    allows('pragma TABLE_XINFO("order items");', 'sqlite')
+    allows('PRAGMA user_version', 'sqlite')
+    blocks('PRAGMA user_version = 5', 'sqlite', /PRAGMA user_version is not allowed/)
+    blocks('PRAGMA journal_mode(WAL)', 'sqlite', /PRAGMA journal_mode/)
+    blocks('PRAGMA optimize', 'sqlite', /PRAGMA optimize/)
+    blocks('PRAGMA writable_schema = ON', 'sqlite')
+  })
 })
 
 describe('row limits', () => {

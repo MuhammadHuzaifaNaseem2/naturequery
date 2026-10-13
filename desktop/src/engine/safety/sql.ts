@@ -159,6 +159,53 @@ function fail(message: string, hint?: string): never {
   throw new NqError('VALIDATION', message, { hint })
 }
 
+/**
+ * PRAGMA can change a setting as well as read it, so only these reads run. The
+ * first group takes a table or index name; the second takes nothing at all.
+ */
+const PRAGMA_READS_WITH_NAME = new Set([
+  'foreign_key_list',
+  'index_info',
+  'index_list',
+  'index_xinfo',
+  'table_info',
+  'table_list',
+  'table_xinfo',
+])
+const PRAGMA_READS = new Set([
+  'application_id',
+  'collation_list',
+  'compile_options',
+  'data_version',
+  'database_list',
+  'encoding',
+  'foreign_keys',
+  'freelist_count',
+  'function_list',
+  'journal_mode',
+  'module_list',
+  'page_count',
+  'page_size',
+  'pragma_list',
+  'schema_version',
+  'user_version',
+])
+
+function assertReadPragma(body: string): void {
+  const match = /^\s*\(*\s*PRAGMA\s+(?:\w+\s*\.\s*)?(\w+)\s*(\S?)/i.exec(body)
+  const name = match?.[1]?.toLowerCase() ?? ''
+  const next = match?.[2] ?? ''
+  const allowed =
+    !body.includes('=') &&
+    (PRAGMA_READS_WITH_NAME.has(name) || (PRAGMA_READS.has(name) && next === ''))
+  if (!allowed) {
+    fail(
+      `NatureQuery runs PRAGMA only to read details, so ${name ? `PRAGMA ${name}` : 'this PRAGMA'} is not allowed.`,
+      'For example, PRAGMA table_info(orders) lists the columns of a table.'
+    )
+  }
+}
+
 /** Blanks out comments and quoted text, keeping offsets and line breaks. */
 export function maskSql(sql: string, dialect: SqlDialect): string {
   const rules = RULES[dialect]
@@ -366,6 +413,7 @@ export function assertReadOnlySql(sql: string, dialect: SqlDialect): string {
       'Remove it from the query, or ask your database administrator to run it.'
     )
   }
+  if (first === 'PRAGMA') assertReadPragma(scrubbed)
   return masked
 }
 

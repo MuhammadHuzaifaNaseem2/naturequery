@@ -98,12 +98,6 @@ export async function GET(request: Request) {
         )
       }
 
-      // Validate the SQL is still safe before running
-      const sqlCheck = validateSQLSafety(schedule.sql)
-      if (!sqlCheck.valid) {
-        throw new Error(sqlCheck.error ?? 'SQL failed safety check')
-      }
-
       // Fetch connection from DB
       if (!schedule.connectionId) {
         throw new Error('No connectionId — cannot execute without a database connection')
@@ -116,6 +110,13 @@ export async function GET(request: Request) {
         throw new Error('Connection not found or does not belong to user')
       }
 
+      // Validate the SQL is still safe before running, with this database's rules
+      const dbType = conn.dbType as DatabaseType
+      const sqlCheck = validateSQLSafety(schedule.sql, dbType)
+      if (!sqlCheck.valid) {
+        throw new Error(sqlCheck.error ?? 'SQL failed safety check')
+      }
+
       let password: string
       try {
         password = conn.password ? decrypt(conn.password) : ''
@@ -124,7 +125,6 @@ export async function GET(request: Request) {
           'Could not decrypt connection credentials — re-add the connection to fix this'
         )
       }
-      const dbType = conn.dbType as DatabaseType
       const driver = getOrCreateDriver(
         {
           host: conn.host,

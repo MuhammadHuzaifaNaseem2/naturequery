@@ -8,13 +8,15 @@
 //   2. Per-user schema: magic_u_<hash>.
 //   3. Every user query is wrapped in a read-only transaction with
 //      search_path pinned to the user's schema and a statement timeout.
-//   4. Any schema-qualified identifier in user SQL that references something
-//      other than the user's schema is rejected before execution.
+//   4. Every user query is parsed before it runs, and refused if it cannot be.
+//      It may read only the user's own tables and names it defines with WITH:
+//      no other schemas, system tables, or functions that reveal other data.
 
 import { Pool } from 'pg'
 import Papa from 'papaparse'
 import crypto from 'crypto'
-import { parse, astVisitor, Statement } from 'pgsql-ast-parser'
+import { parse, Statement } from 'pgsql-ast-parser'
+import { validateSQLSafety } from '@/lib/sql-validator'
 
 // ── Connection pool ────────────────────────────────────────────────────
 
@@ -145,7 +147,8 @@ const TS_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\
 // Slashed / dashed regional date formats. We match the SHAPE here; the actual
 // DD-vs-MM disambiguation happens in inferDateLayout() over the whole column.
 const REGIONAL_DATE_RE = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/
-const REGIONAL_TS_RE = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})[T ]\d{1,2}:\d{2}(:\d{2})?(\s?[AP]M)?$/i
+const REGIONAL_TS_RE =
+  /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})[T ]\d{1,2}:\d{2}(:\d{2})?(\s?[AP]M)?$/i
 
 /**
  * Decide whether a column of regional dates uses DD/MM/YYYY or MM/DD/YYYY by
@@ -225,15 +228,7 @@ function inferType(values: unknown[]): InferredType {
     if (allTs && !TS_RE.test(s)) allTs = false
     if (allRegionalDate && !REGIONAL_DATE_RE.test(s)) allRegionalDate = false
     if (allRegionalTs && !REGIONAL_TS_RE.test(s)) allRegionalTs = false
-    if (
-      !allBool &&
-      !allInt &&
-      !allNum &&
-      !allDate &&
-      !allTs &&
-      !allRegionalDate &&
-      !allRegionalTs
-    )
+    if (!allBool && !allInt && !allNum && !allDate && !allTs && !allRegionalDate && !allRegionalTs)
       return 'text'
   }
 
@@ -425,27 +420,113 @@ export async function dropMagicTable(userId: string, tableName: string): Promise
 
 // ── Query-time isolation ───────────────────────────────────────────────
 
-// Reject any schema-qualified identifier that isn't the user's own schema.
-// Combined with a pinned search_path, this prevents a user from reading
-// app tables even if this database happens to share with the app.
-function assertAllowedSchemas(sql: string, allowedSchema: string): void {
-  let ast: Statement[]
-  try {
-    ast = parse(sql)
-  } catch {
-    // If parsing fails we still let pg report the syntax error — it's a
-    // better error message than our fallback would produce.
-    return
+// Functions that reveal server details or read beyond the query's own tables
+// (another table by name, or SQL passed in as text). The shared read-only
+// guard already refuses the ones that write or reach other servers.
+const BLOCKED_FUNCTION_PREFIXES = ['pg_', 'has_', 'to_reg', 'crosstab']
+const BLOCKED_FUNCTIONS = new Set([
+  'connectby',
+  'current_setting',
+  'inet_client_addr',
+  'inet_client_port',
+  'inet_server_addr',
+  'inet_server_port',
+  'ts_rewrite',
+  'ts_stat',
+  'xpath_table',
+])
+const ALLOWED_FUNCTIONS = new Set(['pg_typeof'])
+
+function isBlockedFunction(name: string): boolean {
+  const lower = name.toLowerCase()
+  if (ALLOWED_FUNCTIONS.has(lower)) return false
+  return (
+    BLOCKED_FUNCTIONS.has(lower) ||
+    lower.includes('_to_xml') ||
+    BLOCKED_FUNCTION_PREFIXES.some((prefix) => lower.startsWith(prefix))
+  )
+}
+
+type AstNode = Record<string, unknown>
+
+function walkAst(node: unknown, visit: (node: AstNode) => void): void {
+  if (Array.isArray(node)) {
+    for (const item of node) walkAst(item, visit)
+  } else if (node && typeof node === 'object') {
+    visit(node as AstNode)
+    for (const value of Object.values(node)) walkAst(value, visit)
   }
-  const visitor = astVisitor((v) => ({
-    tableRef: (t) => {
-      if (t.schema && t.schema !== allowedSchema && t.schema !== 'pg_temp') {
-        throw new Error(`Access to schema "${t.schema}" is not allowed in Magic Datasets.`)
+}
+
+function nameOf(node: unknown): { name?: string; schema?: string } {
+  if (!node || typeof node !== 'object') return {}
+  const { name, schema } = node as { name?: unknown; schema?: unknown }
+  return {
+    name: typeof name === 'string' ? name : undefined,
+    schema: typeof schema === 'string' ? schema : undefined,
+  }
+}
+
+/**
+ * Check a query on uploaded data and return its parsed form. Fails closed: a
+ * query the parser cannot read is refused, because the table check needs it.
+ */
+export function parseMagicQuery(sql: string): Statement[] {
+  const check = validateSQLSafety(sql, 'magic')
+  if (!check.valid) throw new Error(check.error ?? 'This query is not allowed.')
+  try {
+    return parse(sql)
+  } catch {
+    throw new Error('This query could not be checked, so it was not run. Check the SQL syntax.')
+  }
+}
+
+/**
+ * Allow only reads of the user's own uploaded tables and of names the query
+ * defines with WITH. Refuses other schemas, system tables, and functions or
+ * casts that reveal anything outside those tables.
+ */
+export function assertOwnTablesOnly(
+  ast: Statement[],
+  ownSchema: string,
+  ownTables: ReadonlySet<string>
+): void {
+  const withNames = new Set<string>()
+  walkAst(ast, (node) => {
+    if (node.type === 'with' && Array.isArray(node.bind)) {
+      for (const bind of node.bind) {
+        const { name } = nameOf((bind as AstNode | null)?.alias)
+        if (name) withNames.add(name)
       }
-      return v.super().tableRef(t)
-    },
-  }))
-  for (const stmt of ast) visitor.statement(stmt)
+    } else if (node.type === 'with recursive') {
+      const { name } = nameOf(node.alias)
+      if (name) withNames.add(name)
+    }
+  })
+
+  walkAst(ast, (node) => {
+    if (node.type === 'table') {
+      const { name, schema } = nameOf(node.name)
+      const own = !!name && ownTables.has(name) && (!schema || schema === ownSchema)
+      // System tables all start with pg_, so a WITH name never stands in for one.
+      const defined = !!name && !schema && withNames.has(name) && !name.startsWith('pg_')
+      if (!own && !defined) {
+        const label = schema ? `${schema}.${name ?? ''}` : (name ?? 'this table')
+        throw new Error(`"${label}" is not one of your uploaded tables, so this query was not run.`)
+      }
+    } else if (node.type === 'call') {
+      const { name, schema } = nameOf(node.function)
+      if (!name || schema || isBlockedFunction(name)) {
+        const label = `${schema ? `${schema}.` : ''}${name ?? 'This function'}`
+        throw new Error(`${label}() is not available for uploaded files.`)
+      }
+    } else if (node.type === 'cast') {
+      const { name, schema } = nameOf(node.to)
+      if (schema || name?.toLowerCase().startsWith('reg')) {
+        throw new Error(`Converting to ${name ?? 'this type'} is not available for uploaded files.`)
+      }
+    }
+  })
 }
 
 export interface MagicQueryResult {
@@ -463,16 +544,21 @@ export async function runMagicQuery(params: {
 }): Promise<MagicQueryResult> {
   const { userId, sql, maxRows, timeoutMs = 30000 } = params
   const schema = userSchemaName(userId)
-  assertAllowedSchemas(sql, schema)
+  const ast = parseMagicQuery(sql)
 
   const client = await getPool().connect()
   try {
     await client.query('BEGIN READ ONLY')
-    // pg_temp must remain on the path for things like temp tables PG creates
-    // internally. Explicitly pin user schema first so unqualified names
-    // resolve there.
-    await client.query(`SET LOCAL search_path TO ${quoteIdent(schema)}, pg_temp`)
+    // The user's schema comes first, ahead of the built-in catalog, so their own
+    // table names always resolve to their own tables.
+    await client.query(`SET LOCAL search_path TO ${quoteIdent(schema)}, pg_catalog, pg_temp`)
     await client.query(`SET LOCAL statement_timeout = ${Math.floor(timeoutMs)}`)
+
+    const own = await client.query<{ tablename: string }>(
+      'SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = $1',
+      [schema]
+    )
+    assertOwnTablesOnly(ast, schema, new Set(own.rows.map((row) => row.tablename)))
 
     const result = await client.query(sql)
     await client.query('COMMIT')
@@ -570,13 +656,13 @@ export async function createMagicTable(
 
   // Infer column types from sample rows so date/numeric columns get proper PG types.
   // Falls back to TEXT when no sample is provided.
-  const cols = headers.map((h) => {
-    const type =
-      sampleRows && sampleRows.length > 0
-        ? inferType(sampleRows.map((r) => r[h]))
-        : 'text'
-    return `${quoteIdent(sanitizeIdentifier(h, 'col'))} ${pgTypeOf(type)}`
-  }).join(', ')
+  const cols = headers
+    .map((h) => {
+      const type =
+        sampleRows && sampleRows.length > 0 ? inferType(sampleRows.map((r) => r[h])) : 'text'
+      return `${quoteIdent(sanitizeIdentifier(h, 'col'))} ${pgTypeOf(type)}`
+    })
+    .join(', ')
 
   const client = await getPool().connect()
   try {
