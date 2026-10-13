@@ -112,6 +112,7 @@ export interface CatalogColumnRow {
   isPrimaryKey: boolean
   defaultValue?: string | null
   rowEstimate?: number | null
+  values?: string[] | null
 }
 
 export interface CatalogForeignKeyRow {
@@ -156,6 +157,7 @@ export function buildTables(
       nullable: !!row.nullable,
       isPrimaryKey: !!row.isPrimaryKey,
       defaultValue: row.defaultValue ?? null,
+      ...(row.values?.length ? { values: row.values } : {}),
     }
     table.columns.push(column)
   }

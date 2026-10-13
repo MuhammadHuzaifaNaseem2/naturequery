@@ -1,11 +1,12 @@
 import type { SchemaSnapshot, TableInfo } from '@shared/types'
 
-/** Table description sent to the NatureQuery AI service. Names are sent, never data. */
+/** Table description sent to the NatureQuery AI service: names, types and the allowed
+ * values of enum columns (part of the table definition), never row data. */
 export interface AiSchemaTable {
   name: string
   kind?: 'table' | 'view' | 'collection'
   rows?: number
-  columns: { name: string; type: string; key?: boolean; nullable?: boolean }[]
+  columns: { name: string; type: string; key?: boolean; nullable?: boolean; values?: string[] }[]
   references?: { column: string; table: string; tableColumn: string }[]
 }
 
@@ -76,6 +77,9 @@ export function aiSchema(snapshot: SchemaSnapshot, question: string): AiSchemaTa
       type: column.type.slice(0, 200),
       key: column.isPrimaryKey || undefined,
       nullable: column.nullable,
+      values: column.values?.length
+        ? column.values.slice(0, 100).map((value) => value.slice(0, 200))
+        : undefined,
     })),
     references: table.foreignKeys.length
       ? table.foreignKeys.slice(0, 100).map((reference) => ({

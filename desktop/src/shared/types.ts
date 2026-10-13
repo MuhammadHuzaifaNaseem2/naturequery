@@ -131,6 +131,8 @@ export interface ColumnInfo {
   nullable: boolean
   isPrimaryKey: boolean
   defaultValue?: string | null
+  /** The allowed values of an enum column, in their defined order. */
+  values?: string[]
 }
 
 export interface ForeignKeyInfo {

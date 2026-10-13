@@ -235,7 +235,8 @@ on Enterprise).
 
 - **Ask**: your question, your recent follow-up questions with the queries they
   produced, the database type, and the names and types of your tables and
-  columns, with their keys, relationships and approximate row counts. Never the
+  columns (including the allowed values of columns limited to a fixed list),
+  with their keys, relationships and approximate row counts. Never the
   data in them.
 - **Fix with AI**: the query, the database's error message, and the same table
   and column names.

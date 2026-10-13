@@ -193,8 +193,9 @@ export function SettingsView() {
           />
           <p className="text-[12px] leading-relaxed text-muted-foreground">
             When you ask a question, NatureQuery receives your question and the structure of your
-            tables (names, columns, types and approximate sizes), never your data. Database
-            passwords and query results stay on this computer unless you turn on the option above.
+            tables (names, columns, types, the allowed values of columns limited to a fixed list,
+            and approximate sizes), never your data. Database passwords and query results stay on
+            this computer unless you turn on the option above.
           </p>
         </Section>
 

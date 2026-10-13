@@ -91,6 +91,15 @@ const CATALOG_COLUMNS = `
     AND has_table_privilege(c.oid, 'SELECT')
   ORDER BY n.nspname, c.relname, a.attnum`
 
+// Enum values by type, formatted like CATALOG_COLUMNS formats the column type, so
+// the AI compares with the exact values (role = 'student'). Optional: engines
+// without pg_enum (Redshift) simply get no values.
+const ENUM_VALUES = `
+  SELECT format_type(e.enumtypid, NULL) AS type,
+         array_agg(e.enumlabel::text ORDER BY e.enumsortorder) AS "values"
+  FROM pg_catalog.pg_enum e
+  GROUP BY e.enumtypid`
+
 const CATALOG_FOREIGN_KEYS = `
   SELECT n.nspname AS schema, cl.relname AS table, a.attname AS column,
          fn.nspname AS "referencedSchema", fcl.relname AS "referencedTable", fa.attname AS "referencedColumn"
@@ -219,6 +228,16 @@ export const createPostgresDriver: DriverFactory = (config, secrets, context) =>
           foreignKeys = (await client.query(CATALOG_FOREIGN_KEYS, [SYSTEM_SCHEMAS])).rows
         } catch {
           foreignKeys = []
+        }
+        try {
+          const enums = new Map<string, string[]>(
+            (await client.query(ENUM_VALUES)).rows.map((row) => [row.type, row.values])
+          )
+          if (enums.size) {
+            columns = columns.map((column) => ({ ...column, values: enums.get(column.type) }))
+          }
+        } catch {
+          // No enum values on this engine; the schema works without them.
         }
         // Reserve unqualified names for "public" only when they are unique.
         const tables = buildTables(columns, foreignKeys, qualify)
