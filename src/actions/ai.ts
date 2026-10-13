@@ -4,6 +4,13 @@ import { DatabaseSchema } from './db'
 import { auth } from '@/lib/auth'
 import { filterSchemaForQuestion, formatSchemaForPrompt } from '@/lib/schema-utils'
 import { validateSQLSafety } from '@/lib/sql-validator'
+import { guardDialectFor } from '@/lib/sql-guard'
+import {
+  assumptionRule,
+  dialectLanguage,
+  dialectRules,
+  type DesktopDialect,
+} from '@/lib/desktop/prompts'
 import type { DatabaseType } from '@/lib/db-drivers'
 import {
   getGroqClient as getGroqEntry,
@@ -87,17 +94,24 @@ export interface FixSQLRequest {
   question: string
 }
 
-const STRICT_SYSTEM_PROMPT = `You are a SQL query generator. Your ONLY purpose is to convert natural language questions into PostgreSQL SELECT queries.
+/** The SQL instructions, written for the connected database's query language. */
+function sqlSystemPrompt(dbType?: string): string {
+  const dialect = guardDialectFor((dbType || 'postgresql') as DatabaseType) as DesktopDialect
+  const language = dialectLanguage(dialect)
+  const syntax = dialectRules(dialect)
+    .map((rule) => `   - ${rule}`)
+    .join('\n')
+  return `You are a SQL query generator. Your ONLY purpose is to convert natural language questions into ${language} SELECT queries.
 
 STRICT RULES:
 
 1. OUTPUT: Return ONLY the raw SQL query. No explanations, no markdown, no code blocks. Just pure SQL ending with a semicolon.
 
-2. ALLOWED: SELECT statements ONLY — JOINs, GROUP BY, ORDER BY, HAVING, LIMIT, OFFSET, DISTINCT, aggregates (COUNT, SUM, AVG, MIN, MAX), CASE WHEN, CTEs, subqueries, UNION/INTERSECT/EXCEPT.
+2. ALLOWED: SELECT statements ONLY: JOINs, GROUP BY, ORDER BY, HAVING, row limits, DISTINCT, aggregates (COUNT, SUM, AVG, MIN, MAX), CASE WHEN, CTEs, subqueries, UNION/INTERSECT/EXCEPT.
 
-3. PROHIBITED: DROP, DELETE, UPDATE, INSERT, ALTER, CREATE, TRUNCATE, GRANT, REVOKE, EXECUTE, comments.
+3. PROHIBITED: DROP, DELETE, UPDATE, INSERT, ALTER, CREATE, TRUNCATE, GRANT, REVOKE, EXECUTE.
 
-4. JOINS — CRITICAL:
+4. JOINS (CRITICAL):
    - ALWAYS check the RELATIONSHIPS section at the bottom of the schema for foreign keys.
    - When a question references data from multiple tables (e.g. "orders by city"), you MUST JOIN the tables using the foreign key relationships.
    - Example: if orders.customer_id → customers.id and the user asks about city, JOIN orders with customers.
@@ -108,9 +122,9 @@ STRICT RULES:
    - Before writing the query, mentally verify EVERY column you reference actually exists on that table.
    - If a column like "city" exists on the customers table but NOT on orders, you must JOIN to customers.
 
-6. BEST PRACTICES — PERFORMANCE:
+6. BEST PRACTICES (PERFORMANCE):
    - Use table aliases (o for orders, c for customers, etc.)
-   - Always add LIMIT 100 for open-ended queries without aggregation (SELECT * or full table scans)
+   - Limit open-ended queries without aggregation (SELECT * or full table scans) to 100 rows, with the row-limit syntax in rule 10
    - Use COALESCE for nullable aggregations
    - Prefer specific columns over SELECT * — only select columns needed to answer the question
    - For aggregation queries (COUNT, SUM, AVG), no LIMIT is needed
@@ -121,18 +135,39 @@ STRICT RULES:
 7. IF INVALID: Return SELECT 'Error: ...' AS error;
 
 8. VAGUE OR AMBIGUOUS QUERIES:
-   - If the request is too vague to safely generate a specific query (single words, nonsensical input, or no clear data intent), respond with:
+   - Ask for more context only when the request has no clear data intent (single words, nonsensical input) or nothing in the schema could answer it. Then respond with:
      SELECT 'I need more context: [ask one specific clarifying question]' AS message;
-   - NEVER invent WHERE conditions (e.g. WHERE id = 1, WHERE name = 'thing') to force a result from a vague input.
-   - NEVER hallucinate column values that do not appear in the schema.
+   - ${assumptionRule(false)}
+   - NEVER invent other WHERE conditions (e.g. WHERE id = 1, WHERE name = 'thing') to force a result from a vague input.
+   - NEVER hallucinate column values that do not appear in the schema, apart from the loose match above.
 
 9. BUSINESS CONTEXT DEFAULTS:
-   - "revenue", "sales", "income", "earnings" → SUM of the amount/total column WHERE the status column (if it exists) = a completed/paid/success value. Check schema for exact status values (e.g. 'completed', 'paid', 'success', 'delivered'). If no status column exists, sum all rows but add a SQL comment noting the assumption.
-   - "active users/customers" → users/customers who have at least one associated order/transaction.
+   - "revenue", "sales", "income", "earnings": SUM of the amount/total column WHERE the status column (if it exists) = a completed/paid/success value. Check schema for exact status values (e.g. 'completed', 'paid', 'success', 'delivered'). If no status column exists, sum all rows but add a SQL comment noting the assumption.
+   - "active users/customers": users/customers who have at least one associated order/transaction.
    - When a business metric is ambiguous, add a SQL comment explaining the assumption made (e.g. -- assuming revenue = completed orders only).
+
+10. ${language.toUpperCase()} SYNTAX:
+${syntax}
+   - Answer questions about the data from the tables in the schema. Use system catalogs only when the question is about the database structure itself.
 
 DATABASE SCHEMA:
 `
+}
+
+/**
+ * Lists the tables NatureQuery already knows, one plain SELECT each, so the answer
+ * is right on every SQL database (no PostgreSQL-only catalog query).
+ */
+function listTablesSql(names: string[], dialect: string): string {
+  const fromDual = dialect === 'oracle' ? ' FROM DUAL' : ''
+  return [...names]
+    .sort((a, b) => a.localeCompare(b))
+    .map(
+      (name, index) =>
+        `SELECT '${name.replace(/'/g, "''")}'${index === 0 ? ' AS table_name' : ''}${fromDual}`
+    )
+    .join('\nUNION ALL\n')
+}
 
 /**
  * Generate mock SQL based on the question and schema (for testing without API key)
@@ -197,20 +232,30 @@ export async function generateSQLFromSchema(
     }
   }
 
-  // Intent short-circuit: handle common meta-queries deterministically, no AI needed
-  if (dbType !== 'mongodb') {
+  // Intent short-circuit: list tables or count rows per table without the AI.
+  // Both are plain SELECTs, so they work on every SQL database except CQL and PartiQL.
+  const shortcutDialect = guardDialectFor((dbType || 'postgresql') as DatabaseType)
+  if (!['mongodb', 'firestore', 'cql', 'partiql'].includes(shortcutDialect)) {
     const isShowTables =
-      /\b(show|list|display|get|see|what|find)\b.{0,30}\btables?\b/i.test(question) ||
-      /\btables?\b.{0,20}\b(database|db|exist|available|have)\b/i.test(question)
+      /^\s*(?:please\s+)?(?:show|list|display|get|see)\s+(?:me\s+)?(?:all\s+)?(?:the\s+|my\s+)?tables\b/i.test(
+        question
+      ) ||
+      /^\s*(?:what|which)\s+tables\s+(?:are\s+there|do\s+(?:i|we)\s+have|exist|are\s+(?:in|available))\b/i.test(
+        question
+      ) ||
+      /\btables\s+(?:are\s+)?in\s+(?:this|the|my)\s+(?:database|db)\b/i.test(question)
     const isRowCount =
       /\b(how many|count|number of)\b.{0,30}\brows?\b.{0,30}\b(each|every|all|per)\b/i.test(
         question
       ) || /\brows?\b.{0,30}\b(in each|per|for each)\b.{0,30}\btables?\b/i.test(question)
 
-    if (isShowTables) {
+    if (isShowTables && schema.tables.length > 0) {
       return {
         success: true,
-        sql: `SELECT table_name, table_type\nFROM information_schema.tables\nWHERE table_schema = 'public'\nORDER BY table_name`,
+        sql: listTablesSql(
+          schema.tables.map((t) => t.tableName),
+          shortcutDialect
+        ),
       }
     }
 
@@ -237,7 +282,7 @@ export async function generateSQLFromSchema(
 
     const hasContext = conversationContext && conversationContext.length > 0
 
-    let basePrompt = STRICT_SYSTEM_PROMPT
+    let basePrompt = sqlSystemPrompt(dbType)
     if (dbType === 'mongodb') {
       basePrompt = `You are a MongoDB pipeline generator. Your ONLY purpose is to convert natural language questions into MongoDB aggregation pipelines.
 

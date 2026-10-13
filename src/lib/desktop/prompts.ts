@@ -246,8 +246,20 @@ function outputRules(dialect: DesktopDialect): string[] {
       ? 'Reply with the JSON query only: no explanation, no markdown, no code fences, no comments.'
       : 'Reply with the query only: no explanation, no markdown, no code fences.',
     'If the request asks to change data or the database, reply exactly: REFUSE: <one short sentence>',
-    'If the question is too vague to answer safely, reply exactly: CLARIFY: <one short question for the user>',
+    'If nothing in the schema could answer the question, or it has no clear data request, reply exactly: CLARIFY: <one short question for the user>. When the schema has a likely answer, write the query instead.',
   ]
+}
+
+/** Rules for this query language, shared with the website's prompts. */
+export function dialectRules(dialect: DesktopDialect): string[] {
+  return GUIDES[dialect].rules
+}
+
+/** How to read business words that are not table names, such as "students". */
+export function assumptionRule(json: boolean): string {
+  return json
+    ? 'When the question uses a word that is not a collection or field name (for example students, members, clients or patients), use the collection and field that most likely hold it, such as people filtered by a role or type field.'
+    : "When the question uses a word that is not a table or column name (for example students, members, clients or patients), use the table and column that most likely hold it, such as a people table filtered by a role or type column, or the distinct people in a related table. If you have not seen the exact value, match it loosely, for example lower(role) LIKE '%student%'. State that assumption in a short -- comment on the first line."
 }
 
 function queryRules(dialect: DesktopDialect): string[] {
@@ -260,7 +272,9 @@ function queryRules(dialect: DesktopDialect): string[] {
       : 'Join tables using the listed relationships, and check every column exists on the table you use it with.',
     'Prefer the specific columns that answer the question over selecting everything.',
     'Limit open-ended listings to 100 rows. Totals and grouped results need no limit.',
-    'Never invent filter values that the question does not mention.',
+    'Never invent filter values that the question does not mention, apart from the loose match described next.',
+    assumptionRule(guide.json),
+    'Answer questions about the data from the tables in the schema. Use system catalogs only when the question is about the database structure itself.',
     guide.json
       ? 'For revenue or sales, total the amount field of completed or paid records when a status field exists.'
       : 'For revenue or sales, total the amount column of completed or paid rows when a status column exists, and state that assumption in a short -- comment on the first line.',
