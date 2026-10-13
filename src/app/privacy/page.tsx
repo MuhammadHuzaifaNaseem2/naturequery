@@ -107,8 +107,7 @@ const sections: LegalSection[] = [
       },
       {
         label: 'Error tracking and analytics',
-        detail:
-          'Error reports and usage statistics, without IP addresses or screen recordings. See our Security page for the list of services',
+        detail: 'Error reports and usage statistics, without IP addresses or screen recordings',
       },
       { label: 'Law enforcement', detail: 'When required by valid legal process' },
     ],

@@ -158,33 +158,6 @@ const sections: LegalSection[] = [
   },
   {
     number: '08',
-    title: 'Services we use',
-    content: 'These companies process data on our behalf, each for one purpose:',
-    list: [
-      {
-        label: 'Vercel',
-        detail: 'Runs naturequery.app, with page statistics that use no cookies',
-      },
-      {
-        label: 'Neon',
-        detail: 'Databases for accounts, settings and uploaded files, in Singapore',
-      },
-      {
-        label: 'Groq and Cerebras',
-        detail: 'AI that writes, explains and fixes queries (Cerebras is the backup)',
-      },
-      { label: 'Resend', detail: 'Account emails and scheduled reports' },
-      { label: 'Lemon Squeezy', detail: 'Payments, as merchant of record' },
-      { label: 'Sentry', detail: 'Error reports, without IP addresses' },
-      {
-        label: 'PostHog',
-        detail: 'Product analytics, without IP addresses or screen recordings',
-      },
-      { label: 'Google and GitHub', detail: 'Optional sign-in' },
-    ],
-  },
-  {
-    number: '09',
     title: 'What we do not have yet',
     content: 'We would rather tell you than let you find out. NatureQuery does not yet offer:',
     bullets: [
@@ -195,7 +168,7 @@ const sections: LegalSection[] = [
     ],
   },
   {
-    number: '10',
+    number: '09',
     title: 'Reporting a security issue',
     content:
       "If you find a vulnerability, email hello@naturequery.app with the steps to reproduce it, and a person will reply. Please do not access other people's data or disrupt the service while testing.",
