@@ -37,15 +37,8 @@ export const createCassandraDriver: DriverFactory = (config, secrets, context) =
       ? { username: config.user, password: secrets.password ?? '' }
       : undefined,
     // Cassandra cannot fall back from TLS to plain, so "prefer" means plain.
-    sslOptions:
-      tls.options && tls.mode !== 'prefer'
-        ? {
-            rejectUnauthorized: tls.options.rejectUnauthorized,
-            ca: tls.options.ca,
-            servername: tls.options.servername,
-            checkServerIdentity: tls.options.checkServerIdentity,
-          }
-        : undefined,
+    // Spread, so a checkServerIdentity the mode does not set stays absent.
+    sslOptions: tls.options && tls.mode !== 'prefer' ? { ...tls.options } : undefined,
     socketOptions: { connectTimeout: context.connectTimeoutMs, readTimeout: 60_000 },
     applicationName: APP_NAME,
   })

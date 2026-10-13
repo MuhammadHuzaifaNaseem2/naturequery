@@ -34,10 +34,9 @@ export const createClickHouseDriver: DriverFactory = (config, secrets, context) 
     agent = new https.Agent({
       keepAlive: true,
       maxSockets: 4,
-      rejectUnauthorized: tls.options?.rejectUnauthorized ?? true,
-      ca: tls.options?.ca,
-      servername: tls.options?.servername,
-      checkServerIdentity: tls.options?.checkServerIdentity,
+      rejectUnauthorized: true,
+      // Spread, so a checkServerIdentity the mode does not set stays absent.
+      ...tls.options,
     })
   }
 

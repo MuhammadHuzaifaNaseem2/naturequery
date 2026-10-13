@@ -63,8 +63,9 @@ export function resolveTls(
       rejectUnauthorized: true,
       ca,
       servername: sni,
-      // verify-ca checks the certificate chain but not the host name.
-      checkServerIdentity: mode === 'verify-ca' ? () => undefined : undefined,
+      // verify-ca checks the certificate chain but not the host name. verify-full
+      // leaves the key out: Node refuses a checkServerIdentity that is undefined.
+      ...(mode === 'verify-ca' ? { checkServerIdentity: () => undefined } : {}),
     },
   }
 }
