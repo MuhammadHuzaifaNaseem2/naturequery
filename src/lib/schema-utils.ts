@@ -4,6 +4,7 @@
  */
 
 import { DatabaseSchema } from '@/actions/db'
+import { enumValuesText } from '@/lib/desktop/prompts'
 
 const MAX_TABLES_UNFILTERED = 12
 const MAX_TABLES_IN_PROMPT = 15
@@ -291,7 +292,7 @@ export function formatSchemaForPrompt(schema: DatabaseSchema): string {
       const fk = table.foreignKeys?.find((f) => f.column === column.name)
       if (fk) constraints.push(`FK → ${fk.referencedTable}.${fk.referencedColumn}`)
       const constraintStr = constraints.length > 0 ? ` [${constraints.join(', ')}]` : ''
-      description += `  - ${column.name}: ${column.type}${constraintStr}\n`
+      description += `  - ${column.name}: ${column.type}${enumValuesText(column.values)}${constraintStr}\n`
     }
   }
 

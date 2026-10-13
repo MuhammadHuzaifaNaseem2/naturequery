@@ -29,6 +29,7 @@ export const schemaTableSchema = z.object({
         type: z.string().max(512),
         key: z.boolean().optional(),
         nullable: z.boolean().optional(),
+        values: z.array(z.string().max(1000)).max(500).optional(),
       })
     )
     .max(1000),

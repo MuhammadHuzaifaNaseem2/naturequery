@@ -7,6 +7,8 @@ export interface ColumnDefinition {
   nullable: boolean
   defaultValue: string | null
   isPrimaryKey: boolean
+  /** The allowed values of an enum column, in their defined order. */
+  values?: string[]
 }
 
 export interface ForeignKey {

@@ -26,6 +26,18 @@ export interface DesktopSchemaColumn {
   type: string
   key?: boolean
   nullable?: boolean
+  /** The allowed values of an enum column. */
+  values?: string[]
+}
+
+const MAX_LISTED_VALUES = 30
+
+/** " (one of 'student', 'teacher')" for an enum column, so queries use the exact values. */
+export function enumValuesText(values: string[] | undefined): string {
+  if (!values?.length) return ''
+  const listed = values.slice(0, MAX_LISTED_VALUES).map((value) => `'${value.replace(/'/g, "''")}'`)
+  const more = values.length - listed.length
+  return ` (one of ${listed.join(', ')}${more > 0 ? `, and ${more} more` : ''})`
 }
 
 export interface DesktopSchemaTable {
@@ -56,6 +68,7 @@ const GUIDES: Record<DesktopDialect, DialectGuide> = {
       'Only SELECT or WITH queries. Never INSERT, UPDATE, DELETE, MERGE, DDL, COPY or locking clauses.',
       'Limit row listings with LIMIT n.',
       'Use ILIKE for case-insensitive text matching.',
+      "Enum and other custom-type columns: compare with = and one of the listed values (role = 'student'). Before LOWER, UPPER, LIKE or ILIKE, cast to text: role::text ILIKE '%stud%'.",
       "Dates: date_trunc('month', col), now(), current_date, now() - interval '30 days', to_char(col, 'YYYY-MM').",
     ],
   },
@@ -224,7 +237,9 @@ export function formatDesktopSchema(tables: DesktopSchemaTable[], dialect: Deskt
       ]
         .filter(Boolean)
         .join(', ')
-      lines.push(`  ${column.name}: ${column.type}${flags ? ` [${flags}]` : ''}`)
+      lines.push(
+        `  ${column.name}: ${column.type}${enumValuesText(column.values)}${flags ? ` [${flags}]` : ''}`
+      )
     }
     for (const reference of table.references ?? []) {
       relationships.push(

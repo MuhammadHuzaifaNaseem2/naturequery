@@ -92,11 +92,19 @@ export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver
     },
 
     async fetchSchema() {
+      // information_schema calls enums and other custom types "USER-DEFINED" and
+      // arrays "ARRAY"; the type's own name (user_role, text[]) tells the AI more.
       const schemaQuery = `
         SELECT
           t.table_name,
           c.column_name,
-          c.data_type,
+          CASE
+            WHEN c.data_type = 'USER-DEFINED' THEN c.udt_name
+            WHEN c.data_type = 'ARRAY' THEN substr(c.udt_name, 2) || '[]'
+            ELSE c.data_type
+          END AS data_type,
+          c.udt_schema,
+          c.udt_name,
           c.is_nullable,
           c.column_default,
           CASE
@@ -135,10 +143,29 @@ export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver
           ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
         WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public';
       `
-      const [colResult, fkResult] = await Promise.all([
+      // Enum values, so queries compare with the exact values (role = 'student').
+      const enumQuery = `
+        SELECT n.nspname AS type_schema, t.typname AS type_name,
+               array_agg(e.enumlabel::text ORDER BY e.enumsortorder) AS labels
+        FROM pg_catalog.pg_enum e
+        JOIN pg_catalog.pg_type t ON t.oid = e.enumtypid
+        JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+        GROUP BY n.nspname, t.typname;
+      `
+      const [colResult, fkResult, enumResult] = await Promise.all([
         pool.query(schemaQuery),
         pool.query(fkQuery),
+        // Optional: the schema still loads, without values, where pg_enum is missing.
+        pool.query(enumQuery).catch(() => ({ rows: [] })),
       ])
+      const enumValues = new Map<string, string[]>()
+      for (const row of enumResult.rows as {
+        type_schema: string
+        type_name: string
+        labels: string[]
+      }[]) {
+        enumValues.set(`${row.type_schema}.${row.type_name}`, row.labels)
+      }
       const fkMap = new Map<string, ForeignKey[]>()
       for (const fk of fkResult.rows as {
         from_table: string
@@ -153,7 +180,11 @@ export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver
           referencedColumn: fk.to_column,
         })
       }
-      return groupSchemaRows(colResult.rows, fkMap)
+      const rows = colResult.rows.map((row) => ({
+        ...row,
+        values: enumValues.get(`${row.udt_schema}.${row.udt_name}`),
+      }))
+      return groupSchemaRows(rows, fkMap)
     },
 
     async executeQuery(sql: string, maxRows?: number) {
@@ -1623,6 +1654,7 @@ function groupSchemaRows(
     is_nullable: string | boolean
     column_default: string | null
     is_primary_key: boolean
+    values?: string[]
   }[],
   fkMap?: Map<string, ForeignKey[]>
 ): TableSchema[] {
@@ -1635,6 +1667,7 @@ function groupSchemaRows(
       nullable: row.is_nullable === 'YES' || row.is_nullable === true,
       defaultValue: row.column_default,
       isPrimaryKey: row.is_primary_key,
+      ...(row.values?.length ? { values: row.values } : {}),
     }
     if (!tablesMap.has(row.table_name)) {
       tablesMap.set(row.table_name, [])
