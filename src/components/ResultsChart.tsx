@@ -129,6 +129,11 @@ const tooltipStyle = {
   boxShadow: '0 12px 32px -18px rgba(0,0,0,0.35)',
 }
 
+/** Text that holds a number, such as the "3500.00" PostgreSQL returns for NUMERIC. */
+function isNumericText(value: string): boolean {
+  return value.trim() !== '' && !isNaN(Number(value))
+}
+
 /**
  * Detect which fields are numeric and which are categorical (labels).
  */
@@ -143,7 +148,7 @@ function analyzeFields(rows: QueryResultRow[], fields: string[]) {
       const isNumeric =
         typeof val === 'number' ||
         typeof val === 'bigint' ||
-        (typeof val === 'string' && !isNaN(Number(val)) && val.trim() !== '')
+        (typeof val === 'string' && isNumericText(val))
       if (isNumeric) {
         numericFields.push(field)
       } else {
@@ -246,18 +251,25 @@ export function ResultsChart({
     </button>
   )
 
-  // Limit data points for readability; coerce BigInt to number for recharts
+  // Limit data points for readability. Numbers can arrive as BigInt, or as text:
+  // PostgreSQL returns NUMERIC values and SUM results as strings. Recharts draws
+  // bars, lines and slices only for real numbers, so convert the numeric columns.
   const chartData = useMemo(
     () =>
       rows.slice(0, 100).map((row) => {
         const normalized: QueryResultRow = {}
         for (const key of Object.keys(row)) {
           const val = row[key]
-          normalized[key] = typeof val === 'bigint' ? Number(val) : val
+          normalized[key] =
+            typeof val === 'bigint'
+              ? Number(val)
+              : typeof val === 'string' && valueFields.includes(key) && isNumericText(val)
+                ? Number(val)
+                : val
         }
         return normalized
       }),
-    [rows]
+    [rows, valueFields]
   )
 
   // Export chart as PNG
