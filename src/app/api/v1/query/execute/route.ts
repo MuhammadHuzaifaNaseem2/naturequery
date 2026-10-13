@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
     user: conn.user,
     password: decryptedPassword,
     dbType: conn.dbType as DatabaseType,
+    verifyCertificate: conn.ssl,
   }
 
   // Enforce SELECT-only — prevent data destruction

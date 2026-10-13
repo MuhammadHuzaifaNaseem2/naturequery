@@ -133,6 +133,7 @@ export async function GET(request: Request) {
           user: conn.user,
           password,
           dbType,
+          verifyCertificate: conn.ssl,
         },
         dbType
       )

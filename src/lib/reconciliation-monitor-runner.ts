@@ -77,6 +77,7 @@ async function executeReport(
       user: connection.user,
       password: decrypt(connection.password),
       dbType,
+      verifyCertificate: connection.ssl,
     },
     dbType
   )

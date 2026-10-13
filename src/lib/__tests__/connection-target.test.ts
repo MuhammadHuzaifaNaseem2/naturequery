@@ -194,6 +194,19 @@ describe('database addresses on the hosted site', () => {
     )
   })
 
+  it("refuses ClickHouse's unencrypted HTTP ports", async () => {
+    await expect(check('clickhouse', 'db.example.com', { port: 8443 })).resolves.toBeUndefined()
+    await expect(check('clickhouse', 'db.example.com', { port: 8123 })).rejects.toThrow(
+      /unencrypted HTTP port.*8443/
+    )
+    await expect(
+      assertConnectionTarget(creds('db.example.com', { port: 8123 }), 'clickhouse', {
+        ...hosted,
+        allowPrivate: true,
+      })
+    ).resolves.toBeUndefined()
+  })
+
   it('leaves uploaded files and Google services alone', async () => {
     for (const type of ['magic', 'bigquery', 'firestore'] as DatabaseType[]) {
       await expect(check(type, '')).resolves.toBeUndefined()

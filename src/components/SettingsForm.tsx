@@ -332,6 +332,19 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
 // Switched off on the website for now, but NatureQuery Desktop connects to them.
 const DESKTOP_APP_TYPES: string[] = ['turso', 'dynamodb', 'firestore', 'cassandra']
 
+/** Databases whose certificate the website checks, unless the user trusts it as it is. */
+const CERTIFICATE_CHECK_TYPES = new Set<DatabaseType>([
+  'postgresql',
+  'neon',
+  'cockroachdb',
+  'redshift',
+  'mysql',
+  'mariadb',
+  'planetscale',
+  'sqlserver',
+  'clickhouse',
+])
+
 const DB_OPTIONS: {
   group: string
   items: { type: string; label: string; port: number; soon?: boolean }[]
@@ -355,7 +368,7 @@ const DB_OPTIONS: {
       { type: 'bigquery' as const, label: 'BigQuery', port: 443 },
       { type: 'snowflake' as const, label: 'Snowflake', port: 443 },
       { type: 'cockroachdb' as const, label: 'CockroachDB', port: 26257 },
-      { type: 'clickhouse' as const, label: 'ClickHouse', port: 8123 },
+      { type: 'clickhouse' as const, label: 'ClickHouse', port: 8443 },
       { type: 'duckdb' as const, label: 'DuckDB', port: 0, soon: true },
     ],
   },
@@ -397,6 +410,7 @@ export default function SettingsForm({
     password: '',
     dbType: 'postgresql',
     teamId: '',
+    verifyCertificate: true,
   })
   const [pasteError, setPasteError] = useState('')
 
@@ -476,6 +490,7 @@ export default function SettingsForm({
       database: '',
       user: '',
       password: '',
+      verifyCertificate: true,
     }))
     setPasteError('')
     setConnectionStatus('idle')
@@ -908,6 +923,41 @@ export default function SettingsForm({
                       </button>
                     </div>
                   </div>
+
+                  {dbType && CERTIFICATE_CHECK_TYPES.has(dbType) && (
+                    <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="trust-certificate"
+                          className="block text-sm font-medium text-foreground"
+                        >
+                          Trust this server&apos;s certificate
+                        </label>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Only for databases that sign their own certificate, such as Amazon RDS,
+                          Heroku, Aiven or Supabase&apos;s direct connection. The connection stays
+                          encrypted.
+                        </p>
+                      </div>
+                      <label className="relative mt-0.5 inline-flex shrink-0 cursor-pointer items-center">
+                        <input
+                          id="trust-certificate"
+                          type="checkbox"
+                          className="peer sr-only"
+                          checked={credentials.verifyCertificate === false}
+                          onChange={(e) => {
+                            setCredentials((prev) => ({
+                              ...prev,
+                              verifyCertificate: !e.target.checked,
+                            }))
+                            setConnectionStatus('idle')
+                            setStatusMessage('')
+                          }}
+                        />
+                        <div className="h-6 w-11 rounded-full bg-muted transition-colors after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-focus-visible:ring-2 peer-focus-visible:ring-ring/60"></div>
+                      </label>
+                    </div>
+                  )}
                 </>
               )}
 

@@ -88,6 +88,8 @@ export default function AdminConnectionsPage() {
       user: credentials.user,
       password: credentials.password,
       dbType: (credentials as DBCredentials & { dbType?: string }).dbType || 'postgresql',
+      // Stored in the ssl column: check the server's certificate
+      ssl: credentials.verifyCertificate === true,
     })
     if (res.success) {
       setShowAddModal(false)

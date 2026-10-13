@@ -2,7 +2,11 @@ import { NextRequest } from 'next/server'
 import { authenticateApiRequest, isAuthError } from '@/lib/api-auth'
 import { apiSuccess, apiError } from '@/lib/api-response'
 import { prisma } from '@/lib/prisma'
-import { GenerateQueryApiInputSchema, validateInput, type GenerateQueryApiInput } from '@/lib/validation'
+import {
+  GenerateQueryApiInputSchema,
+  validateInput,
+  type GenerateQueryApiInput,
+} from '@/lib/validation'
 import { decrypt } from '@/lib/encryption'
 import { createDriver, type DatabaseType } from '@/lib/db-drivers'
 import { generateSQLFromSchema } from '@/actions/ai'
@@ -42,6 +46,7 @@ export async function POST(request: NextRequest) {
     user: conn.user,
     password: decrypt(conn.password),
     dbType: conn.dbType as DatabaseType,
+    verifyCertificate: conn.ssl,
   }
 
   const driver = createDriver(credentials, credentials.dbType)
@@ -62,10 +67,7 @@ export async function POST(request: NextRequest) {
       connectionId,
     })
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : 'SQL generation failed',
-      500
-    )
+    return apiError(error instanceof Error ? error.message : 'SQL generation failed', 500)
   } finally {
     await driver.close().catch(() => {})
   }

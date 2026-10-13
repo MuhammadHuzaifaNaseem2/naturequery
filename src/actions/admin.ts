@@ -135,6 +135,7 @@ function decryptCredentials(conn: {
   user: string
   password: string
   dbType: string
+  ssl: boolean
 }) {
   return {
     host: conn.host,
@@ -143,6 +144,8 @@ function decryptCredentials(conn: {
     user: conn.user,
     password: decrypt(conn.password),
     dbType: conn.dbType as DatabaseType,
+    // The ssl column records "check the server's certificate"
+    verifyCertificate: conn.ssl,
   }
 }
 

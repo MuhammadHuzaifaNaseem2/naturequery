@@ -196,7 +196,7 @@ model DatabaseConnection {
   database  String
   user      String
   password  String // encrypted with AES-256
-  ssl       Boolean  @default(false)
+  ssl       Boolean  @default(false) // check the server's certificate (new connections); false: encrypted, certificate trusted as is
   dbType    String   @default("postgresql") // postgresql, mysql, sqlite, etc.
   userId    String?
   teamId    String?

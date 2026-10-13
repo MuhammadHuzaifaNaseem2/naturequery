@@ -6,6 +6,7 @@ import { encrypt, decrypt } from '@/lib/encryption'
 import { checkPlanLimits, checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
 import { assertConnectionTarget } from '@/lib/connection-target'
 import { createDriver, getMaxRows } from '@/lib/db-drivers'
+import { certificateProblem } from '@/lib/driver-tls'
 import type { DatabaseType } from '@/lib/db-drivers'
 import type {
   ExecuteSQLResult,
@@ -75,8 +76,10 @@ function friendlyConnectionError(error: unknown): string {
     lower.includes('connect timed out')
   )
     return 'Connection timed out. The host may be unreachable or blocked by a firewall.'
+  const certificate = certificateProblem(error)
+  if (certificate) return certificate
   if (lower.includes('ssl') || lower.includes('tls'))
-    return 'SSL/TLS error. Try toggling the SSL setting for this connection.'
+    return 'Could not set up an encrypted connection with this server. Check the host and port.'
   if (lower.includes('too many connections') || lower.includes('max_connections'))
     return 'Database has too many open connections. Try again in a moment.'
   if (
@@ -133,6 +136,7 @@ function decryptCredentials(conn: {
   user: string
   password: string
   dbType: string
+  ssl: boolean
 }) {
   return {
     host: conn.host,
@@ -141,6 +145,8 @@ function decryptCredentials(conn: {
     user: conn.user,
     password: decrypt(conn.password),
     dbType: conn.dbType as DatabaseType,
+    // The ssl column records "check the server's certificate"
+    verifyCertificate: conn.ssl,
   }
 }
 

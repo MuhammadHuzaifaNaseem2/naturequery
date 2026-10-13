@@ -38,6 +38,7 @@ function hashCredentials(credentials: DBCredentials, dbType: DatabaseType): stri
     database: credentials.database,
     user: credentials.user,
     password: credentials.password,
+    verifyCertificate: credentials.verifyCertificate === true,
     dbType,
   })
   return createHash('sha256').update(raw).digest('hex').slice(0, 16)

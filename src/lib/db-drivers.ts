@@ -3,6 +3,7 @@
  * Supports PostgreSQL, MySQL, and SQLite connections.
  */
 
+import { Agent as HttpsAgent } from 'node:https'
 import { Pool as PgPool } from 'pg'
 import type {
   DBCredentials,
@@ -12,6 +13,7 @@ import type {
   QueryResultRow,
 } from '@/actions/db'
 import { assertConnectionTarget } from '@/lib/connection-target'
+import { checksCertificate, clickHouseUrl, mysqlTls, postgresTls } from '@/lib/driver-tls'
 import { assertReadOnlyMongo, SqlGuardError } from '@/lib/sql-guard'
 
 export type DatabaseType =
@@ -68,15 +70,13 @@ export interface DatabaseDriver {
 // ─── PostgreSQL Driver ───────────────────────────────────────────────
 
 export function createPostgresDriver(credentials: DBCredentials): DatabaseDriver {
-  // Allow SSL to be disabled for local/dev databases via host heuristic
-  const isLocal = ['localhost', '127.0.0.1', '::1'].includes(credentials.host)
   const pool = new PgPool({
     host: credentials.host,
     port: credentials.port,
     database: credentials.database,
     user: credentials.user,
     password: credentials.password,
-    ssl: isLocal ? false : { rejectUnauthorized: false },
+    ssl: postgresTls(credentials),
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
@@ -208,14 +208,13 @@ export function createMysqlDriver(credentials: DBCredentials): DatabaseDriver {
   const getPool = async (): Promise<MysqlPool> => {
     if (!pool) {
       const mysql = await import('mysql2/promise')
-      const isLocal = ['localhost', '127.0.0.1', '::1'].includes(credentials.host)
       pool = mysql.createPool({
         host: credentials.host,
         port: credentials.port,
         database: credentials.database,
         user: credentials.user,
         password: credentials.password,
-        ssl: isLocal ? undefined : { rejectUnauthorized: false },
+        ssl: mysqlTls(credentials),
         connectionLimit: 10,
         waitForConnections: true,
         queueLimit: 20,
@@ -454,10 +453,10 @@ export function createSqlServerDriver(credentials: DBCredentials): DatabaseDrive
         user: credentials.user,
         password: credentials.password,
         options: {
-          // SQL Server 2022 requires encryption. trustServerCertificate lets us
-          // accept the self-signed cert Docker generates on first boot.
+          // Always encrypted. Trusting the certificate as it is serves servers that
+          // sign their own, like the one Docker generates on first boot.
           encrypt: true,
-          trustServerCertificate: true,
+          trustServerCertificate: !checksCertificate(credentials),
           enableArithAbort: true,
         },
         connectionTimeout: 15000,
@@ -542,7 +541,7 @@ export function createRedshiftDriver(credentials: DBCredentials): DatabaseDriver
     database: credentials.database,
     user: credentials.user,
     password: credentials.password,
-    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: checksCertificate(credentials) },
     connectionTimeoutMillis: 10000,
     query_timeout: 60000,
   })
@@ -956,13 +955,16 @@ export function createClickHouseDriver(credentials: DBCredentials): DatabaseDriv
   const getClient = async () => {
     if (!client) {
       const { createClient } = await import('@clickhouse/client')
-      // Map host / port
-      const url = `http://${credentials.host}:${credentials.port || 8123}`
+      const url = clickHouseUrl(credentials)
+      const trustCertificate = url.startsWith('https:') && !checksCertificate(credentials)
       client = createClient({
         url,
         username: credentials.user || 'default',
         password: credentials.password || '',
         database: credentials.database || 'default',
+        ...(trustCertificate
+          ? { http_agent: new HttpsAgent({ keepAlive: true, rejectUnauthorized: false }) }
+          : {}),
       })
     }
     return client

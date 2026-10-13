@@ -13,6 +13,7 @@ import { lookup as dnsLookup, resolveSrv as dnsResolveSrv } from 'node:dns/promi
 import { isIP } from 'node:net'
 import type { DBCredentials } from '@/actions/db'
 import type { DatabaseType } from '@/lib/db-drivers'
+import { CLICKHOUSE_HTTP_PORTS } from '@/lib/driver-tls'
 
 export class ConnectionTargetError extends Error {
   constructor(message: string) {
@@ -223,6 +224,14 @@ function targetsFor(
     case 'sqlserver':
       // "host\instance" names a SQL Server instance on that host.
       return [{ host: plainHost(credentials.host.split('\\')[0]) }]
+    case 'clickhouse':
+      if (!allowPrivate && CLICKHOUSE_HTTP_PORTS.includes(credentials.port)) {
+        throw new ConnectionTargetError(
+          `Port ${credentials.port} is ClickHouse's unencrypted HTTP port, which would send your password as plain text. ` +
+            'Use the HTTPS port instead, usually 8443.'
+        )
+      }
+      return [{ host: plainHost(credentials.host) }]
     default:
       return [{ host: plainHost(credentials.host) }]
   }

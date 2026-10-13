@@ -486,6 +486,8 @@ export function useDashboard() {
         password: credentials.password,
         dbType: credentials.dbType || 'postgresql',
         teamId: credentials.teamId || undefined,
+        // Stored in the ssl column: check the server's certificate
+        ssl: credentials.verifyCertificate === true,
       })
 
       if (!result.success || !result.connection) {

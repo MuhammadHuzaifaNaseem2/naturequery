@@ -2,6 +2,7 @@
 
 import { createDriver, type DatabaseType, MAX_QUERY_ROWS } from '@/lib/db-drivers'
 import { getOrCreateDriver } from '@/lib/driver-pool'
+import { certificateProblem } from '@/lib/driver-tls'
 import { auth } from '@/lib/auth'
 import { checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
 import { validateSQLSafety, ensureLimitClause } from '@/lib/sql-validator'
@@ -18,6 +19,11 @@ export interface DBCredentials {
   password: string
   dbType?: DatabaseType
   teamId?: string
+  /**
+   * Check the server's certificate (new connections do). Otherwise the connection
+   * is encrypted and accepts the certificate as it is (see driver-tls.ts).
+   */
+  verifyCertificate?: boolean
 }
 
 // Pure shapes live in @/types/database so client components can import them
@@ -86,7 +92,8 @@ export async function testConnection(credentials: DBCredentials): Promise<TestCo
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Connection failed',
+      error:
+        certificateProblem(error) ?? (error instanceof Error ? error.message : 'Connection failed'),
     }
   } finally {
     await driver.close().catch(() => {})
@@ -108,7 +115,9 @@ export async function fetchSchema(credentials: DBCredentials): Promise<FetchSche
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch schema',
+      error:
+        certificateProblem(error) ??
+        (error instanceof Error ? error.message : 'Failed to fetch schema'),
     }
   }
   // NOTE: No driver.close() — the pool manages the lifecycle
