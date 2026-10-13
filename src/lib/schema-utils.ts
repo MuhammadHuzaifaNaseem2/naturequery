@@ -9,10 +9,36 @@ const MAX_TABLES_UNFILTERED = 12
 const MAX_TABLES_IN_PROMPT = 15
 
 const STOP_WORDS = new Set([
-  'the', 'and', 'for', 'are', 'was', 'with', 'that', 'from',
-  'this', 'all', 'has', 'have', 'not', 'but', 'its', 'show',
-  'me', 'give', 'get', 'list', 'find', 'what', 'how', 'many',
-  'last', 'top', 'first', 'per', 'each', 'their',
+  'the',
+  'and',
+  'for',
+  'are',
+  'was',
+  'with',
+  'that',
+  'from',
+  'this',
+  'all',
+  'has',
+  'have',
+  'not',
+  'but',
+  'its',
+  'show',
+  'me',
+  'give',
+  'get',
+  'list',
+  'find',
+  'what',
+  'how',
+  'many',
+  'last',
+  'top',
+  'first',
+  'per',
+  'each',
+  'their',
 ])
 
 /**
@@ -20,71 +46,71 @@ const STOP_WORDS = new Set([
  * Handles the common real-world pattern where DBAs abbreviate everything.
  */
 const ABBR_MAP: Record<string, string[]> = {
-  ord:    ['order', 'orders'],
-  ordr:   ['order', 'orders'],
-  cust:   ['customer', 'customers', 'client', 'clients'],
-  emp:    ['employee', 'employees', 'staff', 'worker'],
-  empl:   ['employee', 'employees'],
-  prod:   ['product', 'products'],
-  inv:    ['invoice', 'invoices', 'inventory'],
-  invt:   ['inventory'],
-  invc:   ['invoice', 'invoices'],
-  dept:   ['department', 'departments'],
-  mgr:    ['manager'],
-  addr:   ['address'],
-  ph:     ['phone'],
-  qty:    ['quantity', 'count'],
-  amt:    ['amount', 'total', 'value'],
-  dt:     ['date'],
-  nm:     ['name'],
-  stts:   ['status'],
-  sts:    ['status'],
-  flg:    ['flag'],
-  wh:     ['warehouse'],
-  po:     ['purchase', 'order'],
-  grp:    ['group'],
-  cat:    ['category', 'categories'],
-  catg:   ['category', 'categories'],
-  pmt:    ['payment', 'payments'],
-  shp:    ['shipment', 'shipping', 'ship'],
-  dlvry:  ['delivery'],
-  dlv:    ['delivery'],
-  rcv:    ['receive', 'received'],
-  recv:   ['receive', 'received'],
-  vnd:    ['vendor', 'vendors', 'supplier'],
-  vndr:   ['vendor', 'vendors'],
-  sup:    ['supplier', 'suppliers', 'support'],
-  supp:   ['supplier', 'suppliers'],
-  acct:   ['account', 'accounts'],
-  txn:    ['transaction', 'transactions'],
-  trans:  ['transaction', 'transactions'],
-  cfg:    ['config', 'configuration'],
-  usr:    ['user', 'users'],
-  hdr:    ['header'],
-  dtl:    ['detail', 'details', 'line'],
-  ln:     ['line'],
-  mstr:   ['master'],
-  ref:    ['reference'],
-  log:    ['log', 'logs', 'history', 'audit'],
-  hist:   ['history', 'historical'],
-  rpt:    ['report', 'reports'],
-  msg:    ['message', 'messages'],
-  notif:  ['notification', 'notifications'],
-  tkt:    ['ticket', 'tickets'],
-  seg:    ['segment', 'segments'],
-  mktg:   ['marketing'],
-  camp:   ['campaign', 'campaigns'],
-  rev:    ['revenue', 'review'],
-  prc:    ['price'],
-  prm:    ['promo', 'promotion'],
-  promo:  ['promotion', 'promotions', 'discount'],
-  disc:   ['discount'],
-  tax:    ['tax'],
-  curr:   ['currency'],
-  loc:    ['location'],
-  geo:    ['geography', 'location'],
-  tbl:    [], // meaningless prefix
-  raw:    [], // ignore — prefix meaning unprocessed
+  ord: ['order', 'orders'],
+  ordr: ['order', 'orders'],
+  cust: ['customer', 'customers', 'client', 'clients'],
+  emp: ['employee', 'employees', 'staff', 'worker'],
+  empl: ['employee', 'employees'],
+  prod: ['product', 'products'],
+  inv: ['invoice', 'invoices', 'inventory'],
+  invt: ['inventory'],
+  invc: ['invoice', 'invoices'],
+  dept: ['department', 'departments'],
+  mgr: ['manager'],
+  addr: ['address'],
+  ph: ['phone'],
+  qty: ['quantity', 'count'],
+  amt: ['amount', 'total', 'value'],
+  dt: ['date'],
+  nm: ['name'],
+  stts: ['status'],
+  sts: ['status'],
+  flg: ['flag'],
+  wh: ['warehouse'],
+  po: ['purchase', 'order'],
+  grp: ['group'],
+  cat: ['category', 'categories'],
+  catg: ['category', 'categories'],
+  pmt: ['payment', 'payments'],
+  shp: ['shipment', 'shipping', 'ship'],
+  dlvry: ['delivery'],
+  dlv: ['delivery'],
+  rcv: ['receive', 'received'],
+  recv: ['receive', 'received'],
+  vnd: ['vendor', 'vendors', 'supplier'],
+  vndr: ['vendor', 'vendors'],
+  sup: ['supplier', 'suppliers', 'support'],
+  supp: ['supplier', 'suppliers'],
+  acct: ['account', 'accounts'],
+  txn: ['transaction', 'transactions'],
+  trans: ['transaction', 'transactions'],
+  cfg: ['config', 'configuration'],
+  usr: ['user', 'users'],
+  hdr: ['header'],
+  dtl: ['detail', 'details', 'line'],
+  ln: ['line'],
+  mstr: ['master'],
+  ref: ['reference'],
+  log: ['log', 'logs', 'history', 'audit'],
+  hist: ['history', 'historical'],
+  rpt: ['report', 'reports'],
+  msg: ['message', 'messages'],
+  notif: ['notification', 'notifications'],
+  tkt: ['ticket', 'tickets'],
+  seg: ['segment', 'segments'],
+  mktg: ['marketing'],
+  camp: ['campaign', 'campaigns'],
+  rev: ['revenue', 'review'],
+  prc: ['price'],
+  prm: ['promo', 'promotion'],
+  promo: ['promotion', 'promotions', 'discount'],
+  disc: ['discount'],
+  tax: ['tax'],
+  curr: ['currency'],
+  loc: ['location'],
+  geo: ['geography', 'location'],
+  tbl: [], // meaningless prefix
+  raw: [], // ignore — prefix meaning unprocessed
 }
 
 /**
@@ -116,7 +142,7 @@ function tokenise(text: string): string[] {
 function scoreTable(
   table: DatabaseSchema['tables'][number],
   questionTokens: string[],
-  expandedTokens: string[][]  // questionTokens[i] expanded
+  expandedTokens: string[][] // questionTokens[i] expanded
 ): number {
   let score = 0
 
@@ -125,17 +151,29 @@ function scoreTable(
   const tableNameFull = tableNameParts.join(' ')
 
   for (let i = 0; i < questionTokens.length; i++) {
-    const allForms = expandedTokens[i]  // [original token, ...expanded meanings]
+    const allForms = expandedTokens[i] // [original token, ...expanded meanings]
 
     for (const form of allForms) {
       // Exact table name match
-      if (tableNameFull === form) { score += 12; break }
+      if (tableNameFull === form) {
+        score += 12
+        break
+      }
       // Table name part exact match
-      if (tableNameParts.some(p => p === form)) { score += 8; break }
+      if (tableNameParts.some((p) => p === form)) {
+        score += 8
+        break
+      }
       // Table name part prefix match (e.g. "order" matches "orders")
-      if (tableNameParts.some(p => p.startsWith(form) || form.startsWith(p))) { score += 5; break }
+      if (tableNameParts.some((p) => p.startsWith(form) || form.startsWith(p))) {
+        score += 5
+        break
+      }
       // Substring in table name
-      if (tableNameFull.includes(form)) { score += 3; break }
+      if (tableNameFull.includes(form)) {
+        score += 3
+        break
+      }
     }
 
     // Score column names
@@ -143,9 +181,18 @@ function scoreTable(
       const colParts = tokenise(col.name)
       const colFull = colParts.join(' ')
       for (const form of allForms) {
-        if (colFull === form) { score += 4; break }
-        if (colParts.some(p => p === form)) { score += 3; break }
-        if (colFull.includes(form)) { score += 1; break }
+        if (colFull === form) {
+          score += 4
+          break
+        }
+        if (colParts.some((p) => p === form)) {
+          score += 3
+          break
+        }
+        if (colFull.includes(form)) {
+          score += 1
+          break
+        }
       }
     }
   }
@@ -200,7 +247,8 @@ export function formatSampleRowsForPrompt(
 ): string {
   if (tables.length === 0) return ''
 
-  let result = '\nSAMPLE DATA (real rows from the database — use these to understand actual values, formats, and data quality):\n'
+  let result =
+    '\nSAMPLE DATA (real rows from the database — use these to understand actual values, formats, and data quality):\n'
 
   for (const { tableName, rows } of tables) {
     if (rows.length === 0) {
@@ -212,12 +260,15 @@ export function formatSampleRowsForPrompt(
     result += cols.join(' | ') + '\n'
     result += cols.map(() => '---').join(' | ') + '\n'
     for (const row of rows) {
-      result += cols.map(c => {
-        const val = row[c]
-        if (val === null || val === undefined) return 'NULL'
-        if (typeof val === 'object') return JSON.stringify(val).slice(0, 40)
-        return String(val).slice(0, 60)
-      }).join(' | ') + '\n'
+      result +=
+        cols
+          .map((c) => {
+            const val = row[c]
+            if (val === null || val === undefined) return 'NULL'
+            if (typeof val === 'object') return JSON.stringify(val).slice(0, 40)
+            return String(val).slice(0, 60)
+          })
+          .join(' | ') + '\n'
     }
   }
 
@@ -246,7 +297,9 @@ export function formatSchemaForPrompt(schema: DatabaseSchema): string {
 
   // Add a relationship summary section for the AI
   const allFKs = schema.tables.flatMap((t) =>
-    (t.foreignKeys ?? []).map((fk) => `  ${t.tableName}.${fk.column} → ${fk.referencedTable}.${fk.referencedColumn}`)
+    (t.foreignKeys ?? []).map(
+      (fk) => `  ${t.tableName}.${fk.column} → ${fk.referencedTable}.${fk.referencedColumn}`
+    )
   )
   if (allFKs.length > 0) {
     description += `\nRELATIONSHIPS (use these for JOINs):\n${allFKs.join('\n')}\n`
