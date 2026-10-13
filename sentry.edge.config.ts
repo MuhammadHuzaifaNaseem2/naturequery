@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs'
+import { redactRequest } from '@/lib/redact-url'
 
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   Sentry.init({
@@ -12,6 +13,11 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
       if (error?.message === 'Not Found' || error?.name === 'NotFoundError') {
         return null
       }
+      redactRequest(event.request)
+      return event
+    },
+    beforeSendTransaction(event) {
+      redactRequest(event.request)
       return event
     },
   })
