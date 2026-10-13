@@ -2,7 +2,9 @@
 
 import { QueryResultRow } from './db'
 import { DatabaseSchema } from './db'
+import { auth } from '@/lib/auth'
 import { getGroqClient, withKeyRotation } from '@/lib/groq-keys'
+import { rateLimitAsync } from '@/lib/rate-limit'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -486,6 +488,18 @@ function generateMockAIInsights(
 // ─── Main Export ────────────────────────────────────────────────────────────
 
 export async function analyzeResults(request: AnalyzeRequest): Promise<AnalyzeResult> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { success: false, error: 'Not authenticated' }
+  }
+  const rl = await rateLimitAsync(`insights:${session.user.id}`, {
+    maxRequests: 20,
+    windowSeconds: 60,
+  })
+  if (!rl.allowed) {
+    return { success: false, error: `Too many requests. Please wait ${rl.retryAfterSeconds}s.` }
+  }
+
   try {
     const { rows, fields, originalQuestion } = request
 

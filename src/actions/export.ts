@@ -1,6 +1,7 @@
 'use server'
 
 import ExcelJS from 'exceljs'
+import { auth } from '@/lib/auth'
 import { QueryResultRow } from './db'
 import { ExportToExcelSchema, ExportToCSVSchema, validateInput } from '@/lib/validation'
 
@@ -19,10 +20,16 @@ export interface ExportResult {
   error?: string
 }
 
+async function isSignedIn(): Promise<boolean> {
+  const session = await auth()
+  return !!session?.user?.id
+}
+
 /**
  * Export query results to CSV format
  */
 export async function exportToCSV(request: ExportRequest): Promise<ExportResult> {
+  if (!(await isSignedIn())) return { success: false, error: 'Not authenticated' }
   try {
     // Validate input
     const validation = validateInput(ExportToCSVSchema, request)
@@ -76,6 +83,7 @@ export async function exportToCSV(request: ExportRequest): Promise<ExportResult>
  * Theme: Blue headers, gray zebra-stripes, currency formatting, auto-filter
  */
 export async function exportToExcel(request: ExportRequest): Promise<ExportResult> {
+  if (!(await isSignedIn())) return { success: false, error: 'Not authenticated' }
   try {
     // Validate input
     const validation = validateInput(ExportToExcelSchema, request)
