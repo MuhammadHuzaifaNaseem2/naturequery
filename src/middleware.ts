@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
 const PUBLIC_PREFIXES = ['/api/v1', '/_next', '/favicon', '/public', '/shared']
 
@@ -25,8 +26,6 @@ const PUBLIC_EXACT = new Set([
   // The page behind 'Stop weekly summaries' in the email; the link is signed
   '/email/unsubscribe',
 ])
-
-const AUTH_PAGES = new Set(['/login', '/register'])
 
 function applySecurityHeaders(res: NextResponse): NextResponse {
   res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
@@ -57,8 +56,34 @@ function applySecurityHeaders(res: NextResponse): NextResponse {
   return res
 }
 
-export function middleware(req: NextRequest) {
+/**
+ * True when the request carries a session that decodes and has not expired. Used
+ * where a redirect depends on it, so an old cookie cannot cause a redirect loop.
+ */
+async function hasValidSession(req: NextRequest): Promise<boolean> {
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
+  if (!secret) return false
+  try {
+    const token = await getToken({
+      req,
+      secret,
+      secureCookie: process.env.NODE_ENV === 'production',
+    })
+    return !!token
+  } catch {
+    return false
+  }
+}
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+
+  // People who are signed in and open the home page, for example from a search, go
+  // straight to their dashboard. The login page does not redirect: it offers to
+  // continue instead, which cannot loop if the dashboard ever sends someone back.
+  if (pathname === '/' && (await hasValidSession(req))) {
+    return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', req.url)))
+  }
 
   const isPublic = PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
 
@@ -70,10 +95,6 @@ export function middleware(req: NextRequest) {
   const cookieName =
     process.env.NODE_ENV === 'production' ? '__Secure-authjs.session-token' : 'authjs.session-token'
   const hasSession = !!req.cookies.get(cookieName)?.value
-
-  if (AUTH_PAGES.has(pathname) && hasSession) {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', req.url)))
-  }
 
   if (pathname.startsWith('/api/')) {
     return applySecurityHeaders(NextResponse.next())

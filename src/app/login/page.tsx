@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState, useRef } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, signOut, useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, ArrowLeft } from 'lucide-react'
@@ -53,6 +53,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const oauthProviders = useOAuthProviders()
   const callbackUrl = safeCallbackUrl(searchParams.get('callbackUrl'))
+  const { data: session, status } = useSession()
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -234,6 +235,30 @@ function LoginForm() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Already signed in, for example after opening the site from a search: offer to
+  // continue instead of asking for the password again.
+  if (status === 'authenticated' && !isLoading && !show2FA) {
+    return (
+      <div className="animate-fadeIn">
+        <AuthHeading eyebrow={t('auth.login.eyebrow')} title={t('auth.login.signedInTitle')}>
+          {session?.user?.email ? t('auth.login.signedInAs', { email: session.user.email }) : null}
+        </AuthHeading>
+        <div className="mt-8 space-y-3">
+          <a href={callbackUrl} className="mk-btn mk-btn-primary w-full">
+            {t('auth.login.continue')}
+          </a>
+          <button
+            type="button"
+            onClick={() => signOut({ redirect: false })}
+            className="mk-btn w-full text-mk-ink-2 hover:text-mk-ink"
+          >
+            {t('auth.login.useAnotherAccount')}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   // Two-step verification

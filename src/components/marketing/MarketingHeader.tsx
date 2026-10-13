@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { Menu } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
+import { HeaderAccountLinks, MenuAccountLink } from './HeaderAccountLinks'
+
+const MENU_LINK =
+  'block rounded-md px-3 py-2.5 text-[0.9375rem] text-mk-ink hover:bg-mk-sunken aria-[current=page]:font-semibold'
 
 const LINKS = [
   { href: '/features', label: 'Product' },
@@ -32,15 +36,7 @@ export function MarketingHeader({ current }: { current?: string }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            href="/login"
-            className="mk-btn mk-btn-sm hidden text-mk-ink-2 hover:text-mk-ink sm:inline-flex"
-          >
-            Sign in
-          </Link>
-          <Link href="/register" className="mk-btn mk-btn-sm mk-btn-primary">
-            Start free
-          </Link>
+          <HeaderAccountLinks />
 
           <details className="group relative md:hidden">
             <summary
@@ -53,16 +49,17 @@ export function MarketingHeader({ current }: { current?: string }) {
               aria-label="Main"
               className="absolute right-0 top-11 w-56 rounded-lg border border-mk-rule bg-mk-surface p-2 shadow-[0_18px_40px_-20px_hsl(var(--mk-ink)/0.35)]"
             >
-              {[...LINKS, { href: '/login', label: 'Sign in' }].map((link) => (
+              {LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   aria-current={current === link.href ? 'page' : undefined}
-                  className="block rounded-md px-3 py-2.5 text-[0.9375rem] text-mk-ink hover:bg-mk-sunken aria-[current=page]:font-semibold"
+                  className={MENU_LINK}
                 >
                   {link.label}
                 </Link>
               ))}
+              <MenuAccountLink className={MENU_LINK} />
             </nav>
           </details>
         </div>
