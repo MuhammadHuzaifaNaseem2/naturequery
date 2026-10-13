@@ -1,7 +1,7 @@
 'use server'
 
 import { lookup } from 'dns/promises'
-import { isIP } from 'net'
+import { isPrivateAddress } from '@/lib/connection-target'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { decrypt, encrypt } from '@/lib/encryption'
@@ -35,33 +35,6 @@ async function requireUserId() {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Not authenticated')
   return session.user.id
-}
-
-function isPrivateAddress(address: string) {
-  if (isIP(address) === 4) {
-    const parts = address.split('.').map(Number)
-    return (
-      parts[0] === 0 ||
-      parts[0] === 10 ||
-      parts[0] === 127 ||
-      (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) ||
-      (parts[0] === 169 && parts[1] === 254) ||
-      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-      (parts[0] === 192 && parts[1] === 168) ||
-      (parts[0] === 198 && (parts[1] === 18 || parts[1] === 19)) ||
-      parts[0] >= 224
-    )
-  }
-  const normalized = address.toLowerCase()
-  return (
-    normalized === '::' ||
-    normalized === '::1' ||
-    normalized.startsWith('fc') ||
-    normalized.startsWith('fd') ||
-    /^fe[89ab]/.test(normalized) ||
-    normalized.startsWith('ff') ||
-    normalized.startsWith('::ffff:')
-  )
 }
 
 async function normalizeAndValidateStoreUrl(input: string) {

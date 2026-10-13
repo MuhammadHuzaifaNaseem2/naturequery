@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { encrypt, decrypt } from '@/lib/encryption'
 import { checkPlanLimits, checkAndRecordQuery, maybeNotifyQueryThreshold } from '@/lib/plan-limits'
+import { assertConnectionTarget } from '@/lib/connection-target'
 import { createDriver, getMaxRows } from '@/lib/db-drivers'
 import type { DatabaseType } from '@/lib/db-drivers'
 import type {
@@ -163,6 +164,18 @@ export async function saveConnection(
     const validated = validateInput(DBCredentialsSchema, input)
     if (!validated.success) return { success: false, error: validated.error }
     const data = validated.data
+
+    // Refuse private and local addresses before saving (see connection-target.ts)
+    await assertConnectionTarget(
+      {
+        host: data.host,
+        port: data.port,
+        database: data.database,
+        user: data.user,
+        password: data.password,
+      },
+      data.dbType
+    )
 
     // If adding to a team, only OWNER/ADMIN may create team connections
     if (data.teamId) {

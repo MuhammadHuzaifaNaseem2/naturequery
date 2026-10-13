@@ -11,6 +11,7 @@ import type {
   TableSchema,
   QueryResultRow,
 } from '@/actions/db'
+import { assertConnectionTarget } from '@/lib/connection-target'
 import { assertReadOnlyMongo, SqlGuardError } from '@/lib/sql-guard'
 
 export type DatabaseType =
@@ -1510,10 +1511,56 @@ export function createMagicDriver(credentials: DBCredentials): DatabaseDriver {
 
 // ─── Factory ─────────────────────────────────────────────────────────
 
+const TARGET_RECHECK_MS = 60_000
+
+/**
+ * Checks where the connection points before the driver first connects, and again
+ * every minute while a pooled driver is reused, so no caller can reach a private
+ * network address or a file on the server (see connection-target.ts).
+ */
+function withTargetCheck(
+  driver: DatabaseDriver,
+  credentials: DBCredentials,
+  type: DatabaseType
+): DatabaseDriver {
+  let checked: Promise<void> | null = null
+  let checkedAt = 0
+  const ensureTarget = () => {
+    if (!checked || Date.now() - checkedAt > TARGET_RECHECK_MS) {
+      checkedAt = Date.now()
+      const check = assertConnectionTarget(credentials, type)
+      check.catch(() => {
+        if (checked === check) checked = null
+      })
+      checked = check
+    }
+    return checked
+  }
+  return {
+    async testConnection() {
+      await ensureTarget()
+      return driver.testConnection()
+    },
+    async fetchSchema() {
+      await ensureTarget()
+      return driver.fetchSchema()
+    },
+    async executeQuery(sql: string, maxRows?: number) {
+      await ensureTarget()
+      return driver.executeQuery(sql, maxRows)
+    },
+    close: () => driver.close(),
+  }
+}
+
 export function createDriver(
   credentials: DBCredentials,
   type: DatabaseType = 'postgresql'
 ): DatabaseDriver {
+  return withTargetCheck(createUncheckedDriver(credentials, type), credentials, type)
+}
+
+function createUncheckedDriver(credentials: DBCredentials, type: DatabaseType): DatabaseDriver {
   switch (type) {
     case 'mysql':
       return createMysqlDriver(credentials)

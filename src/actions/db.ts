@@ -54,9 +54,28 @@ export interface ExecuteSQLResult {
 }
 
 /**
+ * Connecting with typed-in details needs a signed-in user and is rate limited, so
+ * nobody can use NatureQuery to probe other servers. Returns the reason when the
+ * attempt is not allowed.
+ */
+async function guardConnectionAttempt(kind: string): Promise<string | null> {
+  const session = await auth()
+  if (!session?.user?.id) return 'Please sign in to connect a database.'
+  const rl = await rateLimitAsync(`${kind}:${session.user.id}`, {
+    maxRequests: 20,
+    windowSeconds: 60,
+  })
+  if (!rl.allowed) return `Too many attempts. Please wait ${rl.retryAfterSeconds}s.`
+  return null
+}
+
+/**
  * Test database connection with provided credentials
  */
 export async function testConnection(credentials: DBCredentials): Promise<TestConnectionResult> {
+  const blocked = await guardConnectionAttempt('conn_test')
+  if (blocked) return { success: false, error: blocked }
+
   // testConnection always creates a fresh driver (not pooled)
   // because we need to verify the credentials actually work
   const driver = createDriver(credentials, credentials.dbType)
@@ -78,6 +97,9 @@ export async function testConnection(credentials: DBCredentials): Promise<TestCo
  * Fetch database schema (tables and columns) using provided credentials
  */
 export async function fetchSchema(credentials: DBCredentials): Promise<FetchSchemaResult> {
+  const blocked = await guardConnectionAttempt('conn_schema')
+  if (blocked) return { success: false, error: blocked }
+
   const driver = getOrCreateDriver(credentials, credentials.dbType)
 
   try {
