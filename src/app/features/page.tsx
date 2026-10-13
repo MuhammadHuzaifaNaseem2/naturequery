@@ -7,7 +7,7 @@ import { Shot } from '@/components/marketing/Shot'
 export const metadata: Metadata = {
   title: 'Features - Everything NatureQuery Offers',
   description:
-    'Plain-English questions to SQL with follow-ups and step-by-step reasoning, 14 databases, charts, dashboards, scheduled queries, team plans and read-only security.',
+    'Plain-English questions to SQL with follow-ups and step-by-step reasoning, 15 databases, charts, dashboards, scheduled queries, team plans and read-only security.',
 }
 
 interface Feature {
@@ -163,9 +163,9 @@ const CHAPTERS: Chapter[] = [
           'Owner, admin, member and viewer roles decide who can invite people, manage connections or run queries.',
       },
       {
-        title: '14 databases',
+        title: '15 databases',
         description:
-          'PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, BigQuery, MongoDB and 7 more, side by side in one workspace. NatureQuery Desktop adds Turso, DynamoDB, Firestore and Cassandra.',
+          'PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, BigQuery, MongoDB and 8 more, side by side in one workspace. NatureQuery Desktop adds Turso, DynamoDB, Firestore and Cassandra.',
       },
       {
         title: 'API access',

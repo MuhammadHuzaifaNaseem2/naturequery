@@ -21,7 +21,7 @@ const sections: LegalSection[] = [
       {
         label: 'Refused by the database',
         detail:
-          'On PostgreSQL, Neon, CockroachDB, Redshift and Oracle, and on MySQL and MariaDB servers that support it, queries run inside a read-only transaction, so the database itself refuses any change. On Turso, each query runs in a transaction that is never saved.',
+          'On PostgreSQL, Neon, Supabase, CockroachDB, Redshift and Oracle, and on MySQL and MariaDB servers that support it, queries run inside a read-only transaction, so the database itself refuses any change. On Turso, each query runs in a transaction that is never saved.',
       },
       {
         label: 'Your own safeguard',

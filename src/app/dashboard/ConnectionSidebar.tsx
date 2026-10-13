@@ -158,6 +158,21 @@ const DB_MINI_LOGOS: Record<string, React.ReactNode> = {
       />
     </svg>
   ),
+  supabase: (
+    <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="#1C1C1C" />
+      <g transform="translate(7.3 7) scale(0.16)">
+        <path
+          d="M63.7 110.3C60.8 113.9 55.1 111.9 55 107.3L54 40.1H99.2C107.4 40.1 112 49.5 106.9 55.9Z"
+          fill="#249361"
+        />
+        <path
+          d="M45.3 2.1C48.2 -1.5 54 0.4 54 5L54.5 72.3H9.8C1.6 72.3 -2.9 62.8 2.2 56.4Z"
+          fill="#3ECF8E"
+        />
+      </g>
+    </svg>
+  ),
   planetscale: (
     <svg viewBox="0 0 32 32" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
       <circle cx="16" cy="16" r="14" fill="#0C0C0C" />

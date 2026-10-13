@@ -132,7 +132,7 @@ const FAQS = [
   },
   {
     q: 'What databases do you support?',
-    a: 'PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, Amazon Redshift, BigQuery, Snowflake, CockroachDB, ClickHouse, Neon, PlanetScale and MongoDB, plus CSV and Excel uploads. NatureQuery Desktop also connects to Turso, DynamoDB, Firestore and Cassandra.',
+    a: 'PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, Amazon Redshift, BigQuery, Snowflake, CockroachDB, ClickHouse, Neon, Supabase, PlanetScale and MongoDB, plus CSV and Excel uploads. NatureQuery Desktop also connects to Turso, DynamoDB, Firestore and Cassandra.',
   },
   {
     q: 'Can I change plans anytime?',

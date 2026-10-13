@@ -39,6 +39,7 @@ export function guardDialectFor(type: DatabaseType): SqlDialect | 'mongodb' | 'f
   switch (type) {
     case 'postgresql':
     case 'neon':
+    case 'supabase':
     case 'cockroachdb':
     case 'redshift':
     case 'magic':

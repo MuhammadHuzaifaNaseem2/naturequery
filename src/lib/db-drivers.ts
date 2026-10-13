@@ -36,6 +36,7 @@ export type DatabaseType =
   | 'firestore'
   | 'planetscale'
   | 'neon'
+  | 'supabase'
   | 'turso'
   | 'magic'
 
@@ -1601,6 +1602,8 @@ function createUncheckedDriver(credentials: DBCredentials, type: DatabaseType): 
     case 'cockroachdb':
       return createPostgresDriver(credentials)
     case 'neon':
+      return createPostgresDriver(credentials)
+    case 'supabase':
       return createPostgresDriver(credentials)
     case 'planetscale':
       return createMysqlDriver(credentials)

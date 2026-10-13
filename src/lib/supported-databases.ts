@@ -16,6 +16,7 @@ export const WEB_DATABASES = [
   'CockroachDB',
   'ClickHouse',
   'Neon',
+  'Supabase',
   'PlanetScale',
   'MongoDB',
 ] as const

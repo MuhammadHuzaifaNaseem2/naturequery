@@ -66,6 +66,7 @@ export const DBCredentialsSchema = z.object({
       'snowflake',
       'bigquery',
       'neon',
+      'supabase',
       'planetscale',
       'mongodb',
     ])

@@ -15,12 +15,18 @@ const CONNECTION_RE =
 
 export interface ParsedConnection {
   user: string
+  /** Empty when the string held a placeholder such as Supabase's [YOUR-PASSWORD] */
   password: string
+  /** True when the string held a placeholder instead of the password */
+  passwordPlaceholder: boolean
   host: string
   /** null when the port was absent — callers should fall back to their own default */
   port: number | null
   database: string
 }
+
+/** Placeholders that providers put where the password goes, e.g. [YOUR-PASSWORD] or <password>. */
+const PASSWORD_PLACEHOLDER_RE = /^[[<]\s*(?:your[-_ ]?)?password\s*[\]>]$/i
 
 export type ParseResult =
   | { success: true; data: ParsedConnection }
@@ -63,11 +69,14 @@ export function parseConnectionString(input: string): ParseResult {
     }
   }
 
+  const passwordPlaceholder = PASSWORD_PLACEHOLDER_RE.test(password)
+
   return {
     success: true,
     data: {
       user,
-      password,
+      password: passwordPlaceholder ? '' : password,
+      passwordPlaceholder,
       host,
       port: rawPort != null ? parseInt(rawPort, 10) : null,
       database: rawDatabase,

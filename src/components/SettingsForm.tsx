@@ -246,6 +246,22 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
       />
     </svg>
   ),
+  supabase: (
+    <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="#1C1C1C" />
+      {/* Supabase bolt */}
+      <g transform="translate(7.3 7) scale(0.16)">
+        <path
+          d="M63.7 110.3C60.8 113.9 55.1 111.9 55 107.3L54 40.1H99.2C107.4 40.1 112 49.5 106.9 55.9Z"
+          fill="#249361"
+        />
+        <path
+          d="M45.3 2.1C48.2 -1.5 54 0.4 54 5L54.5 72.3H9.8C1.6 72.3 -2.9 62.8 2.2 56.4Z"
+          fill="#3ECF8E"
+        />
+      </g>
+    </svg>
+  ),
   planetscale: (
     <svg viewBox="0 0 32 32" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
       <circle cx="16" cy="16" r="14" fill="#0C0C0C" />
@@ -336,6 +352,7 @@ const DESKTOP_APP_TYPES: string[] = ['turso', 'dynamodb', 'firestore', 'cassandr
 const CERTIFICATE_CHECK_TYPES = new Set<DatabaseType>([
   'postgresql',
   'neon',
+  'supabase',
   'cockroachdb',
   'redshift',
   'mysql',
@@ -376,6 +393,7 @@ const DB_OPTIONS: {
     group: 'Serverless / Edge',
     items: [
       { type: 'neon' as const, label: 'Neon', port: 5432 },
+      { type: 'supabase' as const, label: 'Supabase', port: 5432 },
       { type: 'planetscale' as const, label: 'PlanetScale', port: 3306 },
       { type: 'turso' as const, label: 'Turso', port: 443, soon: true },
     ],
@@ -413,6 +431,8 @@ export default function SettingsForm({
     verifyCertificate: true,
   })
   const [pasteError, setPasteError] = useState('')
+  // The pasted string had a placeholder such as [YOUR-PASSWORD] where the password goes.
+  const [passwordNeeded, setPasswordNeeded] = useState(false)
 
   const CONNECTION_STRING_RE = /^(postgresql|postgres|mysql|mongodb(\+srv)?|redis|sqlite):\/\//i
 
@@ -493,6 +513,7 @@ export default function SettingsForm({
       verifyCertificate: true,
     }))
     setPasteError('')
+    setPasswordNeeded(false)
     setConnectionStatus('idle')
     setStatusMessage('')
     setSchema(null)
@@ -519,6 +540,7 @@ export default function SettingsForm({
         port: result.data.port ?? prev.port,
         database: result.data.database,
       }))
+      setPasswordNeeded(result.data.passwordPlaceholder)
       setShowPassword(false) // always hide password after paste — never expose it
       setConnectionStatus('idle')
       setStatusMessage('')
@@ -743,6 +765,12 @@ export default function SettingsForm({
               {/* Paste connection string — only for network databases */}
               {dbType !== 'sqlite' && (
                 <div>
+                  {dbType === 'supabase' && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      In Supabase, click Connect and copy the Session pooler connection string, then
+                      paste it here.
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={handlePasteConnectionString}
@@ -755,6 +783,12 @@ export default function SettingsForm({
                     <p className="text-xs text-destructive mt-1.5 flex items-center gap-1">
                       <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
                       {pasteError}
+                    </p>
+                  )}
+                  {passwordNeeded && !credentials.password && (
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      The connection string has a placeholder instead of your password. Type your
+                      database password below.
                     </p>
                   )}
                 </div>
@@ -809,11 +843,13 @@ export default function SettingsForm({
                               ? 'cluster0.abc.mongodb.net'
                               : dbType === 'neon'
                                 ? 'ep-xxx.us-east-1.aws.neon.tech'
-                                : dbType === 'planetscale'
-                                  ? 'aws.connect.psdb.cloud'
-                                  : dbType === 'cockroachdb'
-                                    ? 'free-tier.gcp-us-central1.cockroachlabs.cloud'
-                                    : 'localhost'
+                                : dbType === 'supabase'
+                                  ? 'aws-0-us-east-1.pooler.supabase.com'
+                                  : dbType === 'planetscale'
+                                    ? 'aws.connect.psdb.cloud'
+                                    : dbType === 'cockroachdb'
+                                      ? 'free-tier.gcp-us-central1.cockroachlabs.cloud'
+                                      : 'localhost'
                         }
                         disabled={dbType === 'bigquery'}
                         className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 disabled:opacity-50 transition-all hover:border-foreground/30 text-foreground"
@@ -859,7 +895,9 @@ export default function SettingsForm({
                               ? 'ORCL'
                               : dbType === 'mongodb'
                                 ? 'myDatabase'
-                                : 'my_database'
+                                : dbType === 'supabase'
+                                  ? 'postgres'
+                                  : 'my_database'
                       }
                       className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 transition-all hover:border-foreground/30 text-foreground"
                     />
@@ -883,7 +921,9 @@ export default function SettingsForm({
                               ? 'sa'
                               : dbType === 'oracle'
                                 ? 'system'
-                                : 'postgres'
+                                : dbType === 'supabase'
+                                  ? 'postgres.your-project-ref'
+                                  : 'postgres'
                       }
                       className="w-full px-3 py-2 bg-card border border-input rounded-md text-sm focus:outline-none focus:border-foreground/40 transition-all hover:border-foreground/30 text-foreground"
                     />
@@ -935,8 +975,7 @@ export default function SettingsForm({
                         </label>
                         <p className="mt-0.5 text-xs text-muted-foreground">
                           Only for databases that sign their own certificate, such as Amazon RDS,
-                          Heroku, Aiven or Supabase&apos;s direct connection. The connection stays
-                          encrypted.
+                          Heroku or Aiven. The connection stays encrypted.
                         </p>
                       </div>
                       <label className="relative mt-0.5 inline-flex shrink-0 cursor-pointer items-center">

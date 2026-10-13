@@ -213,6 +213,24 @@ describe('real-world connection strings', () => {
     expect(d.port).toBe(6543)
   })
 
+  it('Supabase session pooler as copied, with the password placeholder left empty', () => {
+    const d = ok(
+      'postgresql://postgres.abcdefghijkl:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres'
+    )
+    expect(d.user).toBe('postgres.abcdefghijkl')
+    expect(d.host).toBe('aws-0-us-east-1.pooler.supabase.com')
+    expect(d.port).toBe(5432)
+    expect(d.password).toBe('')
+    expect(d.passwordPlaceholder).toBe(true)
+  })
+
+  it('treats <password> as a placeholder but keeps real passwords that use brackets', () => {
+    expect(ok('postgresql://u:<password>@host:5432/db').password).toBe('')
+    const real = ok('postgresql://u:[a1b2]@host:5432/db')
+    expect(real.password).toBe('[a1b2]')
+    expect(real.passwordPlaceholder).toBe(false)
+  })
+
   it('Railway', () => {
     const d = ok('postgresql://postgres:randompassword@roundhouse.proxy.rlwy.net:12345/railway')
     expect(d.host).toBe('roundhouse.proxy.rlwy.net')
