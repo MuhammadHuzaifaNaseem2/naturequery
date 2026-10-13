@@ -52,7 +52,7 @@ const sections: LegalSection[] = [
     number: '04',
     title: 'AI Processing',
     content:
-      'To write queries, your questions and details of your database structure (table and column names and types, keys, relationships and approximate row counts) are sent to our third-party AI inference providers. Explaining or fixing a query also sends the query text, and fixing it sends the database\'s error message. The data stored in your tables is not sent, except by two features that you choose to use: AI Insights on the website sends column statistics and up to 5 rows of the result, and Summarize in NatureQuery Desktop sends up to 50 rows of the result, but only after you turn on "Let AI summaries use result rows" (off by default). We may change AI providers over time to keep quality and performance high.',
+      'To write queries, your questions and details of your database structure (table and column names and types (including the allowed values of columns limited to a fixed list), keys, relationships and approximate row counts) are sent to our third-party AI inference providers. Explaining or fixing a query also sends the query text, and fixing it sends the database\'s error message. The data stored in your tables is not sent, except by two features that you choose to use: AI Insights on the website sends column statistics and up to 5 rows of the result, and Summarize in NatureQuery Desktop sends up to 50 rows of the result, but only after you turn on "Let AI summaries use result rows" (off by default). We may change AI providers over time to keep quality and performance high.',
   },
   {
     number: '05',
@@ -168,7 +168,7 @@ export default function PrivacyPage() {
       label="Legal"
       title="Privacy Policy"
       intro="Your privacy matters to us. This policy explains what data we collect, how we use it, and the controls you have over your information."
-      updated="October 13, 2026"
+      updated="October 14, 2026"
       sections={sections}
     />
   )

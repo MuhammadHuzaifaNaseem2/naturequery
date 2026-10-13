@@ -88,7 +88,7 @@ const sections: LegalSection[] = [
     number: '04',
     title: 'AI and your data',
     content:
-      'To write a query, the AI receives your question and the structure of your database: table and column names and types, keys, relationships and approximate row counts. It does not receive the rows in your tables, except through two features you choose to use. AI Insights on the website sends column statistics and up to 5 rows of a result. Summarize in NatureQuery Desktop sends up to 50 rows, and only after you turn on "Let AI summaries use result rows", which is off by default. Explaining or fixing a query sends the query text, and fixing it also sends the database\'s error message.',
+      'To write a query, the AI receives your question and the structure of your database: table and column names and types (including the allowed values of columns limited to a fixed list), keys, relationships and approximate row counts. It does not receive the rows in your tables, except through two features you choose to use. AI Insights on the website sends column statistics and up to 5 rows of a result. Summarize in NatureQuery Desktop sends up to 50 rows, and only after you turn on "Let AI summaries use result rows", which is off by default. Explaining or fixing a query sends the query text, and fixing it also sends the database\'s error message.',
   },
   {
     number: '05',
