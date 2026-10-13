@@ -111,6 +111,12 @@ export function useDashboardHistory(
     }
   }, [])
 
+  // A query just ran: show it at the top and count it, without reloading
+  const addToHistory = useCallback((item: QueryHistoryItem) => {
+    setQueryHistory((prev) => [item, ...prev])
+    setQueryHistoryTotal((prev) => prev + 1)
+  }, [])
+
   // Handle clearing all history
   const handleClearHistory = useCallback(async () => {
     const result = await clearQueryHistoryAction()
@@ -158,6 +164,7 @@ export function useDashboardHistory(
     setQueryHistory,
     queryHistoryTotal,
     setQueryHistoryTotal,
+    addToHistory,
     savedQueries,
     setSavedQueries,
     cachedSavedCount,

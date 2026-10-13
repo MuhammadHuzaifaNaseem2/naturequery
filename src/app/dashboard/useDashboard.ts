@@ -97,6 +97,24 @@ export function useDashboard() {
   const [conversationLength, setConversationLength] = useState(0)
   const MAX_CONVERSATION_TURNS = 5
 
+  // Each connection keeps its own question, so switching databases never shows
+  // another database's question. Refs let the switch read the latest values.
+  const questionDrafts = useRef(new Map<string, string>())
+  const nlQueryRef = useRef(nlQuery)
+  const activeConnectionIdRef = useRef(activeConnectionId)
+  useEffect(() => {
+    nlQueryRef.current = nlQuery
+    activeConnectionIdRef.current = activeConnectionId
+  }, [nlQuery, activeConnectionId])
+
+  /** Remember the current connection's question and show the next connection's. */
+  const showQuestionFor = useCallback((connectionId: string) => {
+    const previous = activeConnectionIdRef.current
+    if (previous === connectionId) return
+    if (previous) questionDrafts.current.set(previous, nlQueryRef.current)
+    setNlQuery(questionDrafts.current.get(connectionId) ?? '')
+  }, [])
+
   // NL filter state
   const [activeFilters, setActiveFilters] = useState<
     { id: string; label: string; nlQuery: string }[]
@@ -179,6 +197,7 @@ export function useDashboard() {
     setQueryHistory,
     queryHistoryTotal,
     setQueryHistoryTotal,
+    addToHistory,
     savedQueries,
     setSavedQueries,
     cachedSavedCount,
@@ -521,6 +540,7 @@ export function useDashboard() {
         teamName: result.connection.teamName,
       }
       setConnections((prev) => [...prev, newConnection])
+      showQuestionFor(newConnection.id)
       setActiveConnectionId(newConnection.id)
       setShowAddConnection(false)
 
@@ -530,7 +550,7 @@ export function useDashboard() {
         new CustomEvent('onboarding:complete', { detail: { item: 'connectedDb' } })
       )
     },
-    []
+    [showQuestionFor]
   )
 
   // Handle adding demo connection
@@ -552,8 +572,9 @@ export function useDashboard() {
       if (prev.find((c) => c.id === 'demo')) return prev
       return [...prev, demoConnection]
     })
+    showQuestionFor('demo')
     setActiveConnectionId('demo')
-  }, [])
+  }, [showQuestionFor])
 
   // Cache for schema discovery suggestions (per connection ID)
   // Backed by localStorage so insights appear instantly on page refresh.
@@ -614,6 +635,7 @@ export function useDashboard() {
   // Handle selecting a connection
   const handleSelectConnection = useCallback(
     async (connectionId: string) => {
+      showQuestionFor(connectionId)
       setActiveConnectionId(connectionId)
       setGeneratedSQL('')
       setQueryResults(null)
@@ -668,7 +690,7 @@ export function useDashboard() {
         runDiscovery(connectionId, connection.schema)
       }
     },
-    [connections, runDiscovery]
+    [connections, runDiscovery, showQuestionFor]
   )
 
   // Handle deleting a connection
@@ -763,7 +785,7 @@ export function useDashboard() {
           executionTimeMs,
           status: 'success',
         }).then((res) => {
-          if (res.success && res.data) setQueryHistory((prev) => [res.data!, ...prev])
+          if (res.success && res.data) addToHistory(res.data!)
         })
       } else {
         const errMsg = result.error || 'Failed to execute query'
@@ -962,7 +984,7 @@ export function useDashboard() {
           status: 'success',
         }).then((res) => {
           if (res.success && res.data) {
-            setQueryHistory((prev) => [res.data!, ...prev])
+            addToHistory(res.data!)
           }
         })
         return
@@ -1013,7 +1035,7 @@ export function useDashboard() {
           status: 'success',
         }).then((res) => {
           if (res.success && res.data) {
-            setQueryHistory((prev) => [res.data!, ...prev])
+            addToHistory(res.data!)
           }
         })
       } else {
@@ -1039,7 +1061,7 @@ export function useDashboard() {
           errorMessage: errMsg,
         }).then((res) => {
           if (res.success && res.data) {
-            setQueryHistory((prev) => [res.data!, ...prev])
+            addToHistory(res.data!)
           }
         })
       }
