@@ -15,6 +15,7 @@ const DB_COLORS: Record<DbType, { bg: string; fg: string }> = {
   redshift: { bg: '#8c4fff', fg: '#ffffff' },
   cockroachdb: { bg: '#6933ff', fg: '#ffffff' },
   neon: { bg: '#00e599', fg: '#062a1d' },
+  supabase: { bg: '#1c1c1c', fg: '#3ecf8e' },
   planetscale: { bg: '#2b2f36', fg: '#ffffff' },
   turso: { bg: '#4ff8d2', fg: '#06302a' },
   dynamodb: { bg: '#4053d6', fg: '#ffffff' },

@@ -108,6 +108,18 @@ describe('error translation', () => {
         host: 'db',
       }).code
     ).toBe('HOST_NOT_FOUND')
+    // Supabase's pooler uses the same code for an unknown project or user.
+    expect(
+      describeError(
+        Object.assign(new Error('tenant/user postgres.abcdefghijkl not found'), {
+          code: 'ENOTFOUND',
+        }),
+        { ...connect, type: 'supabase', host: 'aws-0-us-east-1.pooler.supabase.com' }
+      )
+    ).toMatchObject({
+      code: 'AUTH_FAILED',
+      hint: expect.stringContaining('postgres.your-project-ref'),
+    })
     expect(
       describeError(
         Object.assign(new Error('password authentication failed for user "x"'), { code: '28P01' }),

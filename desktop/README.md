@@ -4,9 +4,9 @@ A native desktop app for asking databases questions in plain English or SQL.
 It connects directly from the user's computer, so it reaches databases on the
 same machine or a private office network that the web app cannot reach.
 
-Supported databases (18): PostgreSQL, MySQL, MariaDB, SQL Server, Oracle,
+Supported databases (19): PostgreSQL, MySQL, MariaDB, SQL Server, Oracle,
 SQLite, MongoDB, ClickHouse, Snowflake, BigQuery, Redshift, CockroachDB, Neon,
-PlanetScale, Turso/libSQL, DynamoDB, Firestore and Cassandra.
+Supabase, PlanetScale, Turso/libSQL, DynamoDB, Firestore and Cassandra.
 
 For people using the app, see [docs/USER-GUIDE.md](docs/USER-GUIDE.md).
 

@@ -76,6 +76,24 @@ describe('connection form', () => {
       'neon'
     )
   })
+
+  it("reads Supabase's string as copied, keeping the full certificate check", () => {
+    const next = applyConnectionUrl(
+      emptyDraft('supabase'),
+      'postgresql://postgres.abcdefghijkl:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres'
+    )
+    expect(next).toMatchObject({
+      type: 'supabase',
+      host: 'aws-0-us-east-1.pooler.supabase.com',
+      port: '5432',
+      user: 'postgres.abcdefghijkl',
+      // The placeholder is not a password; the person types the real one.
+      password: '',
+      database: 'postgres',
+      tlsMode: 'verify-full',
+    })
+    expect(emptyDraft('supabase')).toMatchObject({ host: '', port: '5432', tlsMode: 'verify-full' })
+  })
 })
 
 describe('SQL Server names', () => {

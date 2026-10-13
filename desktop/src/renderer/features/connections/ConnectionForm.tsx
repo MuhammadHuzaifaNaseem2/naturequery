@@ -923,7 +923,13 @@ export function ConnectionForm({ draft, update }: { draft: ConnectionDraft; upda
       </Field>
 
       {canPasteUrl && (
-        <div>
+        <div className="space-y-1.5">
+          {draft.type === 'supabase' && (
+            <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+              In Supabase, click &quot;Connect&quot; and copy the &quot;Session pooler&quot;
+              connection string. Paste it here, then type your database password.
+            </p>
+          )}
           {pasting ? (
             <div className="space-y-1.5">
               <Input

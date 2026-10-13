@@ -65,7 +65,7 @@ Upload `desktop/release/NatureQuery-<version>-store-x64.appx`, built with
 ```
 Ask your company's databases questions in plain English and get answers in seconds, right from your own computer.
 
-NatureQuery connects to the databases your business already uses: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, MongoDB, Snowflake, BigQuery, ClickHouse, Amazon Redshift, CockroachDB, Neon, PlanetScale, Turso, Amazon DynamoDB, Cloud Firestore and Apache Cassandra. Because it runs on your PC, it also reaches databases on your office network that cloud tools cannot.
+NatureQuery connects to the databases your business already uses: PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, MongoDB, Snowflake, BigQuery, ClickHouse, Amazon Redshift, CockroachDB, Neon, Supabase, PlanetScale, Turso, Amazon DynamoDB, Cloud Firestore and Apache Cassandra. Because it runs on your PC, it also reaches databases on your office network that cloud tools cannot.
 
 Type a question such as "Which 10 customers spent the most this year?" and NatureQuery writes the query, shows it to you and runs it. Results appear as a table you can sort and filter, or as a chart. Export them to Excel, CSV or JSON in one click.
 
@@ -108,7 +108,7 @@ NatureQuery
 
 ```
 Ask questions in plain English and get the query and the answer
-Works with PostgreSQL, MySQL, SQL Server, Oracle, MongoDB, Snowflake, BigQuery and 11 more databases
+Works with PostgreSQL, MySQL, SQL Server, Oracle, MongoDB, Snowflake, BigQuery and 12 more databases
 Connects to databases on your PC, your office network or the cloud
 Read-only queries, so your data is not changed
 Database passwords encrypted with your Windows account

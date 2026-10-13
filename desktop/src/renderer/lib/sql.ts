@@ -25,6 +25,7 @@ const FORMATTER_LANGUAGE: Partial<Record<DbType, SqlLanguage>> = {
   postgresql: 'postgresql',
   cockroachdb: 'postgresql',
   neon: 'postgresql',
+  supabase: 'postgresql',
   redshift: 'redshift',
   mysql: 'mysql',
   planetscale: 'mysql',

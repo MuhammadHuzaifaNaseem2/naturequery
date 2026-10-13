@@ -1,5 +1,6 @@
 import tls from 'node:tls'
 import type { ConnectionConfig, ConnectionSecrets, TlsMode } from '@shared/types'
+import { SUPABASE_ROOT_CA } from './supabase-certificate'
 
 export interface NodeTlsOptions {
   rejectUnauthorized: boolean
@@ -34,6 +35,11 @@ export function trustedCertificates(): string[] {
   return trustedRoots
 }
 
+/** Supabase's pooler (*.pooler.supabase.com) and direct connections (db.*.supabase.co). */
+export function isSupabaseHost(host: string | undefined): boolean {
+  return /\.supabase\.(?:com|co)$/i.test(host?.trim() ?? '')
+}
+
 export function defaultTlsMode(config: ConnectionConfig): TlsMode {
   return config.tls?.mode ?? 'prefer'
 }
@@ -54,9 +60,11 @@ export function resolveTls(
   if (mode === 'prefer' || mode === 'require') {
     return { mode, options: { rejectUnauthorized: false, servername: sni } }
   }
-  const ca = secrets.caCertificate
-    ? [...trustedCertificates(), secrets.caCertificate]
+  // Supabase signs with its own authority, trusted for Supabase's hosts only.
+  const roots = isSupabaseHost(servername ?? config.host)
+    ? [...trustedCertificates(), SUPABASE_ROOT_CA]
     : trustedCertificates()
+  const ca = secrets.caCertificate ? [...roots, secrets.caCertificate] : roots
   return {
     mode,
     options: {

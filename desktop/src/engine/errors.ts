@@ -72,6 +72,16 @@ export function describeError(error: unknown, context: ErrorContext): AppError {
     )
   }
 
+  // Supabase's pooler answers an unknown project or user with code ENOTFOUND, which
+  // would otherwise read as an unknown server name below.
+  if (/tenant\/user \S+ not found|tenant or user not found/i.test(text)) {
+    return make(
+      'AUTH_FAILED',
+      "Supabase couldn't find this project and user.",
+      "For the Session pooler, the user name is postgres.your-project-ref and the host is the pooler for your project's region. Copy both from Connect in Supabase."
+    )
+  }
+
   // Network reachability
   if (
     code === 'ECONNREFUSED' ||

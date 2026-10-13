@@ -59,13 +59,17 @@ export function emptyDraft(type: DbType): ConnectionDraft {
     type,
     name: '',
     // Cloud services have their own address fields; only servers default to this computer.
-    host: !info.network || type === 'neon' || type === 'planetscale' ? '' : 'localhost',
+    host:
+      !info.network || type === 'neon' || type === 'supabase' || type === 'planetscale'
+        ? ''
+        : 'localhost',
     port: info.defaultPort ? String(info.defaultPort) : '',
     database: '',
     user: '',
     password: '',
-    // Managed cloud services always use TLS with a public certificate.
-    tlsMode: ['neon', 'planetscale', 'redshift', 'cockroachdb'].includes(type)
+    // Managed cloud services always use TLS with a certificate NatureQuery can check
+    // (Supabase's own authority is built in, see engine/tls.ts).
+    tlsMode: ['neon', 'supabase', 'planetscale', 'redshift', 'cockroachdb'].includes(type)
       ? 'verify-full'
       : // These cannot fall back from TLS to plain, so there is no "prefer".
         type === 'mongodb' || type === 'cassandra'
@@ -321,6 +325,9 @@ export function draftToInput(draft: ConnectionDraft): ConnectionInput {
   return input
 }
 
+/** Placeholders that providers put where the password goes, e.g. [YOUR-PASSWORD] or <password>. */
+const PASSWORD_PLACEHOLDER = /^[[<]\s*(?:your[-_ ]?)?password\s*[\]>]$/i
+
 /**
  * Fills a draft from a pasted URL such as
  * postgres://user:pass@db.example.com:5432/sales?sslmode=require
@@ -341,19 +348,24 @@ export function applyConnectionUrl(draft: ConnectionDraft, raw: string): Connect
     sqlserver: 'sqlserver',
     mssql: 'sqlserver',
   }
-  const type = typeByScheme[scheme]
-  if (!type) return null
+  const schemeType = typeByScheme[scheme]
+  if (!schemeType) return null
+  // A URL for the same kind of server keeps the chosen type (Neon, Supabase...) and
+  // that type's defaults, such as its connection security.
+  const type =
+    DB_TYPE_INFO[draft.type].family === DB_TYPE_INFO[schemeType].family ? draft.type : schemeType
   const next: ConnectionDraft = {
     ...emptyDraft(type),
     id: draft.id,
     name: draft.name,
     savedSecrets: draft.savedSecrets,
   }
-  if (DB_TYPE_INFO[draft.type].family === DB_TYPE_INFO[type].family) next.type = draft.type
   next.host = decodeURIComponent(url.hostname.replace(/^\[|\]$/g, ''))
   next.port = url.port || String(DB_TYPE_INFO[type].defaultPort ?? '')
   next.user = decodeURIComponent(url.username)
-  next.password = decodeURIComponent(url.password)
+  const password = decodeURIComponent(url.password)
+  // Supabase copies the string with [YOUR-PASSWORD] in place of the password.
+  next.password = PASSWORD_PLACEHOLDER.test(password) ? '' : password
   next.database = decodeURIComponent(url.pathname.replace(/^\//, ''))
   const ssl = (
     url.searchParams.get('sslmode') ??
