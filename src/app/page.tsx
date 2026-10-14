@@ -149,7 +149,7 @@ export default function LandingPage() {
               Free plan: 50 AI questions a month. No card needed.
             </p>
             <a href="#demo" className="mk-link mt-1.5 inline-flex items-center gap-1 text-sm">
-              Watch the demo (1:22)
+              Watch the demo (1:00)
             </a>
           </div>
         </div>
