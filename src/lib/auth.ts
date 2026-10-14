@@ -8,7 +8,7 @@ import { prisma } from './prisma'
 import { verifyPassword, decrypt } from './encryption'
 import { rateLimitAsync } from './rate-limit'
 import { verifyTOTPCode, verifyBackupCode } from './totp'
-import { auditLogin, auditLogout } from './audit-immutable'
+import { auditLogin, auditLogout, writeImmutableAuditLog } from './audit-immutable'
 import { sendLoginNotificationEmail } from './email'
 import { startedBeforeSignOutLine } from './session-revocation'
 import { CredentialsSignin } from 'next-auth'
@@ -164,16 +164,12 @@ const authConfig: NextAuthConfig = {
               })
 
               // Audit log backup code usage
-              await prisma.auditLog
-                .create({
-                  data: {
-                    userId: user.id,
-                    action: '2FA_BACKUP_CODE_USED',
-                    resource: 'user',
-                    resourceId: user.id,
-                  },
-                })
-                .catch(console.error)
+              await writeImmutableAuditLog({
+                userId: user.id,
+                action: '2FA_BACKUP_CODE_USED',
+                resource: 'user',
+                resourceId: user.id,
+              }).catch(console.error)
             }
           }
         }

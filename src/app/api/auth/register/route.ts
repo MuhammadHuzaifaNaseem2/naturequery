@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import { hashPassword, validatePasswordComplexity } from '@/lib/encryption'
 import { rateLimitAsync, getClientIp } from '@/lib/rate-limit'
 import { sendWelcomeEmail } from '@/lib/email'
@@ -95,13 +96,11 @@ export async function POST(request: Request) {
     })
 
     // Log registration
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'REGISTER',
-        resource: 'user',
-        resourceId: user.id,
-      },
+    await writeImmutableAuditLog({
+      userId: user.id,
+      action: 'REGISTER',
+      resource: 'user',
+      resourceId: user.id,
     })
 
     // Generate verification token and send email (non-fatal)

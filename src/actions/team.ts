@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import { checkPlanLimits } from '@/lib/plan-limits'
 import { updateChecklistItem } from '@/actions/onboarding-checklist'
 import { rateLimitAsync } from '@/lib/rate-limit'
@@ -74,13 +75,11 @@ export async function createTeam(name: string, description?: string) {
     },
   })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: 'CREATE_TEAM',
-      resource: 'team',
-      resourceId: team.id,
-    },
+  await writeImmutableAuditLog({
+    userId: session.user.id,
+    action: 'CREATE_TEAM',
+    resource: 'team',
+    resourceId: team.id,
   })
 
   return { success: true, data: team }
@@ -156,13 +155,11 @@ export async function deleteTeam(teamId: string) {
 
   await prisma.team.delete({ where: { id: teamId } })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: 'DELETE_TEAM',
-      resource: 'team',
-      resourceId: teamId,
-    },
+  await writeImmutableAuditLog({
+    userId: session.user.id,
+    action: 'DELETE_TEAM',
+    resource: 'team',
+    resourceId: teamId,
   })
 
   return { success: true }
@@ -243,14 +240,12 @@ export async function inviteTeamMember(
     include: { user: { select: { id: true, name: true, email: true, image: true } } },
   })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: 'INVITE_MEMBER',
-      resource: 'team',
-      resourceId: teamId,
-      metadata: { invitedUserId: user.id, role },
-    },
+  await writeImmutableAuditLog({
+    userId: session.user.id,
+    action: 'INVITE_MEMBER',
+    resource: 'team',
+    resourceId: teamId,
+    metadata: { invitedUserId: user.id, role },
   })
 
   // Mark the onboarding checklist item as done for the inviter
@@ -321,14 +316,12 @@ export async function removeTeamMember(teamId: string, memberId: string) {
 
   await prisma.teamMember.delete({ where: { id: memberId, teamId, role: { not: 'OWNER' } } })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: 'REMOVE_MEMBER',
-      resource: 'team',
-      resourceId: teamId,
-      metadata: { removedMemberId: memberId },
-    },
+  await writeImmutableAuditLog({
+    userId: session.user.id,
+    action: 'REMOVE_MEMBER',
+    resource: 'team',
+    resourceId: teamId,
+    metadata: { removedMemberId: memberId },
   })
 
   return { success: true }

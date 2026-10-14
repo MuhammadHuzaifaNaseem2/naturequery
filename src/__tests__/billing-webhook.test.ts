@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   subscriptionUpsert: vi.fn(),
   userFind: vi.fn(),
   auditCreate: vi.fn(),
+  auditFindFirst: vi.fn(),
   getSubscription: vi.fn(),
 }))
 
@@ -28,7 +29,8 @@ vi.mock('@/lib/prisma', () => ({
       upsert: mocks.subscriptionUpsert,
     },
     user: { findUnique: mocks.userFind },
-    auditLog: { create: mocks.auditCreate },
+    // The audit writer reads the previous entry to chain the new one to it.
+    auditLog: { create: mocks.auditCreate, findFirst: mocks.auditFindFirst },
   },
 }))
 vi.mock('@/lib/lemonsqueezy', () => ({ setupLemonSqueezy: vi.fn() }))
@@ -98,6 +100,7 @@ beforeEach(() => {
   })
   mocks.subscriptionUpdateMany.mockResolvedValue({ count: 1 })
   mocks.auditCreate.mockResolvedValue({})
+  mocks.auditFindFirst.mockResolvedValue(null)
 })
 
 afterEach(() => vi.unstubAllEnvs())

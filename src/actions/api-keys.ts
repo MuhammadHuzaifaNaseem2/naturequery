@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import { API_KEY_PREFIX, generateApiKey, hashApiKey } from '@/lib/encryption'
 import { checkPlanLimits } from '@/lib/plan-limits'
 import { rateLimitAsync } from '@/lib/rate-limit'
@@ -53,13 +54,11 @@ export async function createApiKey(name: string, expiresInDays?: number) {
     },
   })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: 'CREATE_API_KEY',
-      resource: 'apiKey',
-      resourceId: apiKey.id,
-    },
+  await writeImmutableAuditLog({
+    userId: session.user.id,
+    action: 'CREATE_API_KEY',
+    resource: 'apiKey',
+    resourceId: apiKey.id,
   })
 
   // Return the full key only once — it cannot be retrieved again
@@ -111,13 +110,11 @@ export async function revokeApiKey(keyId: string) {
 
   await prisma.apiKey.delete({ where: { id: keyId } })
 
-  await prisma.auditLog.create({
-    data: {
-      userId: session.user.id,
-      action: 'REVOKE_API_KEY',
-      resource: 'apiKey',
-      resourceId: keyId,
-    },
+  await writeImmutableAuditLog({
+    userId: session.user.id,
+    action: 'REVOKE_API_KEY',
+    resource: 'apiKey',
+    resourceId: keyId,
   })
 
   return { success: true }

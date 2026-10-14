@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import { decrypt } from '@/lib/encryption'
 import { createDriver } from '@/lib/db-drivers'
 import { PLANS } from '@/lib/lemonsqueezy'
@@ -559,18 +560,20 @@ export async function updateUserRole(
     const user = await prisma.user.findUnique({ where: { id: vUserId }, select: { role: true } })
     if (!user) return { success: false, error: 'User not found' }
 
-    await prisma.$transaction([
-      prisma.user.update({ where: { id: vUserId }, data: { role: vNewRole } }),
-      prisma.auditLog.create({
-        data: {
+    // The change and its audit entry are saved together, or not at all.
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: vUserId }, data: { role: vNewRole } })
+      await writeImmutableAuditLog(
+        {
           userId: admin.id!,
           action: 'CHANGE_USER_ROLE',
           resource: 'user',
           resourceId: vUserId,
           metadata: { oldRole: user.role, newRole: vNewRole },
         },
-      }),
-    ])
+        tx
+      )
+    })
 
     return { success: true }
   } catch (error) {
@@ -596,18 +599,20 @@ export async function deleteConnectionAdmin(
     })
     if (!conn) return { success: false, error: 'Connection not found' }
 
-    await prisma.$transaction([
-      prisma.databaseConnection.delete({ where: { id: connectionId } }),
-      prisma.auditLog.create({
-        data: {
+    // The change and its audit entry are saved together, or not at all.
+    await prisma.$transaction(async (tx) => {
+      await tx.databaseConnection.delete({ where: { id: connectionId } })
+      await writeImmutableAuditLog(
+        {
           userId: admin.id!,
           action: 'ADMIN_DELETE_CONNECTION',
           resource: 'connection',
           resourceId: connectionId,
           metadata: { connectionName: conn.name, host: conn.host, ownerId: conn.userId },
         },
-      }),
-    ])
+        tx
+      )
+    })
 
     return { success: true }
   } catch (error) {

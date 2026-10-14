@@ -18,7 +18,7 @@ vi.mock('@/lib/prisma', () => ({
       update: mocks.memberUpdate,
       delete: mocks.memberDelete,
     },
-    auditLog: { create: vi.fn() },
+    auditLog: { create: vi.fn(), findFirst: vi.fn() },
   },
 }))
 vi.mock('@/lib/lemonsqueezy', () => ({

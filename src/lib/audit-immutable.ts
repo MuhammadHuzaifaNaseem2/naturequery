@@ -12,6 +12,7 @@
  */
 
 import { createHash } from 'crypto'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 // ---------------------------------------------------------------------------
@@ -84,13 +85,20 @@ const GENESIS_HASH = '0'.repeat(64)
  * system with > 100 writes/sec, replace with a queue-based serial writer
  * (e.g. Inngest step function, or a Postgres advisory lock wrapper).
  * At typical B2B SaaS volumes this is fine.
+ *
+ * Pass a transaction client (`prisma.$transaction(async (tx) => ...)`) as `db` when
+ * the entry must be saved together with the change it records. Every audit entry
+ * is written through here (src/__tests__/audit-log-chain.test.ts checks this).
  */
-export async function writeImmutableAuditLog(entry: AuditLogEntry): Promise<AuditLogWriteResult> {
+export async function writeImmutableAuditLog(
+  entry: AuditLogEntry,
+  db: Pick<Prisma.TransactionClient, 'auditLog'> = prisma
+): Promise<AuditLogWriteResult> {
   const timestamp = new Date()
 
   // Get chain tip for this user (null userId entries share a global chain)
   const chainKey = entry.userId ?? '__system__'
-  const previous = await prisma.auditLog.findFirst({
+  const previous = await db.auditLog.findFirst({
     where: entry.userId
       ? { userId: entry.userId, hash: { not: null } }
       : { userId: null, hash: { not: null } },
@@ -102,7 +110,7 @@ export async function writeImmutableAuditLog(entry: AuditLogEntry): Promise<Audi
   const entryData = buildEntryData(entry, timestamp)
   const hash = computeHash(previousHash, entryData)
 
-  const record = await prisma.auditLog.create({
+  const record = await db.auditLog.create({
     data: {
       userId: entry.userId,
       action: entry.action,

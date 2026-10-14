@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import { verifyToken, deleteVerificationToken } from '@/lib/token-generator'
 
 export async function GET(request: Request) {
@@ -45,13 +46,11 @@ export async function GET(request: Request) {
     await deleteVerificationToken(token)
 
     // Log the verification
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'EMAIL_VERIFIED',
-        resource: 'user',
-        resourceId: user.id,
-      },
+    await writeImmutableAuditLog({
+      userId: user.id,
+      action: 'EMAIL_VERIFIED',
+      resource: 'user',
+      resourceId: user.id,
     })
 
     return NextResponse.json(

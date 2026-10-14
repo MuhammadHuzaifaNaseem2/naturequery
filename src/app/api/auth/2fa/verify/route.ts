@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import { encrypt } from '@/lib/encryption'
 import { verifyTOTPCode } from '@/lib/totp'
 
@@ -30,16 +31,12 @@ export async function POST(request: NextRequest) {
 
     if (!isValid) {
       // Audit log failure
-      await prisma.auditLog
-        .create({
-          data: {
-            userId: session.user.id,
-            action: '2FA_VERIFY_FAILED',
-            resource: 'user',
-            resourceId: session.user.id,
-          },
-        })
-        .catch(console.error)
+      await writeImmutableAuditLog({
+        userId: session.user.id,
+        action: '2FA_VERIFY_FAILED',
+        resource: 'user',
+        resourceId: session.user.id,
+      }).catch(console.error)
 
       return NextResponse.json({ success: false, error: 'Invalid code' }, { status: 401 })
     }
@@ -58,13 +55,11 @@ export async function POST(request: NextRequest) {
     })
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: '2FA_ENABLED',
-        resource: 'user',
-        resourceId: session.user.id,
-      },
+    await writeImmutableAuditLog({
+      userId: session.user.id,
+      action: '2FA_ENABLED',
+      resource: 'user',
+      resourceId: session.user.id,
     })
 
     return NextResponse.json({

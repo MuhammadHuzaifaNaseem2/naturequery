@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 
 export async function POST() {
   try {
@@ -25,13 +26,11 @@ export async function POST() {
     })
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: '2FA_DISABLED',
-        resource: 'user',
-        resourceId: session.user.id,
-      },
+    await writeImmutableAuditLog({
+      userId: session.user.id,
+      action: '2FA_DISABLED',
+      resource: 'user',
+      resourceId: session.user.id,
     })
 
     return NextResponse.json({

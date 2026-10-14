@@ -2,6 +2,7 @@
 
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import {
   sendPasswordResetEmail,
   sendVerificationEmail,
@@ -107,13 +108,11 @@ export async function resetPassword(token: string, newPassword: string) {
 
   // Audit log
   if (user) {
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'PASSWORD_RESET',
-        resource: 'user',
-        resourceId: user.id,
-      },
+    await writeImmutableAuditLog({
+      userId: user.id,
+      action: 'PASSWORD_RESET',
+      resource: 'user',
+      resourceId: user.id,
     })
   }
 

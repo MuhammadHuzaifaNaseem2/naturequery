@@ -3,6 +3,7 @@ import { getSubscription } from '@lemonsqueezy/lemonsqueezy.js'
 import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import { setupLemonSqueezy } from '@/lib/lemonsqueezy'
 import {
   PAYMENT_EVENTS,
@@ -175,17 +176,15 @@ async function applySubscription(
   }
 
   if (applied) {
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        action: 'SUBSCRIPTION_UPDATED',
-        resource: 'subscription',
-        resourceId: subscriptionId,
-        metadata: {
-          event: payload.meta.event_name,
-          deduplicationKey,
-          providerUpdatedAt: lifecycle.providerUpdatedAt.toISOString(),
-        },
+    await writeImmutableAuditLog({
+      userId,
+      action: 'SUBSCRIPTION_UPDATED',
+      resource: 'subscription',
+      resourceId: subscriptionId,
+      metadata: {
+        event: payload.meta.event_name,
+        deduplicationKey,
+        providerUpdatedAt: lifecycle.providerUpdatedAt.toISOString(),
       },
     })
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe, isStripeEnabled } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { writeImmutableAuditLog } from '@/lib/audit-immutable'
 import type { SubscriptionPlan, SubscriptionStatus } from '@prisma/client'
 import type Stripe from 'stripe'
 
@@ -85,16 +86,14 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   })
 
   // Audit log
-  await prisma.auditLog.create({
-    data: {
-      userId,
-      action: 'SUBSCRIPTION_UPDATED',
-      resource: 'subscription',
-      resourceId: subscription.id,
-      metadata: {
-        plan: resolvedPlan ?? 'UNKNOWN',
-        status: subscription.status,
-      },
+  await writeImmutableAuditLog({
+    userId,
+    action: 'SUBSCRIPTION_UPDATED',
+    resource: 'subscription',
+    resourceId: subscription.id,
+    metadata: {
+      plan: resolvedPlan ?? 'UNKNOWN',
+      status: subscription.status,
     },
   })
 }
@@ -150,14 +149,12 @@ export async function POST(request: NextRequest) {
         // Log failed payment for admin visibility
         const sub = await prisma.subscription.findFirst({ where: { stripeSubscriptionId: subId } })
         if (sub?.userId) {
-          await prisma.auditLog.create({
-            data: {
-              userId: sub.userId,
-              action: 'PAYMENT_FAILED',
-              resource: 'subscription',
-              resourceId: subId,
-              metadata: { invoiceId: invoice.id, amount: invoice.amount_due },
-            },
+          await writeImmutableAuditLog({
+            userId: sub.userId,
+            action: 'PAYMENT_FAILED',
+            resource: 'subscription',
+            resourceId: subId,
+            metadata: { invoiceId: invoice.id, amount: invoice.amount_due },
           })
         }
       }
@@ -194,14 +191,12 @@ export async function POST(request: NextRequest) {
       const sub = event.data.object as Stripe.Subscription
       const userId = sub.metadata?.userId
       if (userId) {
-        await prisma.auditLog.create({
-          data: {
-            userId,
-            action: 'TRIAL_ENDING_SOON',
-            resource: 'subscription',
-            resourceId: sub.id,
-            metadata: { trialEnd: sub.trial_end },
-          },
+        await writeImmutableAuditLog({
+          userId,
+          action: 'TRIAL_ENDING_SOON',
+          resource: 'subscription',
+          resourceId: sub.id,
+          metadata: { trialEnd: sub.trial_end },
         })
       }
       break
