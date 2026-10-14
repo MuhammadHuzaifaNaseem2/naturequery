@@ -16,9 +16,12 @@ import {
   Lock,
   Eye,
   EyeOff,
+  LogOut,
+  Loader2,
 } from 'lucide-react'
 import TwoFactorSetup from '@/components/TwoFactorSetup'
 import { signOut } from 'next-auth/react'
+import { signOutEverywhere } from '@/actions/sessions'
 import { useTranslation } from '@/contexts/LocaleContext'
 import { DesktopSessions, type DesktopSessionView } from './DesktopSessions'
 
@@ -46,6 +49,8 @@ export default function SecurityClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showSignOutAllConfirm, setShowSignOutAllConfirm] = useState(false)
+  const [isSigningOutAll, setIsSigningOutAll] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   // Change password state
@@ -125,6 +130,23 @@ export default function SecurityClient({
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleSignOutEverywhere = async () => {
+    setIsSigningOutAll(true)
+    try {
+      const result = await signOutEverywhere()
+      if (result.ok) {
+        // This browser too: the other sessions end on their own within a minute.
+        await signOut({ callbackUrl: '/login' })
+        return
+      }
+      showToast('Could not sign out everywhere. Wait a few minutes and try again.', 'error')
+    } catch {
+      showToast('Network error. Please try again.', 'error')
+    }
+    setIsSigningOutAll(false)
+    setShowSignOutAllConfirm(false)
   }
 
   const downloadBackupCodes = () => {
@@ -383,6 +405,31 @@ export default function SecurityClient({
 
         <DesktopSessions initial={desktopSessions} />
 
+        {/* Sign out of all devices */}
+        <div className="card p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+              <LogOut className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" aria-hidden />
+            </div>
+            <div className="flex-1 w-full min-w-0">
+              <h2 className="text-base font-semibold mb-1">Sign out of all devices</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Ends your NatureQuery sessions in every browser and on every computer with
+                NatureQuery Desktop, including this one. Use it if you lost a device or signed in on
+                a shared computer. API keys keep working.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowSignOutAllConfirm(true)}
+                className="btn-secondary text-sm"
+              >
+                <LogOut className="w-4 h-4 mr-2" aria-hidden />
+                Sign out everywhere
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Danger Zone */}
         <div className="card p-4 sm:p-6 mb-4 sm:mb-6 border border-destructive/20">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
@@ -463,6 +510,49 @@ export default function SecurityClient({
                 className="flex-1 btn-secondary text-sm text-destructive hover:bg-destructive/10"
               >
                 Yes, Disable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign out of all devices Confirmation */}
+      {showSignOutAllConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            role="dialog"
+            aria-labelledby="sign-out-all-title"
+            className="card p-6 max-w-sm w-full"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+                <LogOut className="w-5 h-5 text-foreground" aria-hidden />
+              </div>
+              <h3 id="sign-out-all-title" className="text-base font-semibold">
+                Sign out of all devices?
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">
+              You will be signed out here now, and in every other browser and on NatureQuery Desktop
+              within about a minute. You can sign in again right away.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSignOutAllConfirm(false)}
+                disabled={isSigningOutAll}
+                className="flex-1 btn-secondary text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSignOutEverywhere}
+                disabled={isSigningOutAll}
+                className="flex-1 btn-primary text-sm inline-flex items-center justify-center gap-1.5"
+              >
+                {isSigningOutAll && <Loader2 className="w-4 h-4 animate-spin" aria-hidden />}
+                Sign out everywhere
               </button>
             </div>
           </div>

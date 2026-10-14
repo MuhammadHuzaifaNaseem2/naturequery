@@ -10,6 +10,7 @@ import { rateLimitAsync } from './rate-limit'
 import { verifyTOTPCode, verifyBackupCode } from './totp'
 import { auditLogin, auditLogout } from './audit-immutable'
 import { sendLoginNotificationEmail } from './email'
+import { startedBeforeSignOutLine } from './session-revocation'
 import { CredentialsSignin } from 'next-auth'
 
 class CustomAuthError extends CredentialsSignin {
@@ -262,8 +263,9 @@ const authConfig: NextAuthConfig = {
         token.role = (user as any).role ?? 'ANALYST'
         token.plan = (user as any).plan ?? 'FREE'
         token.onboardingCompleted = (user as any).onboardingCompleted ?? false
-        // Embed passwordChangedAt at login time so we can detect stale sessions
-        token.passwordChangedAt = (user as any).passwordChangedAt ?? null
+        // When this session started, compared with the account's sign-out line
+        // (lib/session-revocation.ts) at every periodic check below.
+        token.signedInAt = Date.now()
         // Track when we last verified against the DB (now = login time)
         token.lastDbCheckAt = Date.now()
 
@@ -292,9 +294,9 @@ const authConfig: NextAuthConfig = {
         token.lastDbCheckAt = 0
       }
 
-      // ── Periodic DB sync (every 5 minutes, NOT every request) ────────
-      // This catches role changes, account deletion, and password resets
-      // without hammering the DB on every single API call.
+      // ── Periodic DB sync (every minute in production, NOT every request) ────────
+      // This catches role changes, account deletion, password changes and
+      // "Sign out of all devices" without hammering the DB on every single API call.
       const isDev = process.env.NODE_ENV === 'development'
       const DB_CHECK_INTERVAL_MS = isDev ? 5 * 60 * 1000 : 1 * 60 * 1000
       const lastCheck = (token.lastDbCheckAt as number) || 0
@@ -308,12 +310,21 @@ const authConfig: NextAuthConfig = {
               role: true,
               onboardingCompleted: true,
               image: true,
+              passwordChangedAt: true,
               subscription: { select: { plan: true } },
             },
           })
 
           if (!dbUser) {
             // User deleted — kill the session
+            return null as any
+          }
+
+          // A password change or "Sign out of all devices" since this session began
+          if (
+            dbUser.passwordChangedAt &&
+            startedBeforeSignOutLine(token, dbUser.passwordChangedAt)
+          ) {
             return null as any
           }
 
@@ -325,23 +336,6 @@ const authConfig: NextAuthConfig = {
             token.picture = dbUser.image.startsWith('data:image/')
               ? `/api/user/avatar?t=${Date.now()}`
               : dbUser.image
-          }
-
-          // Check if password was changed after this token was issued
-          try {
-            const pwUser = await (prisma.user as any).findUnique({
-              where: { id: token.id as string },
-              select: { passwordChangedAt: true },
-            })
-            if (pwUser?.passwordChangedAt) {
-              const tokenIssuedAt = token.passwordChangedAt as number | null
-              const dbChangedAt = (pwUser.passwordChangedAt as Date).getTime()
-              if (!tokenIssuedAt || dbChangedAt > tokenIssuedAt) {
-                return null as any
-              }
-            }
-          } catch {
-            // passwordChangedAt not yet in Prisma client — skip until prisma generate
           }
 
           token.lastDbCheckAt = now

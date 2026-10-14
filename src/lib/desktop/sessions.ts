@@ -271,6 +271,15 @@ export async function listDesktopSessions(userId: string) {
 }
 
 /** Signs out one of the user's own desktop sessions (from the website's settings). */
+/** Signs out every NatureQuery Desktop install of a user ("Sign out of all devices"). */
+export async function revokeAllDesktopSessions(userId: string): Promise<number> {
+  const { count } = await prisma.desktopSession.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  })
+  return count
+}
+
 export async function revokeOwnDesktopSession(userId: string, sessionId: string): Promise<boolean> {
   const result = await prisma.desktopSession.updateMany({
     where: { id: sessionId, userId, revokedAt: null },

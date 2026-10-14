@@ -32,7 +32,10 @@ declare module 'next-auth/jwt' {
     role: UserRole
     onboardingCompleted: boolean
     plan: 'FREE' | 'PRO' | 'ENTERPRISE'
-    passwordChangedAt: number | null
+    /** When the session started (ms); compared with the account's sign-out line. */
+    signedInAt?: number
+    /** Sessions started before signedInAt existed: the sign-out line at sign-in. */
+    passwordChangedAt?: number | string | null
     lastDbCheckAt: number
   }
 }
