@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { Play } from 'lucide-react'
 
-// The demo on the NatureQuery YouTube channel: "Ask Your Database in Plain English", 1:22.
-const VIDEO_ID = '0h5kmva3wq0'
+// The demo on the NatureQuery YouTube channel, October 2026, 1:00 (the 1:22 one from
+// May 2026, 0h5kmva3wq0, is unlisted). Shows the website, then the Windows app.
+const VIDEO_ID = 'uzhjKArD4c4'
 const VIDEO_TITLE = 'NatureQuery: Ask your database in plain English'
 
 // What the video walks through, drawn like the logo: nodes joined by a line.
@@ -36,12 +37,12 @@ export function DemoVideo() {
         <button
           type="button"
           onClick={() => setPlaying(true)}
-          aria-label="Play the NatureQuery demo video, 1 minute 22 seconds"
+          aria-label="Play the NatureQuery demo video, 1 minute"
           className="group absolute inset-0 grid grid-rows-[auto_1fr] p-5 text-left text-mk-band-ink sm:p-10 lg:p-14"
         >
           <span className="flex w-full items-center justify-between font-nq-mono text-[0.7rem] uppercase tracking-[0.08em] text-mk-band-ink-2">
             <span>NatureQuery demo</span>
-            <span className="tabular-nums">1:22</span>
+            <span className="tabular-nums">1:00</span>
           </span>
 
           <span className="grid items-center gap-10 md:grid-cols-[1.25fr_0.75fr]">
