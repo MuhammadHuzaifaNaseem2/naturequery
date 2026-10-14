@@ -137,7 +137,7 @@ const sections: LegalSection[] = [
       'Access your personal data',
       'Correct inaccurate data',
       'Delete your account and associated data',
-      'Export your data (queries, connections, settings)',
+      'Export your data (queries, connections, settings) with Download my data in Settings, Security',
       'Withdraw consent for optional data processing',
     ],
   },

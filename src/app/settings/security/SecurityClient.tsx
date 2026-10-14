@@ -51,6 +51,7 @@ export default function SecurityClient({
   const [isDeleting, setIsDeleting] = useState(false)
   const [showSignOutAllConfirm, setShowSignOutAllConfirm] = useState(false)
   const [isSigningOutAll, setIsSigningOutAll] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   // Change password state
@@ -147,6 +148,33 @@ export default function SecurityClient({
     }
     setIsSigningOutAll(false)
     setShowSignOutAllConfirm(false)
+  }
+
+  const handleDownloadData = async () => {
+    setIsExporting(true)
+    try {
+      const res = await fetch('/api/account/export-data')
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        showToast(body?.error || 'Your data could not be downloaded. Please try again.', 'error')
+        return
+      }
+      // The browser shows the download, so no message is needed when it works.
+      const blob = await res.blob()
+      const filename =
+        /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ??
+        'naturequery-data-export.json'
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Network error. Please try again.', 'error')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const downloadBackupCodes = () => {
@@ -425,6 +453,36 @@ export default function SecurityClient({
               >
                 <LogOut className="w-4 h-4 mr-2" aria-hidden />
                 Sign out everywhere
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Download my data */}
+        <div className="card p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+              <Download className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" aria-hidden />
+            </div>
+            <div className="flex-1 w-full min-w-0">
+              <h2 className="text-base font-semibold mb-1">Download my data</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                A copy of what NatureQuery stores about you, as a JSON file: your profile and
+                settings, saved and recent questions, dashboards, schedules, database connections
+                and sign-ins. Passwords and other secrets are never included.
+              </p>
+              <button
+                type="button"
+                onClick={handleDownloadData}
+                disabled={isExporting}
+                className="btn-secondary text-sm inline-flex items-center disabled:opacity-50"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" aria-hidden />
+                )}
+                {isExporting ? 'Preparing your file...' : 'Download my data'}
               </button>
             </div>
           </div>

@@ -45,6 +45,14 @@ const RELEASES: Release[] = [
         text: "New connections check the database's certificate, with a switch for servers that sign their own",
       },
       { type: 'security', text: 'A security page that explains how your data is protected' },
+      {
+        type: 'security',
+        text: 'Sign out of all devices, in Settings, Security: every browser and the desktop app at once',
+      },
+      {
+        type: 'feature',
+        text: 'Download my data: a copy of what NatureQuery stores about you, without passwords or other secrets',
+      },
       { type: 'improvement', text: 'Signed-in visitors go straight to their dashboard' },
       {
         type: 'improvement',
@@ -62,6 +70,7 @@ const RELEASES: Release[] = [
         type: 'fix',
         text: 'NatureQuery Desktop: "Verify certificate and host name" connects again, and Excel export works',
       },
+      { type: 'fix', text: 'Shared links show a preview picture again, in the new website style' },
     ],
   },
   {
