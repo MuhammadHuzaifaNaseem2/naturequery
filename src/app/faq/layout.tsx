@@ -23,7 +23,7 @@ const faqSchema = {
       name: 'Which databases does NatureQuery support?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'NatureQuery supports PostgreSQL, MySQL, SQLite, SQL Server, MariaDB, and Amazon Redshift.',
+        text: 'PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, Amazon Redshift, BigQuery, Snowflake, CockroachDB, ClickHouse, Neon, Supabase, PlanetScale and MongoDB. You can also upload CSV and Excel files, with no data migration or ETL. NatureQuery Desktop also connects to SQLite files on your computer, Turso, DynamoDB, Firestore and Cassandra.',
       },
     },
     {

@@ -47,7 +47,7 @@ export function ProductTour() {
             popover: {
               title: '⚡ Connect in Seconds',
               description:
-                'Link your PostgreSQL, MySQL, or SQLite database — or launch our 1-click sandbox to explore instantly. No setup required.',
+                'Link your PostgreSQL, MySQL, SQL Server or other database, or launch our 1-click sandbox to explore instantly. No setup required.',
               side: 'bottom',
               align: 'start',
             },
@@ -57,7 +57,7 @@ export function ProductTour() {
             popover: {
               title: '✨ Ask in Plain English',
               description:
-                'Type any question about your data in natural language. Our AI generates accurate SQL instantly — no query expertise needed.',
+                'Type any question about your data in natural language. Our AI generates accurate SQL instantly, with no query expertise needed.',
               side: 'bottom',
               align: 'start',
             },
@@ -77,7 +77,7 @@ export function ProductTour() {
             popover: {
               title: '🎛️ Your Command Center',
               description:
-                'Access your profile, billing, team settings, and admin controls — everything in one place, always one click away.',
+                'Access your profile, billing, team settings, and admin controls, all in one place and always one click away.',
               side: 'bottom',
               align: 'end',
             },
@@ -138,7 +138,7 @@ export function ProductTour() {
             popover: {
               title: '⚡ Connect in Seconds',
               description:
-                'Link your PostgreSQL, MySQL, or SQLite database — or launch our 1-click sandbox to explore instantly. No setup required.',
+                'Link your PostgreSQL, MySQL, SQL Server or other database, or launch our 1-click sandbox to explore instantly. No setup required.',
               side: 'bottom',
               align: 'start',
             },
@@ -148,7 +148,7 @@ export function ProductTour() {
             popover: {
               title: '✨ Ask in Plain English',
               description:
-                'Type any question about your data in natural language. Our AI generates accurate SQL instantly — no query expertise needed.',
+                'Type any question about your data in natural language. Our AI generates accurate SQL instantly, with no query expertise needed.',
               side: 'bottom',
               align: 'start',
             },
@@ -168,7 +168,7 @@ export function ProductTour() {
             popover: {
               title: '🎛️ Your Command Center',
               description:
-                'Access your profile, billing, team settings, and admin controls — everything in one place, always one click away.',
+                'Access your profile, billing, team settings, and admin controls, all in one place and always one click away.',
               side: 'bottom',
               align: 'end',
             },

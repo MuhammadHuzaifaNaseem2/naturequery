@@ -79,7 +79,7 @@ export default async function Image() {
           fontSize: '18px',
         }}
       >
-        PostgreSQL &bull; MySQL &bull; SQLite
+        PostgreSQL &bull; MySQL &bull; SQL Server
       </div>
     </div>,
     { ...size }

@@ -9,7 +9,6 @@ export const WEB_DATABASES = [
   'MariaDB',
   'SQL Server',
   'Oracle',
-  'SQLite',
   'Amazon Redshift',
   'BigQuery',
   'Snowflake',
@@ -21,5 +20,11 @@ export const WEB_DATABASES = [
   'MongoDB',
 ] as const
 
-/** Connected only by NatureQuery Desktop for now. */
-export const DESKTOP_ONLY_DATABASES = ['Turso', 'DynamoDB', 'Firestore', 'Cassandra'] as const
+/** Connected only by NatureQuery Desktop. SQLite files live on the person's own computer. */
+export const DESKTOP_ONLY_DATABASES = [
+  'SQLite',
+  'Turso',
+  'DynamoDB',
+  'Firestore',
+  'Cassandra',
+] as const

@@ -13,7 +13,7 @@ import { DESKTOP_ONLY_DATABASES, WEB_DATABASES } from '@/lib/supported-databases
 export const metadata: Metadata = {
   title: 'NatureQuery - Natural Language to SQL',
   description:
-    'Ask questions in plain English. NatureQuery writes read-only SQL for PostgreSQL, SQL Server, Snowflake, BigQuery and 11 more databases, runs it, and returns tables, charts and summaries.',
+    'Ask questions in plain English. NatureQuery writes read-only SQL for PostgreSQL, SQL Server, Snowflake, BigQuery and 10 more databases, runs it, and returns tables, charts and summaries.',
 }
 
 const SHOWCASE = [

@@ -345,8 +345,9 @@ const DB_LOGOS: Record<string, React.ReactNode> = {
   ),
 }
 
-// Switched off on the website for now, but NatureQuery Desktop connects to them.
-const DESKTOP_APP_TYPES: string[] = ['turso', 'dynamodb', 'firestore', 'cassandra']
+// Switched off on the website, but NatureQuery Desktop connects to them. SQLite files
+// live on the person's computer, which the hosted site cannot reach (connection-target.ts).
+const DESKTOP_APP_TYPES: string[] = ['sqlite', 'turso', 'dynamodb', 'firestore', 'cassandra']
 
 /** Databases whose certificate the website checks, unless the user trusts it as it is. */
 const CERTIFICATE_CHECK_TYPES = new Set<DatabaseType>([
@@ -373,7 +374,7 @@ const DB_OPTIONS: {
       { type: 'mysql' as const, label: 'MySQL', port: 3306 },
       { type: 'mariadb' as const, label: 'MariaDB', port: 3306 },
       { type: 'sqlserver' as const, label: 'SQL Server', port: 1433 },
-      { type: 'sqlite' as const, label: 'SQLite', port: 0 },
+      { type: 'sqlite' as const, label: 'SQLite', port: 0, soon: true },
       { type: 'oracle' as const, label: 'Oracle', port: 1521 },
       { type: 'db2' as const, label: 'IBM Db2', port: 50000, soon: true },
     ],
