@@ -25,6 +25,8 @@ const PUBLIC_EXACT = new Set([
   '/changelog',
   // The page behind 'Stop weekly summaries' in the email; the link is signed
   '/email/unsubscribe',
+  // The link-preview image that WhatsApp, LinkedIn and X fetch while signed out
+  '/opengraph-image',
 ])
 
 function applySecurityHeaders(res: NextResponse): NextResponse {
