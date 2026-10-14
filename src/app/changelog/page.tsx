@@ -26,6 +26,45 @@ const TYPE_LABEL: Record<ChangeType, { label: string; className: string }> = {
 
 const RELEASES: Release[] = [
   {
+    version: '1.5.0',
+    date: 'Oct 14, 2026',
+    title: 'Supabase, security and steadier answers',
+    description:
+      'Connect Supabase with a full security check, stronger read-only protection, and fixes on the website and in NatureQuery Desktop.',
+    changes: [
+      {
+        type: 'feature',
+        text: "Supabase: connect from the website or NatureQuery Desktop, with the server's certificate fully checked",
+      },
+      {
+        type: 'security',
+        text: 'Queries also run in a read-only session wherever the database supports it, so the database itself refuses changes',
+      },
+      {
+        type: 'security',
+        text: "New connections check the database's certificate, with a switch for servers that sign their own",
+      },
+      { type: 'security', text: 'A security page that explains how your data is protected' },
+      { type: 'improvement', text: 'Signed-in visitors go straight to their dashboard' },
+      {
+        type: 'improvement',
+        text: 'Questions like "How many students are there?" get an answer, with the assumption noted in the query',
+      },
+      {
+        type: 'fix',
+        text: 'Queries on columns limited to a fixed list, such as a role or status, run correctly',
+      },
+      {
+        type: 'fix',
+        text: 'History updates as soon as a query runs, each database keeps its own question, and pinned charts draw their bars again',
+      },
+      {
+        type: 'fix',
+        text: 'NatureQuery Desktop: "Verify certificate and host name" connects again, and Excel export works',
+      },
+    ],
+  },
+  {
     version: '1.4.0',
     date: 'Oct 11, 2026',
     title: 'NatureQuery Desktop and team plans',

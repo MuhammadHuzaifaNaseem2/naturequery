@@ -55,6 +55,7 @@ const DATABASES = [
   'Amazon Redshift',
   'CockroachDB',
   'Neon',
+  'Supabase',
   'PlanetScale',
   'Turso',
   'Amazon DynamoDB',
